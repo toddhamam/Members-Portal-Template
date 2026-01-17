@@ -1,131 +1,194 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+
+// Lotus/flame logo icon
+function LogoIcon({ className = "w-8 h-8" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 40 40" fill="none">
+      {/* Outer glow circle */}
+      <circle cx="20" cy="20" r="18" stroke="url(#logoGradient)" strokeWidth="1" opacity="0.5" />
+      {/* Inner lotus/flame shape */}
+      <path
+        d="M20 6c0 0-8 8-8 16c0 4 3.5 8 8 8s8-4 8-8c0-8-8-16-8-16z"
+        fill="url(#logoGradient)"
+        opacity="0.8"
+      />
+      <path
+        d="M20 10c0 0-5 5-5 11c0 2.5 2 5 5 5s5-2.5 5-5c0-6-5-11-5-11z"
+        fill="url(#logoGradient)"
+      />
+      <defs>
+        <linearGradient id="logoGradient" x1="20" y1="0" x2="20" y2="40" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#d4a574" />
+          <stop offset="1" stopColor="#b8956c" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+// Calendar icon for CTA
+function CalendarIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    </svg>
+  );
+}
 
 function Upsell2Content() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
-  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleAccept = async () => {
-    setIsProcessing(true);
-    try {
-      const response = await fetch("/api/upsell", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId,
-          product: "bridge_to_mastery",
-          amount: 1495, // $14.95 in cents
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        window.location.href = "/thank-you?session_id=" + sessionId;
-      } else {
-        alert("There was an issue processing your order. Please try again.");
-        setIsProcessing(false);
-      }
-    } catch {
-      alert("Error processing your order. Please try again.");
-      setIsProcessing(false);
-    }
-  };
+  const steps = [
+    { number: "Step 1:", label: "Order Guide", active: true },
+    { number: "2:", label: "Flagship Program", active: true },
+    { number: "3:", label: "Bridge to Mastery", active: true, current: true },
+    { number: "4:", label: "Order Complete", active: false },
+  ];
 
   return (
-    <main className="min-h-screen bg-gray-900 text-white">
-      {/* Header with Step Indicator */}
-      <header className="py-4 px-4 border-b border-gray-800">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <span className="text-gray-400">Inner Wealth Initiate</span>
-          <span className="text-sm text-[var(--accent)] font-medium">Step 3 of 4</span>
+    <main className="min-h-screen bg-black text-white">
+      {/* Header with Logo */}
+      <header className="py-6 px-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-center gap-3">
+          <LogoIcon className="w-10 h-10" />
+          <span className="text-lg tracking-[0.15em] font-light">
+            INNER WEALTH INITIATE<span className="align-super text-[10px] ml-0.5">™</span>
+          </span>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        {/* Processing Notice */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-green-900/50 text-green-400 px-4 py-2 rounded-full text-sm">
-            <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Almost done! Finalizing your order...
+      {/* Step Progress Bar */}
+      <div className="px-4 mb-10">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center justify-center gap-2">
+            {steps.map((step, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <div
+                  className={`
+                    px-4 py-2 text-xs tracking-wide border transition-all
+                    ${step.current
+                      ? "bg-white text-black border-white font-medium"
+                      : step.active
+                        ? "bg-transparent text-white/70 border-white/30"
+                        : "bg-transparent text-white/40 border-white/20"
+                    }
+                  `}
+                >
+                  <span className="opacity-70">{step.number}</span> {step.label}
+                </div>
+                {index < steps.length - 1 && (
+                  <div className="w-4 h-px bg-white/20" />
+                )}
+              </div>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Main Headline */}
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto px-4">
+        {/* Headlines */}
         <div className="text-center mb-8">
-          <p className="text-[var(--accent)] font-medium mb-4 uppercase tracking-wide text-sm">
-            One Final Opportunity...
+          <p className="text-[#d4a574] text-sm mb-4 tracking-wide">
+            One Last Step! Before Accessing Your Order...
           </p>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
-            Bridge to Mastery
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight tracking-tight">
+            If You Want Personal 1-on-1
+            <br />
+            Guided Support
           </h1>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            I really don&apos;t want you to miss out on this one-time offer!
+          <p className="text-white/60 text-lg">
+            Watch This Short Video...
           </p>
         </div>
 
-        {/* Video Placeholder */}
-        <div className="bg-gray-800 rounded-2xl aspect-video mb-8 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-20 h-20 mx-auto rounded-full bg-[var(--accent)] flex items-center justify-center mb-4 cursor-pointer hover:scale-105 transition-transform">
-              <svg className="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
+        {/* Click to turn on sound */}
+        <div className="text-right mb-2 pr-2">
+          <span className="text-[#d4a574] text-sm">Click To Turn On The Sound</span>
+        </div>
+
+        {/* Video Section */}
+        <div className="relative mb-10">
+          <div className="relative rounded-lg overflow-hidden border border-white/10">
+            {/* Video container with split layout */}
+            <div className="flex aspect-video">
+              {/* Left side - Mountain meditation imagery */}
+              <div className="w-1/2 relative bg-gradient-to-b from-[#2d1b4e] via-[#4a2c6a] to-[#1a1a2e] overflow-hidden">
+                {/* Mountain silhouette */}
+                <div className="absolute inset-0">
+                  {/* Sky gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#8b5a9e]/80 via-[#c77dab]/60 to-[#e8a87c]/40" />
+
+                  {/* Mountains */}
+                  <svg className="absolute bottom-0 w-full h-3/4" viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice">
+                    {/* Back mountains - darker */}
+                    <path d="M0 300 L0 180 L80 120 L150 160 L200 100 L280 150 L350 80 L400 140 L400 300 Z" fill="#2d1b4e" />
+                    {/* Mid mountains */}
+                    <path d="M0 300 L0 220 L60 180 L120 200 L180 150 L250 190 L320 140 L400 180 L400 300 Z" fill="#1e1232" />
+                    {/* Front mountains - darkest */}
+                    <path d="M0 300 L0 260 L100 220 L200 250 L300 210 L400 240 L400 300 Z" fill="#0f0a18" />
+                  </svg>
+
+                  {/* Meditating figure silhouette */}
+                  <div className="absolute bottom-[30%] left-1/2 -translate-x-1/2">
+                    <svg className="w-20 h-20" viewBox="0 0 60 60" fill="#0a0610">
+                      {/* Head */}
+                      <circle cx="30" cy="12" r="8" />
+                      {/* Body in lotus position */}
+                      <path d="M30 20 Q30 35 15 45 Q25 42 30 44 Q35 42 45 45 Q30 35 30 20" />
+                      {/* Crossed legs */}
+                      <ellipse cx="30" cy="48" rx="18" ry="6" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right side - Video content area */}
+              <div className="w-1/2 bg-[#0a0a0f] relative p-6 flex flex-col">
+                {/* Video placeholder with presenter thumbnail */}
+                <div className="absolute top-4 right-4 w-24 h-20 bg-gray-800 rounded overflow-hidden border border-white/10">
+                  <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-gray-600" />
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="mt-auto">
+                  <h2 className="text-2xl font-bold mb-4">
+                    Bridge to Mastery<span className="align-super text-sm">™</span>
+                  </h2>
+                  <p className="text-white/60 text-sm leading-relaxed">
+                    An 8-week <span className="inline-flex items-center gap-1 text-white/80">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                      formative
+                    </span> journey to unwind the turbulence, and bridge the gap between
+                    fear/separation consciousness, and begin to stabilize your experience in your true nature 1
+                    AM awareness.
+                  </p>
+                </div>
+              </div>
             </div>
-            <p className="text-gray-400">Watch This Short Video...</p>
-            <p className="text-sm text-gray-500 mt-1">Click to turn on the sound</p>
           </div>
-        </div>
-
-        {/* Price Box with Discount */}
-        <div className="bg-gradient-to-r from-orange-900/50 to-orange-800/50 border border-orange-700/50 rounded-2xl p-8 mb-8 text-center">
-          <div className="inline-block bg-[var(--accent)] text-white text-sm font-bold px-4 py-1 rounded-full mb-4">
-            SAVE 25% - LIMITED TIME
-          </div>
-          <p className="text-gray-300 mb-2">Special One-Time Price</p>
-          <div className="flex items-baseline justify-center gap-3">
-            <span className="text-5xl font-bold">$14.95</span>
-            <span className="text-xl text-gray-400 line-through">$19.95</span>
-          </div>
-          <p className="text-sm text-[var(--accent)] mt-2">Save $5 right now!</p>
-        </div>
-
-        {/* Urgency Box */}
-        <div className="bg-red-900/30 border border-red-700/50 rounded-xl p-6 mb-8 text-center">
-          <p className="text-red-400 font-bold text-lg">
-            ONLY $14.95! BUT YOU HAVE TO ACT NOW
-          </p>
-          <p className="text-gray-300 text-sm mt-2">
-            This offer will not be available after you leave this page.
-          </p>
         </div>
 
         {/* CTA Buttons */}
-        <div className="space-y-4 max-w-xl mx-auto">
-          <button
-            onClick={handleAccept}
-            disabled={isProcessing}
-            className="w-full cta-button text-xl py-5 disabled:opacity-50 disabled:cursor-not-allowed"
+        <div className="space-y-4 max-w-xl mx-auto mb-16">
+          <Link
+            href={`/thank-you?session_id=${sessionId}&booked=true`}
+            className="group w-full flex items-center justify-center gap-3 bg-white text-black py-4 px-8 text-lg font-semibold hover:bg-white/90 transition-colors"
           >
-            {isProcessing ? (
-              "Processing..."
-            ) : (
-              <span className="flex flex-col items-center">
-                <span>Add To Order Now!</span>
-                <span className="text-sm font-normal opacity-90">Save $5 Now (Instant 25% Discount)</span>
-              </span>
-            )}
-          </button>
+            Book Discovery Call
+            <CalendarIcon className="w-5 h-5" />
+          </Link>
 
           <Link
             href={`/thank-you?session_id=${sessionId}`}
-            className="block w-full text-center py-4 text-gray-400 hover:text-gray-200 transition-colors text-sm underline"
+            className="block w-full text-center py-3 text-white/50 hover:text-white/70 transition-colors text-sm underline underline-offset-2"
           >
             No thanks, I don&apos;t want personal guidance
           </Link>
@@ -133,9 +196,9 @@ function Upsell2Content() {
       </div>
 
       {/* Footer */}
-      <footer className="py-6 px-4 border-t border-gray-800 mt-12">
-        <div className="max-w-4xl mx-auto text-center text-sm text-gray-500">
-          <p>&copy; {new Date().getFullYear()} Inner Wealth Initiate. All rights reserved.</p>
+      <footer className="py-8 px-4 border-t border-white/5">
+        <div className="max-w-4xl mx-auto text-center text-sm text-white/40">
+          <p>All rights reserved {new Date().getFullYear()}.</p>
         </div>
       </footer>
     </main>
@@ -144,7 +207,7 @@ function Upsell2Content() {
 
 export default function Upsell2Page() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gray-900" />}>
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
       <Upsell2Content />
     </Suspense>
   );
