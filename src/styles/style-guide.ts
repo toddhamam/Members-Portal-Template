@@ -1,6 +1,6 @@
 /**
- * RESISTANCE MAPPING FUNNEL - STYLE GUIDE
- * ========================================
+ * INNER WEALTH INITIATE - STYLE GUIDE
+ * ====================================
  *
  * This file documents the design system for the entire funnel.
  * Import these constants to ensure consistency across all pages.
@@ -14,6 +14,32 @@
  * - Upsell 2 (/upsell-2)
  * - Thank You (/thank-you)
  */
+
+// =============================================================================
+// BRANDING
+// =============================================================================
+
+export const branding = {
+  // Brand Name
+  name: 'Inner Wealth Initiate',
+  tagline: 'Inner Wealth Initiate™',
+
+  // Logo
+  logo: {
+    // Full logo with text (horizontal layout)
+    full: '/logo.png',
+    // Alt text for accessibility
+    alt: 'Inner Wealth Initiate logo',
+  },
+
+  // Brand Colors (derived from logo)
+  brandColors: {
+    gold: '#d4a574',           // Primary brand color - logo text and circle
+    teal: '#3da4ab',           // Teal/turquoise flame
+    coral: '#c46c5b',          // Coral/red flame
+    amber: '#e8a838',          // Golden amber flame center
+  },
+} as const;
 
 // =============================================================================
 // COLOR PALETTE
@@ -444,6 +470,7 @@ export function getContainerClasses(
  */
 
 export default {
+  branding,
   colors,
   typography,
   spacing,
