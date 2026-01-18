@@ -153,39 +153,33 @@ export default function ThankYouPage() {
     setIsCreatingAccount(true);
 
     try {
-      // Try to sign up
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: sessionData.email,
-        password,
-        options: {
-          data: {
-            full_name: sessionData.name,
-          },
-        },
-      });
-
-      if (signUpError) {
-        // If user already exists, try signing in
-        if (signUpError.message.includes("already registered")) {
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: sessionData.email,
-            password,
-          });
-
-          if (signInError) {
-            setAccountError("An account with this email already exists. Please login or reset your password.");
-            setIsCreatingAccount(false);
-            return;
-          }
-        } else {
-          throw signUpError;
-        }
-      } else {
-        // Sign in after successful signup
-        await supabase.auth.signInWithPassword({
+      // Use the claim-account endpoint which handles both:
+      // - Setting password for webhook-created users (email-only accounts)
+      // - Creating new accounts if user doesn't exist
+      const claimResponse = await fetch("/api/auth/claim-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           email: sessionData.email,
           password,
-        });
+          sessionId,
+        }),
+      });
+
+      const claimData = await claimResponse.json();
+
+      if (!claimResponse.ok) {
+        throw new Error(claimData.error || "Failed to set up account");
+      }
+
+      // Now sign in with the credentials
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: sessionData.email,
+        password,
+      });
+
+      if (signInError) {
+        throw signInError;
       }
 
       setAccountCreated(true);

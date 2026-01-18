@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useProgress } from "@/lib/hooks/useProgress";
 import { ProgressBar } from "@/components/portal/ProgressBar";
+import { VideoPlayer } from "@/components/portal/VideoPlayer";
+import { AudioPlayer } from "@/components/portal/AudioPlayer";
+import { DownloadButton } from "@/components/portal/DownloadButton";
 import type { Lesson, Module, Product, LessonProgress } from "@/lib/supabase/types";
 
 function ArrowLeftIcon({ className = "w-5 h-5" }: { className?: string }) {
@@ -40,14 +43,6 @@ function CheckIcon({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
-function DownloadIcon({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-    </svg>
-  );
-}
-
 interface LessonData extends Lesson {
   module: Module & {
     product: Product;
@@ -57,7 +52,6 @@ interface LessonData extends Lesson {
 
 export default function LessonPage() {
   const params = useParams();
-  const router = useRouter();
   const { slug: productSlug, moduleSlug, lessonSlug } = params as {
     slug: string;
     moduleSlug: string;
@@ -225,60 +219,51 @@ export default function LessonPage() {
       {/* Content Area */}
       <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
         {lesson.content_type === "video" && (
-          <div className="aspect-video bg-black">
-            {lesson.content_url ? (
-              <video
-                src={lesson.content_url}
-                controls
-                className="w-full h-full"
-                poster={lesson.thumbnail_url || undefined}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400">
-                Video coming soon
-              </div>
-            )}
-          </div>
+          <VideoPlayer
+            productSlug={productSlug}
+            moduleSlug={moduleSlug}
+            lessonSlug={lessonSlug}
+            thumbnailUrl={lesson.thumbnail_url || undefined}
+            initialPosition={progress?.last_position_seconds || 0}
+            onProgress={(progressPercent, currentTime) => {
+              // Save progress periodically (throttled in the hook)
+              if (lesson) {
+                updateProgress(lesson.id, {
+                  progress_percent: progressPercent,
+                  last_position_seconds: currentTime,
+                });
+              }
+            }}
+            onComplete={() => handleMarkComplete()}
+          />
         )}
 
         {lesson.content_type === "audio" && (
-          <div className="p-8 bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a]">
-            <div className="text-center mb-6">
-              <div className="w-24 h-24 bg-[#d4a574]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-12 h-12 text-[#d4a574]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                </svg>
-              </div>
-              <h3 className="text-white font-medium">{lesson.title}</h3>
-            </div>
-            {lesson.content_url ? (
-              <audio src={lesson.content_url} controls className="w-full" />
-            ) : (
-              <p className="text-gray-400 text-center">Audio coming soon</p>
-            )}
-          </div>
+          <AudioPlayer
+            productSlug={productSlug}
+            moduleSlug={moduleSlug}
+            lessonSlug={lessonSlug}
+            title={lesson.title}
+            initialPosition={progress?.last_position_seconds || 0}
+            onProgress={(progressPercent, currentTime) => {
+              if (lesson) {
+                updateProgress(lesson.id, {
+                  progress_percent: progressPercent,
+                  last_position_seconds: currentTime,
+                });
+              }
+            }}
+            onComplete={() => handleMarkComplete()}
+          />
         )}
 
         {(lesson.content_type === "pdf" || lesson.content_type === "download") && (
-          <div className="p-8 text-center">
-            <div className="w-16 h-16 bg-[#d4a574]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <DownloadIcon className="w-8 h-8 text-[#d4a574]" />
-            </div>
-            <h3 className="text-lg font-medium text-[#222222] mb-2">{lesson.title}</h3>
-            <p className="text-[#6b7280] mb-4">Click below to download this resource</p>
-            {lesson.content_url ? (
-              <a
-                href={lesson.content_url}
-                download
-                className="inline-flex items-center gap-2 bg-[#222222] hover:bg-black text-white font-medium px-6 py-3 rounded-lg transition-colors"
-              >
-                <DownloadIcon className="w-5 h-5" />
-                Download
-              </a>
-            ) : (
-              <p className="text-[#9ca3af]">Download coming soon</p>
-            )}
-          </div>
+          <DownloadButton
+            productSlug={productSlug}
+            moduleSlug={moduleSlug}
+            lessonSlug={lessonSlug}
+            title={lesson.title}
+          />
         )}
 
         {lesson.content_type === "text" && (

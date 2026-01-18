@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe, processOneClickUpsell } from '@/lib/stripe';
 import { trackEvent, FunnelEvents } from '@/lib/klaviyo';
 import { createShopifyOrder } from '@/lib/shopify';
+import { grantProductAccess } from '@/lib/supabase/purchases';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest) {
     // Determine which upsell product and event
     let priceAmount: number;
     let productName: string;
+    let productSlug: string;
     let acceptedEvent: string;
     let declinedEvent: string;
 
@@ -27,18 +29,21 @@ export async function POST(request: NextRequest) {
       case 'upsell-1':
         priceAmount = 14700; // $147 in cents
         productName = 'The Pathless Path™ Program';
+        productSlug = 'pathless-path';
         acceptedEvent = FunnelEvents.UPSELL_1_ACCEPTED;
         declinedEvent = FunnelEvents.UPSELL_1_DECLINED;
         break;
       case 'downsell-1':
-        priceAmount = 2700; // $27 in cents
+        priceAmount = 2700; // $27 in cents (discounted from $47)
         productName = 'Nervous System Reset Kit™';
+        productSlug = 'nervous-system-reset';
         acceptedEvent = FunnelEvents.DOWNSELL_1_ACCEPTED;
         declinedEvent = FunnelEvents.DOWNSELL_1_DECLINED;
         break;
       case 'upsell-2':
         priceAmount = 1495; // $14.95 in cents
-        productName = 'Upsell 2 Product';
+        productName = 'Bridge to Mastery™';
+        productSlug = 'bridge-to-mastery';
         acceptedEvent = FunnelEvents.UPSELL_2_ACCEPTED;
         declinedEvent = FunnelEvents.UPSELL_2_DECLINED;
         break;
@@ -48,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     if (action === 'accept') {
       // Process the one-click upsell payment
-      await processOneClickUpsell({
+      const upsellPayment = await processOneClickUpsell({
         customerId,
         paymentMethodId: paymentIntent.payment_method,
         amount: priceAmount,
@@ -58,6 +63,21 @@ export async function POST(request: NextRequest) {
           originalSessionId: sessionId,
         },
       });
+
+      // Grant product access in Supabase
+      try {
+        await grantProductAccess({
+          email: customerEmail,
+          fullName: session.customer_details?.name || '',
+          stripeCustomerId: customerId,
+          productSlug,
+          stripeSessionId: sessionId,
+          stripePaymentIntentId: upsellPayment.id,
+        });
+      } catch (accessError) {
+        // Log but don't fail - access can be granted manually
+        console.error('Failed to grant upsell product access:', accessError);
+      }
 
       // Track in Klaviyo
       await trackEvent({
