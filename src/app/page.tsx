@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -135,30 +136,15 @@ export default function SalesPage() {
 
         <div className="grid lg:grid-cols-2 min-h-[500px]">
           {/* Left: Product Image Area */}
-          <div className="bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] relative overflow-hidden flex items-center justify-center p-8">
-            {/* Aurora effect placeholder */}
-            <div className="absolute inset-0 bg-gradient-to-t from-transparent via-emerald-900/20 to-emerald-500/30" />
-
-            {/* Product mockup placeholder */}
-            <div className="relative z-10 text-center">
-              <div className="bg-[#2a2a3e] rounded-lg p-8 shadow-2xl max-w-sm mx-auto">
-                <div className="bg-gradient-to-b from-[#d4a574] to-[#b8956c] rounded p-6 text-center">
-                  <p className="text-[#1a1a2e] text-xs uppercase tracking-widest mb-2">The</p>
-                  <h3 className="text-[#1a1a2e] text-2xl font-serif font-bold">RESISTANCE</h3>
-                  <h3 className="text-[#1a1a2e] text-2xl font-serif font-bold">MAP</h3>
-                  <div className="w-16 h-16 mx-auto my-4">
-                    <svg className="w-full h-full text-[#1a1a2e]" viewBox="0 0 100 100" fill="currentColor">
-                      <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2"/>
-                      {[...Array(12)].map((_, i) => (
-                        <line key={i} x1="50" y1="10" x2="50" y2="20" stroke="currentColor" strokeWidth="2" transform={`rotate(${i * 30} 50 50)`}/>
-                      ))}
-                    </svg>
-                  </div>
-                  <p className="text-[#1a1a2e] text-xs">TODD HAMASH</p>
-                </div>
-              </div>
-              <p className="text-gray-400 text-sm mt-4">Product mockup - replace with actual image</p>
-            </div>
+          <div className="relative overflow-hidden flex items-center justify-center">
+            <Image
+              src="/images/Products/hero-product.png"
+              alt="The Resistance Map - Clear the Fears, Blocks & Patterns That Keep You Stuck"
+              width={800}
+              height={800}
+              className="w-full h-full object-cover"
+              priority
+            />
           </div>
 
           {/* Right: Content */}
@@ -217,27 +203,16 @@ export default function SalesPage() {
               </div>
             </div>
 
-            {/* Right: Product Image */}
+            {/* Right: Video */}
             <div className="relative">
-              <div className="bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] rounded-lg p-8 flex items-center justify-center min-h-[400px]">
-                {/* Placeholder for product image with candles */}
-                <div className="text-center">
-                  <div className="bg-[#2a2a3e] rounded-lg p-6 shadow-xl">
-                    <div className="bg-gradient-to-b from-[#d4a574] to-[#b8956c] rounded p-4 w-32 mx-auto">
-                      <p className="text-[#1a1a2e] text-xs font-serif font-bold">RESISTANCE MAP</p>
-                    </div>
-                  </div>
-                  {/* Play button overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/30 transition-colors">
-                      <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <p className="text-gray-400 text-sm mt-4">Replace with actual product image</p>
-                </div>
-              </div>
+              <video
+                className="w-full rounded-lg shadow-xl"
+                controls
+                poster="/images/Products/video-thumbnail.jpg"
+              >
+                <source src="/videos/sales-video.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
         </div>
@@ -246,70 +221,13 @@ export default function SalesPage() {
       {/* No More Guesswork - Comparison Section */}
       <section className="py-20 px-4 bg-[#f5f3ef]">
         <div className="max-w-4xl mx-auto">
-          <h2 className="font-serif text-3xl lg:text-4xl text-[#222222] text-center mb-12">
-            No More Guesswork
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Effort-Based Tools */}
-            <div className="bg-white p-8 rounded-lg">
-              <h3 className="text-sm uppercase tracking-widest text-gray-500 mb-6 font-medium">
-                EFFORT-BASED TOOLS
-              </h3>
-              <ul className="space-y-4">
-                {["Therapy", "Breathwork", "Regulation tools", "Positive thinking", "Willpower"].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-gray-700">
-                    <span className="w-2 h-2 rounded-full bg-gray-400" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-8 text-sm text-gray-500">
-                Helps you <span className="font-semibold">manage</span> the reaction
-              </p>
-            </div>
-
-            {/* Resistance Mapping */}
-            <div className="bg-white p-8 rounded-lg">
-              <h3 className="text-sm uppercase tracking-widest text-[#b8956c] mb-6 font-medium">
-                RESISTANCE MAPPING™
-              </h3>
-              <ul className="space-y-4">
-                {["Locate the trigger", "Trace the pattern", "Reveal the root belief"].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-gray-700">
-                    <span className="w-2 h-2 rounded-full bg-[#b8956c]" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-
-              {/* Diagram */}
-              <div className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-600">
-                <span>Trigger</span>
-                <span className="text-[#b8956c]">→</span>
-                <span className="text-[#b8956c]">Reaction</span>
-                <span className="text-[#b8956c]">→</span>
-                <span>Repeat</span>
-              </div>
-              <div className="text-center mt-2">
-                <span className="inline-block px-3 py-1 bg-[#f5f3ef] text-[#b8956c] text-xs rounded">
-                  Root Belief
-                </span>
-                <p className="text-xs text-gray-400 mt-2">Changes the structure beneath the reaction</p>
-              </div>
-            </div>
-          </div>
-
-          {/* VS badge */}
-          <div className="flex justify-center -mt-4 relative z-10">
-            <span className="bg-white px-4 py-2 text-gray-400 text-sm font-medium">VS</span>
-          </div>
-
-          <p className="text-center text-gray-600 mt-8 max-w-2xl mx-auto">
-            When the structure stays the same, effort just repeats the loop.
-            <br />
-            Change the structure, and the reaction changes on its own.
-          </p>
+          <Image
+            src="/images/Products/no-more-guesswork.png"
+            alt="No More Guesswork - Effort-Based Tools vs Resistance Mapping comparison"
+            width={1200}
+            height={600}
+            className="w-full h-auto"
+          />
         </div>
       </section>
 
@@ -342,11 +260,13 @@ export default function SalesPage() {
 
               {/* Center product image */}
               <div className="lg:w-2/4 flex justify-center">
-                <div className="bg-gradient-to-b from-[#d4a574] to-[#b8956c] rounded-lg p-6 w-48">
-                  <p className="text-[#1a1a2e] text-center text-xs uppercase tracking-widest mb-1">The</p>
-                  <h3 className="text-[#1a1a2e] text-center text-xl font-serif font-bold">RESISTANCE MAP</h3>
-                  <p className="text-[#1a1a2e] text-center text-xs mt-4">Todd Hamash</p>
-                </div>
+                <Image
+                  src="/images/Products/whats-inside-product.png"
+                  alt="The Resistance Map - Expanded 2nd Edition"
+                  width={400}
+                  height={500}
+                  className="w-auto h-auto max-w-full"
+                />
               </div>
 
               {/* Right features */}
@@ -420,27 +340,29 @@ export default function SalesPage() {
               </div>
             </div>
 
-            {/* Right: Image Placeholder */}
+            {/* Right: Image */}
             <div className="relative">
-              <div className="bg-[#f5f3ef] rounded-lg min-h-[400px] flex items-center justify-center p-8">
-                <div className="text-center text-gray-400">
-                  <p>Lifestyle image placeholder</p>
-                  <p className="text-sm">(Person at desk with candles, laptop showing product)</p>
-                </div>
-              </div>
+              <Image
+                src="/images/Lifestyle/lifestyle-desk-candles.jpg"
+                alt="Person at desk with candles working on the Resistance Map"
+                width={600}
+                height={400}
+                className="rounded-lg w-full h-auto"
+              />
             </div>
           </div>
 
           {/* Second row */}
           <div className="grid lg:grid-cols-2 gap-12 items-start mt-12">
-            {/* Left: Image Placeholder */}
+            {/* Left: Image */}
             <div className="relative order-2 lg:order-1">
-              <div className="bg-[#f5f3ef] rounded-lg min-h-[400px] flex items-center justify-center p-8">
-                <div className="text-center text-gray-400">
-                  <p>Lifestyle image placeholder</p>
-                  <p className="text-sm">(Person holding tablet showing the 5-phase map)</p>
-                </div>
-              </div>
+              <Image
+                src="/images/Lifestyle/lifestyle-tablet-map.jpg"
+                alt="Person holding tablet showing the 5-phase Resistance Map"
+                width={600}
+                height={400}
+                className="rounded-lg w-full h-auto"
+              />
             </div>
 
             {/* Right: Content */}
@@ -496,26 +418,14 @@ export default function SalesPage() {
             </div>
 
             {/* Right: Phase Diagram */}
-            <div className="bg-[#252525] rounded-lg p-8 border border-[#3a3a3a]">
-              <h3 className="text-center text-[#d4a574] font-serif text-2xl mb-8">The 5 Phase Map</h3>
-
-              {/* Diagram */}
-              <div className="flex items-center justify-center gap-2 mb-8">
-                {["Capture", "Decode", "Reveal", "Root", "Integrate"].map((phase, index) => (
-                  <div key={phase} className="flex items-center">
-                    <div className="w-16 h-16 rounded-full border-2 border-[#d4a574] flex items-center justify-center">
-                      <span className="text-[#d4a574] text-xs text-center">{phase}</span>
-                    </div>
-                    {index < 4 && (
-                      <div className="w-4 h-0.5 bg-[#d4a574]" />
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <p className="text-center text-gray-400 text-sm italic">
-                A repeatable sequence, not a mindset.
-              </p>
+            <div className="flex items-center justify-center">
+              <Image
+                src="/images/Products/five-phase-map.png"
+                alt="The 5 Phase Resistance Mapping System"
+                width={600}
+                height={600}
+                className="w-full h-auto max-w-lg"
+              />
             </div>
           </div>
         </div>
@@ -537,51 +447,15 @@ export default function SalesPage() {
               </div>
             </div>
 
-            {/* Right: Symbols Panel */}
-            <div className="bg-[#1a1a1a] rounded-lg p-8 text-white">
-              <p className="text-center text-[#d4a574] text-xs uppercase tracking-widest mb-8">INNER WEALTH INITIATE</p>
-
-              <div className="flex justify-center gap-8">
-                {/* Symbol 1 */}
-                <div className="text-center">
-                  <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                    <svg className="w-16 h-16 text-[#d4a574]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1">
-                      <ellipse cx="50" cy="50" rx="30" ry="45" />
-                      <ellipse cx="50" cy="50" rx="45" ry="30" />
-                    </svg>
-                  </div>
-                  <p className="text-xs text-gray-400">Distortion Loop</p>
-                </div>
-
-                {/* Symbol 2 */}
-                <div className="text-center">
-                  <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                    <svg className="w-16 h-16 text-[#d4a574]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1">
-                      <circle cx="50" cy="50" r="20" />
-                      <circle cx="50" cy="50" r="35" />
-                    </svg>
-                  </div>
-                  <p className="text-xs text-gray-400">Frequency Collapses</p>
-                </div>
-
-                {/* Symbol 3 */}
-                <div className="text-center">
-                  <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                    <svg className="w-16 h-16 text-[#d4a574]" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1">
-                      <circle cx="50" cy="50" r="10" />
-                      {[...Array(8)].map((_, i) => (
-                        <line key={i} x1="50" y1="15" x2="50" y2="25" stroke="currentColor" strokeWidth="1" transform={`rotate(${i * 45} 50 50)`}/>
-                      ))}
-                      <circle cx="50" cy="50" r="40" />
-                    </svg>
-                  </div>
-                  <p className="text-xs text-gray-400">Clear Field</p>
-                </div>
-              </div>
-
-              <p className="text-center text-gray-400 text-xs mt-8 italic">
-                When the distortion dissolves, your reality responds differently.
-              </p>
+            {/* Right: Root Pattern Image */}
+            <div className="flex items-center justify-center">
+              <Image
+                src="/images/Products/root-pattern.png"
+                alt="What happens when you uncover the root of your pattern"
+                width={600}
+                height={400}
+                className="w-full h-auto rounded-lg"
+              />
             </div>
           </div>
         </div>
@@ -721,12 +595,13 @@ export default function SalesPage() {
 
             {/* Right: Image + CTA */}
             <div>
-              <div className="bg-[#f5f3ef] rounded-lg min-h-[300px] flex items-center justify-center p-8 mb-8">
-                <div className="text-center text-gray-400">
-                  <p>Lifestyle image placeholder</p>
-                  <p className="text-sm">(Person on couch with tablet showing guide)</p>
-                </div>
-              </div>
+              <Image
+                src="/images/Lifestyle/lifestyle-couch-reading.jpg"
+                alt="Person on couch reading the Resistance Mapping guide"
+                width={600}
+                height={400}
+                className="rounded-lg w-full h-auto mb-8"
+              />
 
               <CTAButton className="w-full justify-center">Instant Download</CTAButton>
             </div>
@@ -757,16 +632,13 @@ export default function SalesPage() {
 
             {/* Right: Product mockups */}
             <div className="relative">
-              <div className="bg-[#252525] rounded-lg p-8 flex items-center justify-center min-h-[300px]">
-                <div className="text-center text-gray-400">
-                  <p>Bonus products mockup</p>
-                  <p className="text-sm">(Multiple device mockups with BONUSES INCLUDED badge)</p>
-                </div>
-              </div>
-              {/* Gold badge */}
-              <div className="absolute top-4 right-4 bg-gradient-to-br from-amber-400 to-amber-600 text-xs font-bold text-amber-900 px-3 py-2 rounded-full">
-                BONUSES<br/>INCLUDED
-              </div>
+              <Image
+                src="/images/Products/bonus-bundle.png"
+                alt="Bonus products included with your order"
+                width={600}
+                height={400}
+                className="w-full h-auto"
+              />
             </div>
           </div>
         </div>
