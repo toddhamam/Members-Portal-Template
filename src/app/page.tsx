@@ -14,11 +14,15 @@ function DownloadIcon({ className = "w-4 h-4" }: { className?: string }) {
 }
 
 // CTA Button with download icon
-function CTAButton({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function CTAButton({ children, className = "", inverted = false }: { children: React.ReactNode; className?: string; inverted?: boolean }) {
   return (
     <Link
       href="/product"
-      className={`inline-flex items-center justify-center gap-2 bg-[#222222] text-white px-8 py-4 text-sm font-medium tracking-wide hover:bg-black transition-colors ${className}`}
+      className={`inline-flex items-center justify-center gap-2 px-8 py-4 text-sm font-medium tracking-wide transition-colors ${
+        inverted
+          ? 'bg-white text-[#222222] hover:bg-gray-100'
+          : 'bg-[#222222] text-white hover:bg-black'
+      } ${className}`}
     >
       {children}
       <DownloadIcon className="w-4 h-4" />
@@ -42,7 +46,6 @@ function StarRating() {
 // Bottom navigation bar
 function BottomNav() {
   const items = [
-    "Device",
     "Begin Your Transformation",
     "Practical Exercises",
     "5 Star reviews",
@@ -51,10 +54,10 @@ function BottomNav() {
   ];
 
   return (
-    <div className="bg-white border-t border-gray-200 py-3 overflow-x-auto">
+    <div className="bg-[#beb9eb] py-3 overflow-x-auto">
       <div className="flex items-center justify-center gap-8 px-4 min-w-max">
         {items.map((item, index) => (
-          <div key={index} className="flex items-center gap-2 text-xs text-gray-600">
+          <div key={index} className="flex items-center gap-2 text-sm font-bold text-[#000000]">
             {item === "5 Star reviews" ? (
               <>
                 <span>{item}</span>
@@ -125,16 +128,7 @@ export default function SalesPage() {
     <main className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="relative">
-        {/* Badge */}
-        <div className="absolute top-4 left-4 z-10">
-          <div className="bg-[#8B7355] text-white text-xs px-3 py-1.5 rounded border border-[#6B5344]">
-            <span className="font-medium">Expanded</span>
-            <br />
-            <span className="text-[10px]">2nd Edition</span>
-          </div>
-        </div>
-
-        <div className="grid lg:grid-cols-2 min-h-[500px]">
+          <div className="grid lg:grid-cols-2 min-h-[500px]">
           {/* Left: Product Image Area */}
           <div className="relative overflow-hidden flex items-center justify-center">
             <Image
@@ -148,20 +142,20 @@ export default function SalesPage() {
           </div>
 
           {/* Right: Content */}
-          <div className="flex flex-col justify-center p-8 lg:p-12">
-            <h1 className="font-serif text-4xl lg:text-5xl text-[#222222] leading-tight mb-6">
+          <div className="flex flex-col justify-center p-8 lg:p-12 bg-[#000000]">
+            <h1 className="font-serif text-4xl lg:text-5xl text-white leading-tight mb-6">
               Clear the Fears, Blocks &amp; Patterns That Keep You Stuck
             </h1>
 
-            <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+            <p className="text-[#fcfcfc] text-lg mb-8 leading-relaxed">
               The Resistance Mapping™ Expanded 2nd Edition is a System that helps you identify the deeper cause behind your fear &amp; blocks so you can finally clear them, and align with your true self.
             </p>
 
             <div className="mb-8">
-              <CTAButton>Instant Download</CTAButton>
+              <CTAButton inverted>Instant Download</CTAButton>
             </div>
 
-            <p className="text-gray-500 italic text-sm">
+            <p className="text-[#fcfcfc] italic text-sm">
               &ldquo;The Journey of a Thousand Miles begins with a single step.&rdquo; - Lao Tsu
             </p>
           </div>
@@ -238,54 +232,72 @@ export default function SalesPage() {
             What&apos;s Inside The Expanded 2nd Edition
           </h2>
 
-          <p className="text-gray-400 text-center max-w-2xl mx-auto mb-12">
+          <p className="text-[#fcfcfc] text-center max-w-2xl mx-auto mb-12">
             You don&apos;t have to do this alone. You&apos;ve been sent a guide to help you discover and understand your fear loops clearly, so you can transform... It&apos;s time to awaken...
           </p>
 
-          {/* Product showcase area */}
-          <div className="bg-[#252525] rounded-lg p-8 mb-12">
-            <div className="flex flex-col lg:flex-row items-center justify-center gap-8">
-              {/* Left features */}
-              <div className="space-y-8 text-right lg:w-1/4">
-                <div>
-                  <div className="flex items-center justify-end gap-2 mb-2">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <h4 className="font-semibold mb-1">Quick Run (15 minutes)</h4>
-                  <p className="text-sm text-gray-400">Map the loop while you are triggered so you can get clarity fast, instead of spiraling.</p>
+          {/* Product showcase with features */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-8 lg:gap-12 items-center mb-12">
+            {/* Left features */}
+            <div className="space-y-12 text-center lg:text-right order-2 lg:order-1">
+              <div>
+                <div className="flex items-center justify-center lg:justify-end gap-2 mb-3">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
+                <h4 className="font-semibold text-lg mb-2">Quick Run (15 minutes)</h4>
+                <p className="text-sm text-[#fcfcfc] leading-relaxed">Map the loop while you are triggered so you can get clarity fast, instead of spiraling.</p>
               </div>
 
-              {/* Center product image */}
-              <div className="lg:w-2/4 flex justify-center">
-                <Image
-                  src="/images/Products/whats-inside-product.png"
-                  alt="The Resistance Map - Expanded 2nd Edition"
-                  width={400}
-                  height={500}
-                  className="w-auto h-auto max-w-full"
-                />
+              <div>
+                <div className="flex items-center justify-center lg:justify-end gap-2 mb-3">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                </div>
+                <h4 className="font-semibold text-lg mb-2">Printable Worksheets + Instant Download</h4>
+                <p className="text-sm text-[#fcfcfc] leading-relaxed">Use it on any device, print the pages if you want, and return to the method whenever the pattern shows up again.</p>
+              </div>
+            </div>
+
+            {/* Center product image */}
+            <div className="flex justify-center order-1 lg:order-2">
+              <Image
+                src="/images/Products/whats-inside-product.png"
+                alt="The Resistance Map - Expanded 2nd Edition"
+                width={700}
+                height={875}
+                className="w-auto h-auto max-w-[650px]"
+              />
+            </div>
+
+            {/* Right features */}
+            <div className="space-y-12 text-center lg:text-left order-3">
+              <div>
+                <div className="flex items-center justify-center lg:justify-start gap-2 mb-3">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h4 className="font-semibold text-lg mb-2">Guided Prompts + Real Examples</h4>
+                <p className="text-sm text-[#fcfcfc] leading-relaxed">You are never left guessing what to do next. Follow the prompts, see worked examples, and apply it to your own life immediately.</p>
               </div>
 
-              {/* Right features */}
-              <div className="space-y-8 text-left lg:w-1/4">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <h4 className="font-semibold mb-1">Guided Prompts + Real Examples</h4>
-                  <p className="text-sm text-gray-400">You are never left guessing what to do next. Follow the prompts, see worked examples, and apply it to your own life immediately.</p>
+              <div>
+                <div className="flex items-center justify-center lg:justify-start gap-2 mb-3">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                  </svg>
                 </div>
+                <h4 className="font-semibold text-lg mb-2">How to Use the Resistance Map™ (Step-by-Step Walkthrough)</h4>
+                <p className="text-sm text-[#fcfcfc] leading-relaxed">A clear guided walkthrough showing you exactly how to run the map, what to write, and how to follow the process.</p>
               </div>
             </div>
           </div>
 
           {/* CTA */}
-          <div className="text-center mb-12">
+          <div className="text-center">
             <Link
               href="/product"
               className="inline-flex items-center justify-center gap-2 border border-white text-white px-8 py-4 text-sm font-medium tracking-wide hover:bg-white hover:text-black transition-colors"
@@ -293,29 +305,6 @@ export default function SalesPage() {
               Instant Download
               <DownloadIcon className="w-4 h-4" />
             </Link>
-          </div>
-
-          {/* More features */}
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div className="text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-              </div>
-              <h4 className="font-semibold mb-2">Printable Worksheets + Instant Download</h4>
-              <p className="text-sm text-gray-400">Use it on any device, print the pages if you want, and return to the method whenever the pattern shows up again.</p>
-            </div>
-
-            <div className="text-center md:text-right">
-              <div className="flex items-center justify-center md:justify-end gap-2 mb-2">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                </svg>
-              </div>
-              <h4 className="font-semibold mb-2">How to Use the Resistance Map™ (Step-by-Step Walkthrough)</h4>
-              <p className="text-sm text-gray-400">A clear guided walkthrough showing you exactly how to run the map, what to write, and how to follow the process.</p>
-            </div>
           </div>
         </div>
       </section>
