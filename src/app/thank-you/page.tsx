@@ -1,5 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+
 // Download icon for CTA button
 function DownloadIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -14,6 +18,14 @@ function YouTubeIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg className={className} fill="currentColor" viewBox="0 0 24 24">
       <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+    </svg>
+  );
+}
+
+function CheckCircleIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+      <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
     </svg>
   );
 }
@@ -41,7 +53,154 @@ function BrandLogo({ className = "w-10 h-10" }: { className?: string }) {
   );
 }
 
+interface OrderItem {
+  title: string;
+  quantity: number;
+  price: string;
+}
+
+interface SessionData {
+  email: string;
+  name: string;
+  items: OrderItem[];
+  total: string;
+}
+
 export default function ThankYouPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const sessionId = searchParams.get("session_id");
+
+  const [sessionData, setSessionData] = useState<SessionData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [accountError, setAccountError] = useState("");
+  const [accountCreated, setAccountCreated] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const supabase = createClient();
+
+  // Check if user is already logged in
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setIsLoggedIn(true);
+      }
+    }
+    checkAuth();
+  }, [supabase]);
+
+  // Fetch session data from Stripe
+  useEffect(() => {
+    async function fetchSessionData() {
+      if (!sessionId) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/auth/session-email?session_id=${sessionId}`);
+        const data = await response.json();
+
+        if (data.email) {
+          // For now, use placeholder order data
+          // In production, you'd fetch actual line items from the session
+          setSessionData({
+            email: data.email,
+            name: data.name || "",
+            items: [
+              {
+                title: "Resistance Mapping Guide™ - Expanded 2nd Edition",
+                quantity: 1,
+                price: "7.00",
+              },
+            ],
+            total: "7.00",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch session data:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchSessionData();
+  }, [sessionId]);
+
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAccountError("");
+
+    if (!sessionData?.email) {
+      setAccountError("No email found. Please contact support.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setAccountError("Passwords do not match");
+      return;
+    }
+
+    if (password.length < 8) {
+      setAccountError("Password must be at least 8 characters");
+      return;
+    }
+
+    setIsCreatingAccount(true);
+
+    try {
+      // Try to sign up
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: sessionData.email,
+        password,
+        options: {
+          data: {
+            full_name: sessionData.name,
+          },
+        },
+      });
+
+      if (signUpError) {
+        // If user already exists, try signing in
+        if (signUpError.message.includes("already registered")) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: sessionData.email,
+            password,
+          });
+
+          if (signInError) {
+            setAccountError("An account with this email already exists. Please login or reset your password.");
+            setIsCreatingAccount(false);
+            return;
+          }
+        } else {
+          throw signUpError;
+        }
+      } else {
+        // Sign in after successful signup
+        await supabase.auth.signInWithPassword({
+          email: sessionData.email,
+          password,
+        });
+      }
+
+      setAccountCreated(true);
+    } catch (err) {
+      console.error("Failed to create account:", err);
+      setAccountError(err instanceof Error ? err.message : "Failed to create account");
+    } finally {
+      setIsCreatingAccount(false);
+    }
+  };
+
+  const goToPortal = () => {
+    router.push("/portal");
+  };
+
   return (
     <main className="min-h-screen bg-white flex flex-col">
       {/* Header */}
@@ -62,25 +221,109 @@ export default function ThankYouPage() {
         {/* Thank You Section */}
         <section className="py-12 px-4">
           <div className="max-w-2xl mx-auto text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
+              <CheckCircleIcon className="w-12 h-12 text-green-600" />
+            </div>
+
             <h1 className="font-serif text-5xl lg:text-6xl text-[#222222] mb-4">
               Thank You!
             </h1>
 
             <p className="text-gray-600 mb-6">
-              Your order is complete...
+              Your order is complete. {sessionData?.email && `A confirmation has been sent to ${sessionData.email}`}
             </p>
 
-            <p className="text-[#222222] font-semibold text-lg mb-8">
-              Click below to access your product downloads + course portal
-            </p>
+            {/* Account Creation / Portal Access */}
+            {isLoggedIn || accountCreated ? (
+              <button
+                onClick={goToPortal}
+                className="inline-flex items-center justify-center gap-2 bg-[#7c5cff] hover:bg-[#6b4ce6] text-white text-xl font-medium px-8 py-4 rounded-lg transition-colors"
+              >
+                Access Your Products
+                <DownloadIcon className="w-6 h-6" />
+              </button>
+            ) : (
+              <div className="bg-gray-50 rounded-xl p-6 text-left max-w-md mx-auto">
+                <h3 className="font-semibold text-lg text-gray-900 mb-2">
+                  Create Your Account
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Set a password to access your products anytime
+                </p>
 
-            <a
-              href="#"
-              className="inline-flex items-center justify-center gap-2 bg-[#7c5cff] hover:bg-[#6b4ce6] text-white text-xl font-medium px-8 py-4 rounded-lg transition-colors"
-            >
-              Access Your Products
-              <DownloadIcon className="w-6 h-6" />
-            </a>
+                <form onSubmit={handleCreateAccount} className="space-y-4">
+                  {accountError && (
+                    <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">
+                      {accountError}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={sessionData?.email || ""}
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4a574] focus:border-transparent outline-none transition-shadow"
+                      placeholder="Minimum 8 characters"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirm Password
+                    </label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#d4a574] focus:border-transparent outline-none transition-shadow"
+                      placeholder="Confirm password"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isCreatingAccount || !sessionData?.email}
+                    className="w-full bg-[#7c5cff] hover:bg-[#6b4ce6] text-white font-medium py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isCreatingAccount ? (
+                      "Creating Account..."
+                    ) : (
+                      <>
+                        Create Account & Access Products
+                        <DownloadIcon className="w-5 h-5" />
+                      </>
+                    )}
+                  </button>
+                </form>
+
+                <p className="text-xs text-gray-500 mt-4 text-center">
+                  Already have an account?{" "}
+                  <a href="/portal/login" className="text-[#7c5cff] hover:underline">
+                    Sign in
+                  </a>
+                </p>
+              </div>
+            )}
           </div>
         </section>
 
@@ -97,18 +340,26 @@ export default function ThankYouPage() {
                 <div className="col-span-2 text-right">Price</div>
               </div>
 
-              {/* Product Row - Placeholder for dynamic content */}
-              <div className="grid grid-cols-12 py-4 text-sm border-b border-gray-200">
-                <div className="col-span-8 text-gray-800">Resistance Mapping Guide™ - Expanded 2nd Edition</div>
-                <div className="col-span-2 text-center text-gray-600">1</div>
-                <div className="col-span-2 text-right text-gray-800">AU$7.00</div>
-              </div>
+              {/* Product Rows */}
+              {sessionData?.items.map((item, index) => (
+                <div key={index} className="grid grid-cols-12 py-4 text-sm border-b border-gray-200">
+                  <div className="col-span-8 text-gray-800">{item.title}</div>
+                  <div className="col-span-2 text-center text-gray-600">{item.quantity}</div>
+                  <div className="col-span-2 text-right text-gray-800">AU${item.price}</div>
+                </div>
+              )) || (
+                <div className="grid grid-cols-12 py-4 text-sm border-b border-gray-200">
+                  <div className="col-span-8 text-gray-800">Resistance Mapping Guide™ - Expanded 2nd Edition</div>
+                  <div className="col-span-2 text-center text-gray-600">1</div>
+                  <div className="col-span-2 text-right text-gray-800">AU$7.00</div>
+                </div>
+              )}
 
               {/* Total Row */}
               <div className="grid grid-cols-12 py-4 text-sm font-semibold">
                 <div className="col-span-8 text-gray-800">Total</div>
                 <div className="col-span-2 text-center"></div>
-                <div className="col-span-2 text-right text-gray-800">AU$7.00</div>
+                <div className="col-span-2 text-right text-gray-800">AU${sessionData?.total || "7.00"}</div>
               </div>
             </div>
           </div>
