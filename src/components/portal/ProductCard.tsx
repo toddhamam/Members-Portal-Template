@@ -27,8 +27,10 @@ interface ProductCardProps {
 
 export function ProductCard({ product, progress = 0, showPrice = true }: ProductCardProps) {
   const isOwned = product.is_owned;
-  const priceFormatted = product.price_cents > 0
-    ? `$${(product.price_cents / 100).toFixed(2)}`
+  // Use portal_price_cents for unlock pricing (falls back to price_cents if not set)
+  const displayPrice = product.portal_price_cents ?? product.price_cents;
+  const priceFormatted = displayPrice > 0
+    ? `$${(displayPrice / 100).toFixed(2)}`
     : "Free";
 
   return (

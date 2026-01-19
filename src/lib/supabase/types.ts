@@ -4,6 +4,7 @@
 export type ProductType = 'main' | 'order_bump' | 'upsell' | 'downsell';
 export type ContentType = 'video' | 'audio' | 'pdf' | 'text' | 'download';
 export type PurchaseStatus = 'active' | 'refunded' | 'expired';
+export type ResourceType = 'pdf' | 'worksheet' | 'checklist' | 'audio' | 'video' | 'link' | 'other';
 
 export interface Profile {
   id: string;
@@ -23,6 +24,7 @@ export interface Product {
   name: string;
   description: string | null;
   price_cents: number;
+  portal_price_cents: number | null;
   stripe_price_id: string | null;
   product_type: ProductType;
   thumbnail_url: string | null;
@@ -77,6 +79,20 @@ export interface LessonProgress {
   completed_at: string | null;
   last_position_seconds: number;
   updated_at: string;
+}
+
+export interface LessonResource {
+  id: string;
+  lesson_id: string;
+  title: string;
+  description: string | null;
+  resource_type: ResourceType;
+  file_url: string | null;
+  external_url: string | null;
+  file_size_bytes: number | null;
+  sort_order: number;
+  is_published: boolean;
+  created_at: string;
 }
 
 // Extended types with relations
@@ -137,6 +153,7 @@ export interface Database {
           name: string;
           description?: string | null;
           price_cents: number;
+          portal_price_cents?: number | null;
           stripe_price_id?: string | null;
           product_type: ProductType;
           thumbnail_url?: string | null;
@@ -149,6 +166,7 @@ export interface Database {
           name?: string;
           description?: string | null;
           price_cents?: number;
+          portal_price_cents?: number | null;
           stripe_price_id?: string | null;
           product_type?: ProductType;
           thumbnail_url?: string | null;

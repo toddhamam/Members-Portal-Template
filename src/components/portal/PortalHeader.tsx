@@ -40,8 +40,15 @@ export function PortalHeader() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSignOut = async () => {
-    await signOut();
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Sign out failed:', error);
+    }
     window.location.href = "/portal/login";
   };
 
@@ -100,8 +107,9 @@ export function PortalHeader() {
 
             <div className="border-t border-[#e5e7eb] mt-1 pt-1">
               <button
+                type="button"
                 onClick={handleSignOut}
-                className="w-full text-left px-4 py-2 text-sm text-[#ee5d0b] hover:bg-orange-50"
+                className="w-full text-left px-4 py-2 text-sm text-[#ee5d0b] hover:bg-orange-50 cursor-pointer"
               >
                 Sign Out
               </button>

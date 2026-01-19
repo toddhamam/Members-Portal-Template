@@ -9,12 +9,14 @@ import { ProgressBar } from "@/components/portal/ProgressBar";
 import { VideoPlayer } from "@/components/portal/VideoPlayer";
 import { AudioPlayer } from "@/components/portal/AudioPlayer";
 import { DownloadButton } from "@/components/portal/DownloadButton";
-import type { Lesson, Module, Product, LessonProgress } from "@/lib/supabase/types";
+import { CourseSidebar } from "@/components/portal/CourseSidebar";
+import { LessonResources } from "@/components/portal/LessonResources";
+import type { Lesson, Module, Product, LessonProgress, ModuleWithLessons, LessonResource } from "@/lib/supabase/types";
 
-function ArrowLeftIcon({ className = "w-5 h-5" }: { className?: string }) {
+function CheckIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
     </svg>
   );
 }
@@ -35,14 +37,6 @@ function ChevronRightIcon({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
-function CheckIcon({ className = "w-5 h-5" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-    </svg>
-  );
-}
-
 interface LessonData extends Lesson {
   module: Module & {
     product: Product;
@@ -59,53 +53,113 @@ export default function LessonPage() {
   };
 
   const [lesson, setLesson] = useState<LessonData | null>(null);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [modules, setModules] = useState<ModuleWithLessons[]>([]);
   const [isOwned, setIsOwned] = useState(false);
   const [progress, setProgress] = useState<LessonProgress | null>(null);
+  const [progressMap, setProgressMap] = useState<Record<string, LessonProgress>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [resources, setResources] = useState<LessonResource[]>([]);
 
   const { updateProgress, getProgress } = useProgress();
   const supabase = createClient();
 
-  // Find adjacent lessons for navigation
+  // Find adjacent lessons for navigation (across all modules)
   const adjacentLessons = useCallback(() => {
-    if (!lesson?.module.lessons) return { prev: null, next: null };
+    if (!modules.length || !lesson) return { prev: null, next: null, prevModule: null, nextModule: null };
 
-    const sortedLessons = [...lesson.module.lessons].sort((a, b) => a.sort_order - b.sort_order);
-    const currentIndex = sortedLessons.findIndex((l) => l.slug === lessonSlug);
+    // Flatten all lessons with their module info
+    const allLessons: { lesson: Lesson; module: Module }[] = [];
+    modules.forEach((module) => {
+      module.lessons.forEach((l) => {
+        allLessons.push({ lesson: l, module });
+      });
+    });
+
+    const currentIndex = allLessons.findIndex(
+      (item) => item.lesson.slug === lessonSlug && item.module.slug === moduleSlug
+    );
 
     return {
-      prev: currentIndex > 0 ? sortedLessons[currentIndex - 1] : null,
-      next: currentIndex < sortedLessons.length - 1 ? sortedLessons[currentIndex + 1] : null,
+      prev: currentIndex > 0 ? allLessons[currentIndex - 1].lesson : null,
+      prevModule: currentIndex > 0 ? allLessons[currentIndex - 1].module : null,
+      next: currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1].lesson : null,
+      nextModule: currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1].module : null,
     };
-  }, [lesson, lessonSlug]);
+  }, [modules, lesson, lessonSlug, moduleSlug]);
 
-  // Fetch lesson data
+  // Fetch all data
   useEffect(() => {
-    async function fetchLesson() {
-      // Get lesson with module and product
-      const { data: lessonData, error } = await supabase
-        .from("lessons")
-        .select(`
-          *,
-          module:modules!inner (
-            *,
-            product:products!inner (*),
-            lessons (*)
-          )
-        `)
-        .eq("slug", lessonSlug)
-        .eq("module.slug", moduleSlug)
-        .eq("module.product.slug", productSlug)
+    async function fetchData() {
+      // Get product first
+      const { data: productData, error: productError } = await supabase
+        .from("products")
+        .select("*")
+        .eq("slug", productSlug)
+        .eq("is_active", true)
         .single();
 
-      if (error || !lessonData) {
-        console.error("Failed to fetch lesson:", error);
+      if (productError || !productData) {
+        console.error("Failed to fetch product:", productError);
         setIsLoading(false);
         return;
       }
 
-      setLesson(lessonData as unknown as LessonData);
+      setProduct(productData);
+
+      // Get all modules with lessons for sidebar
+      const { data: modulesData, error: modulesError } = await supabase
+        .from("modules")
+        .select(`*, lessons (*)`)
+        .eq("product_id", productData.id)
+        .eq("is_published", true)
+        .order("sort_order");
+
+      if (modulesError) {
+        console.error("Failed to fetch modules:", modulesError);
+        setIsLoading(false);
+        return;
+      }
+
+      // Sort lessons within each module
+      const sortedModules = (modulesData || []).map((module: ModuleWithLessons) => ({
+        ...module,
+        lessons: (module.lessons || []).sort(
+          (a: Lesson, b: Lesson) => a.sort_order - b.sort_order
+        ),
+      }));
+
+      setModules(sortedModules);
+
+      // Find current lesson
+      const currentModule = sortedModules.find((m: ModuleWithLessons) => m.slug === moduleSlug);
+      const currentLesson = currentModule?.lessons.find((l: Lesson) => l.slug === lessonSlug);
+
+      if (!currentLesson) {
+        console.error("Lesson not found");
+        setIsLoading(false);
+        return;
+      }
+
+      setLesson({
+        ...currentLesson,
+        module: {
+          ...currentModule,
+          product: productData,
+          lessons: currentModule.lessons,
+        },
+      } as LessonData);
+
+      // Fetch resources for this lesson
+      const { data: resourcesData } = await supabase
+        .from("lesson_resources")
+        .select("*")
+        .eq("lesson_id", currentLesson.id)
+        .eq("is_published", true)
+        .order("sort_order");
+
+      setResources(resourcesData || []);
 
       // Check if user owns this product
       const { data: { user } } = await supabase.auth.getUser();
@@ -114,23 +168,44 @@ export default function LessonPage() {
           .from("user_purchases")
           .select("id")
           .eq("user_id", user.id)
-          .eq("product_id", lessonData.module.product.id)
+          .eq("product_id", productData.id)
           .eq("status", "active")
           .single();
 
-        setIsOwned(!!purchase);
+        const owned = !!purchase;
+        setIsOwned(owned);
 
-        // Fetch progress
-        if (purchase) {
-          const progressData = await getProgress(lessonData.id);
-          setProgress(progressData);
+        // Fetch all progress for sidebar
+        if (owned) {
+          const lessonIds = sortedModules.flatMap((m: ModuleWithLessons) =>
+            m.lessons.map((l: Lesson) => l.id)
+          );
+
+          if (lessonIds.length > 0) {
+            const { data: progressData } = await supabase
+              .from("lesson_progress")
+              .select("*")
+              .eq("user_id", user.id)
+              .in("lesson_id", lessonIds);
+
+            const progressById: Record<string, LessonProgress> = {};
+            (progressData || []).forEach((p: LessonProgress) => {
+              progressById[p.lesson_id] = p;
+            });
+            setProgressMap(progressById);
+
+            // Set current lesson progress
+            if (progressById[currentLesson.id]) {
+              setProgress(progressById[currentLesson.id]);
+            }
+          }
         }
       }
 
       setIsLoading(false);
     }
 
-    fetchLesson();
+    fetchData();
   }, [productSlug, moduleSlug, lessonSlug, supabase, getProgress]);
 
   const handleMarkComplete = async () => {
@@ -139,32 +214,72 @@ export default function LessonPage() {
     setIsCompleting(true);
     try {
       await updateProgress(lesson.id, { completed: true });
-      setProgress((prev) => ({
-        ...prev!,
+      const updatedProgress = {
+        ...progress!,
         progress_percent: 100,
         completed_at: new Date().toISOString(),
-      } as LessonProgress));
+      } as LessonProgress;
+      setProgress(updatedProgress);
+      setProgressMap((prev) => ({
+        ...prev,
+        [lesson.id]: updatedProgress,
+      }));
     } catch (err) {
       console.error("Failed to mark complete:", err);
     }
     setIsCompleting(false);
   };
 
-  const { prev, next } = adjacentLessons();
+  const handleProgressUpdate = async (progressPercent: number, currentTime: number) => {
+    if (!lesson) return;
+
+    await updateProgress(lesson.id, {
+      progress_percent: progressPercent,
+      last_position_seconds: currentTime,
+    });
+
+    // Update local state
+    setProgress((prev) => ({
+      ...prev!,
+      progress_percent: progressPercent,
+      last_position_seconds: currentTime,
+    } as LessonProgress));
+  };
+
+  const { prev, next, prevModule, nextModule } = adjacentLessons();
   const isCompleted = !!progress?.completed_at;
   const canAccess = isOwned || lesson?.is_free_preview;
 
+  // Calculate overall progress for sidebar
+  const totalLessons = modules.reduce((sum, m) => sum + m.lessons.length, 0);
+  const completedLessons = Object.values(progressMap).filter((p) => p.completed_at).length;
+  const overallProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
   if (isLoading) {
     return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-64" />
-        <div className="h-96 bg-gray-200 rounded-xl" />
-        <div className="h-20 bg-gray-200 rounded-lg" />
+      <div className="flex h-[calc(100vh-64px)]">
+        <div className="w-72 flex-shrink-0 bg-white border-r border-[#e5e7eb] animate-pulse">
+          <div className="p-4 space-y-4">
+            <div className="h-6 bg-gray-200 rounded w-3/4" />
+            <div className="h-2 bg-gray-200 rounded" />
+            <div className="space-y-2 pt-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-10 bg-gray-200 rounded" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 p-6 animate-pulse">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="h-8 bg-gray-200 rounded w-64" />
+            <div className="h-96 bg-gray-200 rounded-xl" />
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (!lesson) {
+  if (!lesson || !product) {
     return (
       <div className="text-center py-12">
         <h2 className="text-xl font-semibold text-[#222222] mb-2 font-serif">Lesson Not Found</h2>
@@ -189,161 +304,149 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-[#6b7280]">
-        <Link href={`/portal/products/${productSlug}`} className="hover:text-[#222222] transition-colors">
-          {lesson.module.product.name}
-        </Link>
-        <span>/</span>
-        <span>{lesson.module.title}</span>
-        <span>/</span>
-        <span className="text-[#222222]">{lesson.title}</span>
-      </div>
+    <div className="flex h-[calc(100vh-64px)] -m-6">
+      {/* Course Sidebar */}
+      <CourseSidebar
+        product={product}
+        modules={modules}
+        progressMap={progressMap}
+        currentModuleSlug={moduleSlug}
+        currentLessonSlug={lessonSlug}
+        overallProgress={overallProgress}
+      />
 
-      {/* Back Link */}
-      <Link
-        href={`/portal/products/${productSlug}`}
-        className="inline-flex items-center gap-2 text-[#4b5563] hover:text-[#222222] transition-colors"
-      >
-        <ArrowLeftIcon className="w-4 h-4" />
-        Back to {lesson.module.product.name}
-      </Link>
-
-      {/* Lesson Title */}
-      <div>
-        <h1 className="text-2xl font-semibold text-[#222222] mb-2 font-serif">{lesson.title}</h1>
-        {lesson.description && <p className="text-[#4b5563]">{lesson.description}</p>}
-      </div>
-
-      {/* Content Area */}
-      <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
-        {lesson.content_type === "video" && (
-          <VideoPlayer
-            productSlug={productSlug}
-            moduleSlug={moduleSlug}
-            lessonSlug={lessonSlug}
-            thumbnailUrl={lesson.thumbnail_url || undefined}
-            initialPosition={progress?.last_position_seconds || 0}
-            onProgress={(progressPercent, currentTime) => {
-              // Save progress periodically (throttled in the hook)
-              if (lesson) {
-                updateProgress(lesson.id, {
-                  progress_percent: progressPercent,
-                  last_position_seconds: currentTime,
-                });
-              }
-            }}
-            onComplete={() => handleMarkComplete()}
-          />
-        )}
-
-        {lesson.content_type === "audio" && (
-          <AudioPlayer
-            productSlug={productSlug}
-            moduleSlug={moduleSlug}
-            lessonSlug={lessonSlug}
-            title={lesson.title}
-            initialPosition={progress?.last_position_seconds || 0}
-            onProgress={(progressPercent, currentTime) => {
-              if (lesson) {
-                updateProgress(lesson.id, {
-                  progress_percent: progressPercent,
-                  last_position_seconds: currentTime,
-                });
-              }
-            }}
-            onComplete={() => handleMarkComplete()}
-          />
-        )}
-
-        {(lesson.content_type === "pdf" || lesson.content_type === "download") && (
-          <DownloadButton
-            productSlug={productSlug}
-            moduleSlug={moduleSlug}
-            lessonSlug={lessonSlug}
-            title={lesson.title}
-          />
-        )}
-
-        {lesson.content_type === "text" && (
-          <div className="p-8 prose prose-gray max-w-none">
-            {lesson.description || "Content coming soon..."}
-          </div>
-        )}
-      </div>
-
-      {/* Progress & Actions */}
-      {isOwned && (
-        <div className="bg-white border border-[#e5e7eb] rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {isCompleted ? (
-                <div className="flex items-center gap-2 text-green-600">
-                  <CheckIcon className="w-5 h-5" />
-                  <span className="font-medium">Completed</span>
-                </div>
-              ) : progress ? (
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-[#6b7280]">Progress</span>
-                  <div className="w-32">
-                    <ProgressBar progress={progress.progress_percent || 0} size="sm" />
-                  </div>
-                </div>
-              ) : null}
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto p-6 space-y-6">
+          {/* Lesson Header */}
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-[#6b7280] mb-1">{lesson.module.title}</p>
+              <h1 className="text-2xl font-semibold text-[#222222] font-serif">{lesson.title}</h1>
             </div>
 
-            {!isCompleted && (
+            {/* Completion Toggle */}
+            {isOwned && (
               <button
                 onClick={handleMarkComplete}
-                disabled={isCompleting}
-                className="flex items-center gap-2 bg-[#222222] hover:bg-black text-white font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                disabled={isCompleting || isCompleted}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
+                  isCompleted
+                    ? "bg-green-100 text-green-700 cursor-default"
+                    : "bg-[#222222] hover:bg-black text-white"
+                }`}
               >
                 <CheckIcon className="w-4 h-4" />
-                {isCompleting ? "Saving..." : "Mark Complete"}
+                {isCompleted ? "Completed" : isCompleting ? "Saving..." : "Mark Complete"}
               </button>
             )}
           </div>
+
+          {/* Content Area */}
+          <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
+            {lesson.content_type === "video" && (
+              <VideoPlayer
+                productSlug={productSlug}
+                moduleSlug={moduleSlug}
+                lessonSlug={lessonSlug}
+                thumbnailUrl={lesson.thumbnail_url || undefined}
+                initialPosition={progress?.last_position_seconds || 0}
+                onProgress={handleProgressUpdate}
+                onComplete={() => handleMarkComplete()}
+              />
+            )}
+
+            {lesson.content_type === "audio" && (
+              <AudioPlayer
+                productSlug={productSlug}
+                moduleSlug={moduleSlug}
+                lessonSlug={lessonSlug}
+                title={lesson.title}
+                initialPosition={progress?.last_position_seconds || 0}
+                onProgress={handleProgressUpdate}
+                onComplete={() => handleMarkComplete()}
+              />
+            )}
+
+            {(lesson.content_type === "pdf" || lesson.content_type === "download") && (
+              <DownloadButton
+                productSlug={productSlug}
+                moduleSlug={moduleSlug}
+                lessonSlug={lessonSlug}
+                title={lesson.title}
+              />
+            )}
+
+            {lesson.content_type === "text" && (
+              <div className="p-8 prose prose-gray max-w-none">
+                {lesson.description || "Content coming soon..."}
+              </div>
+            )}
+          </div>
+
+          {/* Description */}
+          {lesson.description && lesson.content_type !== "text" && (
+            <div className="bg-white border border-[#e5e7eb] rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-[#222222] mb-3 font-serif">About This Lesson</h3>
+              <p className="text-[#4b5563] whitespace-pre-wrap">{lesson.description}</p>
+            </div>
+          )}
+
+          {/* Resources */}
+          <LessonResources resources={resources} />
+
+          {/* Progress Bar (for video/audio) */}
+          {isOwned && !isCompleted && progress && (lesson.content_type === "video" || lesson.content_type === "audio") && (
+            <div className="bg-white border border-[#e5e7eb] rounded-xl p-4">
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-[#6b7280]">Progress</span>
+                <div className="flex-1">
+                  <ProgressBar progress={progress.progress_percent || 0} size="sm" />
+                </div>
+                <span className="text-sm font-medium text-[#222222]">{progress.progress_percent || 0}%</span>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb]">
+            {prev && prevModule ? (
+              <Link
+                href={`/portal/products/${productSlug}/modules/${prevModule.slug}/lessons/${prev.slug}`}
+                className="flex items-center gap-2 text-[#4b5563] hover:text-[#222222] transition-colors"
+              >
+                <ChevronLeftIcon className="w-5 h-5" />
+                <div className="text-left">
+                  <span className="text-xs text-[#6b7280] block">Previous</span>
+                  <span className="font-medium text-[#222222]">{prev.title}</span>
+                </div>
+              </Link>
+            ) : (
+              <div />
+            )}
+
+            {next && nextModule ? (
+              <Link
+                href={`/portal/products/${productSlug}/modules/${nextModule.slug}/lessons/${next.slug}`}
+                className="flex items-center gap-2 text-[#4b5563] hover:text-[#222222] transition-colors"
+              >
+                <div className="text-right">
+                  <span className="text-xs text-[#6b7280] block">Next</span>
+                  <span className="font-medium text-[#222222]">{next.title}</span>
+                </div>
+                <ChevronRightIcon className="w-5 h-5" />
+              </Link>
+            ) : (
+              <Link
+                href={`/portal/products/${productSlug}`}
+                className="flex items-center gap-2 text-[#ee5d0b] hover:text-[#d54d00] font-medium transition-colors"
+              >
+                Back to Course
+                <ChevronRightIcon className="w-5 h-5" />
+              </Link>
+            )}
+          </div>
         </div>
-      )}
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb]">
-        {prev ? (
-          <Link
-            href={`/portal/products/${productSlug}/modules/${moduleSlug}/lessons/${prev.slug}`}
-            className="flex items-center gap-2 text-[#4b5563] hover:text-[#222222] transition-colors"
-          >
-            <ChevronLeftIcon className="w-5 h-5" />
-            <div className="text-left">
-              <span className="text-xs text-[#6b7280] block">Previous</span>
-              <span className="font-medium text-[#222222]">{prev.title}</span>
-            </div>
-          </Link>
-        ) : (
-          <div />
-        )}
-
-        {next ? (
-          <Link
-            href={`/portal/products/${productSlug}/modules/${moduleSlug}/lessons/${next.slug}`}
-            className="flex items-center gap-2 text-[#4b5563] hover:text-[#222222] transition-colors"
-          >
-            <div className="text-right">
-              <span className="text-xs text-[#6b7280] block">Next</span>
-              <span className="font-medium text-[#222222]">{next.title}</span>
-            </div>
-            <ChevronRightIcon className="w-5 h-5" />
-          </Link>
-        ) : (
-          <Link
-            href={`/portal/products/${productSlug}`}
-            className="flex items-center gap-2 text-[#ee5d0b] hover:text-[#d54d00] font-medium transition-colors"
-          >
-            Back to Course
-            <ChevronRightIcon className="w-5 h-5" />
-          </Link>
-        )}
       </div>
     </div>
   );

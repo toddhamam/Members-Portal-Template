@@ -205,7 +205,7 @@ export default function ProductDetailPage() {
                   href={`/?product=${product.slug}`}
                   className="bg-[#222222] hover:bg-black text-white font-medium px-6 py-3 rounded-lg transition-colors"
                 >
-                  Unlock for ${(product.price_cents / 100).toFixed(2)}
+                  Unlock for ${((product.portal_price_cents ?? product.price_cents) / 100).toFixed(2)}
                 </Link>
               </div>
             )}
