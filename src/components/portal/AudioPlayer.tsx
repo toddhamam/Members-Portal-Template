@@ -26,9 +26,12 @@ export function AudioPlayer({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Reset all state when lesson changes
+    setUrl(null);
+    setIsLoading(true);
+    setError(null);
+
     async function fetchContent() {
-      setIsLoading(true);
-      setError(null);
 
       try {
         const params = new URLSearchParams({

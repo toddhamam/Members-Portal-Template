@@ -91,6 +91,12 @@ export default function LessonPage() {
 
   // Fetch all data
   useEffect(() => {
+    // Reset state when lesson changes to ensure clean re-render
+    setIsLoading(true);
+    setLesson(null);
+    setProgress(null);
+    setResources([]);
+
     async function fetchData() {
       // Get product first
       const { data: productData, error: productError } = await supabase
@@ -206,7 +212,8 @@ export default function LessonPage() {
     }
 
     fetchData();
-  }, [productSlug, moduleSlug, lessonSlug, supabase, getProgress]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productSlug, moduleSlug, lessonSlug]);
 
   const handleMarkComplete = async () => {
     if (!lesson) return;
@@ -346,6 +353,7 @@ export default function LessonPage() {
           <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
             {lesson.content_type === "video" && (
               <VideoPlayer
+                key={`${moduleSlug}-${lessonSlug}`}
                 productSlug={productSlug}
                 moduleSlug={moduleSlug}
                 lessonSlug={lessonSlug}
@@ -358,6 +366,7 @@ export default function LessonPage() {
 
             {lesson.content_type === "audio" && (
               <AudioPlayer
+                key={`${moduleSlug}-${lessonSlug}`}
                 productSlug={productSlug}
                 moduleSlug={moduleSlug}
                 lessonSlug={lessonSlug}

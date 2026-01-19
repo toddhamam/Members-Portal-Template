@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { LessonResource } from "@/lib/supabase/types";
 
 function DownloadIcon({ className = "w-5 h-5" }: { className?: string }) {
@@ -99,6 +100,119 @@ interface LessonResourcesProps {
   resources: LessonResource[];
 }
 
+function ResourceItem({ resource }: { resource: LessonResource }) {
+  const [isDownloading, setIsDownloading] = useState(false);
+  const Icon = getResourceIcon(resource.resource_type);
+  const isExternal = !!resource.external_url && !resource.file_url;
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    // For external links, let the browser handle it
+    if (isExternal) {
+      return;
+    }
+
+    e.preventDefault();
+    setIsDownloading(true);
+
+    try {
+      // Fetch signed URL from API
+      const response = await fetch(`/api/resources/${resource.id}`);
+      const data = await response.json();
+
+      console.log('Download API response:', data);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get download URL');
+      }
+
+      if (!data.url) {
+        throw new Error('No download URL returned');
+      }
+
+      // For cross-origin downloads, we need to navigate directly
+      // The signed URL already has Content-Disposition: attachment set
+      window.location.href = data.url;
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download resource. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  if (isExternal) {
+    return (
+      <a
+        href={resource.external_url || '#'}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-4 p-4 bg-[#f5f3ef] hover:bg-[#eceae6] rounded-lg transition-colors group"
+      >
+        <div className="w-10 h-10 rounded-lg bg-[#d4a574]/20 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-5 h-5 text-[#d4a574]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-[#222222] truncate">
+              {resource.title}
+            </span>
+            <span className="text-xs text-[#6b7280] bg-white px-2 py-0.5 rounded">
+              {getResourceLabel(resource.resource_type)}
+            </span>
+          </div>
+          {resource.description && (
+            <p className="text-sm text-[#6b7280] mt-0.5 line-clamp-1">
+              {resource.description}
+            </p>
+          )}
+        </div>
+        <div className="flex-shrink-0 text-[#6b7280] group-hover:text-[#222222] transition-colors">
+          <LinkIcon className="w-5 h-5" />
+        </div>
+      </a>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={isDownloading}
+      className="w-full flex items-center gap-4 p-4 bg-[#f5f3ef] hover:bg-[#eceae6] rounded-lg transition-colors group text-left disabled:opacity-50 disabled:cursor-wait"
+    >
+      <div className="w-10 h-10 rounded-lg bg-[#d4a574]/20 flex items-center justify-center flex-shrink-0">
+        <Icon className="w-5 h-5 text-[#d4a574]" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-[#222222] truncate">
+            {resource.title}
+          </span>
+          <span className="text-xs text-[#6b7280] bg-white px-2 py-0.5 rounded">
+            {getResourceLabel(resource.resource_type)}
+          </span>
+        </div>
+        {resource.description && (
+          <p className="text-sm text-[#6b7280] mt-0.5 line-clamp-1">
+            {resource.description}
+          </p>
+        )}
+        {resource.file_size_bytes && (
+          <p className="text-xs text-[#9ca3af] mt-1">
+            {formatFileSize(resource.file_size_bytes)}
+          </p>
+        )}
+      </div>
+      <div className="flex-shrink-0 text-[#6b7280] group-hover:text-[#222222] transition-colors">
+        {isDownloading ? (
+          <div className="w-5 h-5 border-2 border-[#6b7280] border-t-transparent rounded-full animate-spin" />
+        ) : (
+          <DownloadIcon className="w-5 h-5" />
+        )}
+      </div>
+    </button>
+  );
+}
+
 export function LessonResources({ resources }: LessonResourcesProps) {
   if (!resources || resources.length === 0) {
     return null;
@@ -111,58 +225,9 @@ export function LessonResources({ resources }: LessonResourcesProps) {
       </h3>
 
       <div className="space-y-3">
-        {resources.map((resource) => {
-          const Icon = getResourceIcon(resource.resource_type);
-          const url = resource.file_url || resource.external_url;
-          const isExternal = !!resource.external_url && !resource.file_url;
-
-          return (
-            <a
-              key={resource.id}
-              href={url || '#'}
-              target={isExternal ? '_blank' : '_self'}
-              rel={isExternal ? 'noopener noreferrer' : undefined}
-              download={!isExternal}
-              className="flex items-center gap-4 p-4 bg-[#f5f3ef] hover:bg-[#eceae6] rounded-lg transition-colors group"
-            >
-              {/* Icon */}
-              <div className="w-10 h-10 rounded-lg bg-[#d4a574]/20 flex items-center justify-center flex-shrink-0">
-                <Icon className="w-5 h-5 text-[#d4a574]" />
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-[#222222] truncate">
-                    {resource.title}
-                  </span>
-                  <span className="text-xs text-[#6b7280] bg-white px-2 py-0.5 rounded">
-                    {getResourceLabel(resource.resource_type)}
-                  </span>
-                </div>
-                {resource.description && (
-                  <p className="text-sm text-[#6b7280] mt-0.5 line-clamp-1">
-                    {resource.description}
-                  </p>
-                )}
-                {resource.file_size_bytes && (
-                  <p className="text-xs text-[#9ca3af] mt-1">
-                    {formatFileSize(resource.file_size_bytes)}
-                  </p>
-                )}
-              </div>
-
-              {/* Download/Link Icon */}
-              <div className="flex-shrink-0 text-[#6b7280] group-hover:text-[#222222] transition-colors">
-                {isExternal ? (
-                  <LinkIcon className="w-5 h-5" />
-                ) : (
-                  <DownloadIcon className="w-5 h-5" />
-                )}
-              </div>
-            </a>
-          );
-        })}
+        {resources.map((resource) => (
+          <ResourceItem key={resource.id} resource={resource} />
+        ))}
       </div>
     </div>
   );

@@ -150,6 +150,7 @@ export function getEmbedHtml(videoId: string): string {
 /**
  * Get the direct embed URL for use in video players
  */
-export function getEmbedUrl(videoId: string): string {
-  return `https://iframe.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${videoId}`;
+export function getEmbedUrl(videoId: string, options?: { autoplay?: boolean }): string {
+  const autoplay = options?.autoplay ?? false;
+  return `https://iframe.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${videoId}?autoplay=${autoplay}`;
 }

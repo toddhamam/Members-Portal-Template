@@ -33,9 +33,12 @@ export function VideoPlayer({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Reset all state when lesson changes
+    setContent(null);
+    setIsLoading(true);
+    setError(null);
+
     async function fetchContent() {
-      setIsLoading(true);
-      setError(null);
 
       try {
         const params = new URLSearchParams({

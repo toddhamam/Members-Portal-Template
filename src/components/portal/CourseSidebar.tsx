@@ -108,10 +108,10 @@ export function CourseSidebar({
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#f5f3ef] transition-colors text-left"
               >
                 <div className="flex-1 min-w-0">
-                  <span className="text-xs text-[#6b7280] block">
+                  <span className="text-sm text-[#6b7280] block">
                     Module {moduleIndex + 1}
                   </span>
-                  <span className="text-sm font-medium text-[#222222] line-clamp-1">
+                  <span className="text-base font-medium text-[#222222] line-clamp-1">
                     {module.title}
                   </span>
                 </div>
@@ -139,30 +139,26 @@ export function CourseSidebar({
                       <Link
                         key={lesson.id}
                         href={`/portal/products/${product.slug}/modules/${module.slug}/lessons/${lesson.slug}`}
-                        className={`flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
+                        className={`flex items-center gap-3 px-4 py-2.5 text-base transition-colors ${
                           isCurrentLesson
                             ? "bg-[#d4a574]/20 border-l-2 border-[#d4a574]"
                             : "hover:bg-[#f5f3ef]"
                         }`}
                       >
-                        {/* Status Icon */}
-                        <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            isCompleted
-                              ? "bg-green-500 text-white"
-                              : isCurrentLesson
-                              ? "bg-[#d4a574] text-white"
-                              : "bg-[#e5e7eb] text-[#6b7280]"
-                          }`}
-                        >
-                          {isCompleted ? (
+                        {/* Status Icon / Lesson Number */}
+                        {isCompleted ? (
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-green-500 text-white">
                             <CheckIcon className="w-3 h-3" />
-                          ) : (
-                            <span className="text-xs font-medium">
-                              {moduleIndex + 1}.{lessonIndex + 1}
-                            </span>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <span
+                            className={`text-sm font-medium flex-shrink-0 ${
+                              isCurrentLesson ? "text-[#d4a574]" : "text-[#6b7280]"
+                            }`}
+                          >
+                            {moduleIndex + 1}.{lessonIndex + 1}
+                          </span>
+                        )}
 
                         {/* Lesson Title */}
                         <span
