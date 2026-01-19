@@ -1,6 +1,7 @@
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { SidebarProvider } from "@/components/portal/SidebarContext";
 import { PortalSidebar } from "@/components/portal/PortalSidebar";
-import { PortalHeader } from "@/components/portal/PortalHeader";
+import { PortalContent } from "@/components/portal/PortalContent";
 
 // Force dynamic rendering for all portal pages (requires auth)
 export const dynamic = "force-dynamic";
@@ -17,13 +18,12 @@ export default function PortalLayout({
 }) {
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-[#faf9f7]">
-        <PortalSidebar />
-        <div className="ml-64">
-          <PortalHeader />
-          <main className="p-8">{children}</main>
+      <SidebarProvider>
+        <div className="min-h-screen bg-[#faf9f7]">
+          <PortalSidebar />
+          <PortalContent>{children}</PortalContent>
         </div>
-      </div>
+      </SidebarProvider>
     </AuthProvider>
   );
 }

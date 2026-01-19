@@ -89,126 +89,138 @@ export default function LessonPage() {
     };
   }, [modules, lesson, lessonSlug, moduleSlug]);
 
-  // Fetch all data
+  // Fetch all data - optimized with parallel fetches and smart caching
   useEffect(() => {
-    // Reset state when lesson changes to ensure clean re-render
+    // Only reset lesson-specific state, preserve product/modules when navigating within same product
     setIsLoading(true);
     setLesson(null);
     setProgress(null);
     setResources([]);
 
     async function fetchData() {
-      // Get product first
-      const { data: productData, error: productError } = await supabase
-        .from("products")
-        .select("*")
-        .eq("slug", productSlug)
-        .eq("is_active", true)
-        .single();
+      try {
+        // Check if we need to fetch product/modules (skip if same product)
+        let currentProduct = product;
+        let currentModules = modules;
 
-      if (productError || !productData) {
-        console.error("Failed to fetch product:", productError);
-        setIsLoading(false);
-        return;
-      }
-
-      setProduct(productData);
-
-      // Get all modules with lessons for sidebar
-      const { data: modulesData, error: modulesError } = await supabase
-        .from("modules")
-        .select(`*, lessons (*)`)
-        .eq("product_id", productData.id)
-        .eq("is_published", true)
-        .order("sort_order");
-
-      if (modulesError) {
-        console.error("Failed to fetch modules:", modulesError);
-        setIsLoading(false);
-        return;
-      }
-
-      // Sort lessons within each module
-      const sortedModules = (modulesData || []).map((module: ModuleWithLessons) => ({
-        ...module,
-        lessons: (module.lessons || []).sort(
-          (a: Lesson, b: Lesson) => a.sort_order - b.sort_order
-        ),
-      }));
-
-      setModules(sortedModules);
-
-      // Find current lesson
-      const currentModule = sortedModules.find((m: ModuleWithLessons) => m.slug === moduleSlug);
-      const currentLesson = currentModule?.lessons.find((l: Lesson) => l.slug === lessonSlug);
-
-      if (!currentLesson) {
-        console.error("Lesson not found");
-        setIsLoading(false);
-        return;
-      }
-
-      setLesson({
-        ...currentLesson,
-        module: {
-          ...currentModule,
-          product: productData,
-          lessons: currentModule.lessons,
-        },
-      } as LessonData);
-
-      // Fetch resources for this lesson
-      const { data: resourcesData } = await supabase
-        .from("lesson_resources")
-        .select("*")
-        .eq("lesson_id", currentLesson.id)
-        .eq("is_published", true)
-        .order("sort_order");
-
-      setResources(resourcesData || []);
-
-      // Check if user owns this product
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: purchase } = await supabase
-          .from("user_purchases")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("product_id", productData.id)
-          .eq("status", "active")
-          .single();
-
-        const owned = !!purchase;
-        setIsOwned(owned);
-
-        // Fetch all progress for sidebar
-        if (owned) {
-          const lessonIds = sortedModules.flatMap((m: ModuleWithLessons) =>
-            m.lessons.map((l: Lesson) => l.id)
-          );
-
-          if (lessonIds.length > 0) {
-            const { data: progressData } = await supabase
-              .from("lesson_progress")
+        if (!currentProduct || currentProduct.slug !== productSlug) {
+          // Fetch product and user in parallel
+          const [productResult, userResult] = await Promise.all([
+            supabase
+              .from("products")
               .select("*")
-              .eq("user_id", user.id)
-              .in("lesson_id", lessonIds);
+              .eq("slug", productSlug)
+              .eq("is_active", true)
+              .single(),
+            supabase.auth.getUser()
+          ]);
 
-            const progressById: Record<string, LessonProgress> = {};
-            (progressData || []).forEach((p: LessonProgress) => {
-              progressById[p.lesson_id] = p;
-            });
-            setProgressMap(progressById);
+          if (productResult.error || !productResult.data) {
+            console.error("Failed to fetch product:", productResult.error);
+            setIsLoading(false);
+            return;
+          }
 
-            // Set current lesson progress
-            if (progressById[currentLesson.id]) {
-              setProgress(progressById[currentLesson.id]);
-            }
+          currentProduct = productResult.data;
+          setProduct(currentProduct);
+
+          // Fetch modules and purchase status in parallel
+          const [modulesResult, purchaseResult] = await Promise.all([
+            supabase
+              .from("modules")
+              .select(`*, lessons (*)`)
+              .eq("product_id", currentProduct.id)
+              .eq("is_published", true)
+              .order("sort_order"),
+            userResult.data.user
+              ? supabase
+                  .from("user_purchases")
+                  .select("id")
+                  .eq("user_id", userResult.data.user.id)
+                  .eq("product_id", currentProduct.id)
+                  .eq("status", "active")
+                  .single()
+              : Promise.resolve({ data: null })
+          ]);
+
+          if (modulesResult.error) {
+            console.error("Failed to fetch modules:", modulesResult.error);
+            setIsLoading(false);
+            return;
+          }
+
+          // Sort lessons within each module
+          currentModules = (modulesResult.data || []).map((module: ModuleWithLessons) => ({
+            ...module,
+            lessons: (module.lessons || []).sort(
+              (a: Lesson, b: Lesson) => a.sort_order - b.sort_order
+            ),
+          }));
+
+          setModules(currentModules);
+          setIsOwned(!!purchaseResult.data);
+        }
+
+        // Find current lesson from cached or fetched modules
+        const currentModule = currentModules.find((m: ModuleWithLessons) => m.slug === moduleSlug);
+        const currentLesson = currentModule?.lessons.find((l: Lesson) => l.slug === lessonSlug);
+
+        if (!currentLesson || !currentProduct) {
+          console.error("Lesson not found");
+          setIsLoading(false);
+          return;
+        }
+
+        setLesson({
+          ...currentLesson,
+          module: {
+            ...currentModule,
+            product: currentProduct,
+            lessons: currentModule.lessons,
+          },
+        } as LessonData);
+
+        // Fetch resources and progress in parallel
+        const { data: { user } } = await supabase.auth.getUser();
+        const lessonIds = currentModules.flatMap((m: ModuleWithLessons) =>
+          m.lessons.map((l: Lesson) => l.id)
+        );
+
+        const [resourcesResult, progressResult] = await Promise.all([
+          supabase
+            .from("lesson_resources")
+            .select("*")
+            .eq("lesson_id", currentLesson.id)
+            .eq("is_published", true)
+            .order("sort_order"),
+          user && lessonIds.length > 0
+            ? supabase
+                .from("lesson_progress")
+                .select("*")
+                .eq("user_id", user.id)
+                .in("lesson_id", lessonIds)
+            : Promise.resolve({ data: null })
+        ]);
+
+        setResources(resourcesResult.data || []);
+
+        if (progressResult.data) {
+          const progressById: Record<string, LessonProgress> = {};
+          progressResult.data.forEach((p: LessonProgress) => {
+            progressById[p.lesson_id] = p;
+          });
+          setProgressMap(progressById);
+
+          // Set current lesson progress
+          if (progressById[currentLesson.id]) {
+            setProgress(progressById[currentLesson.id]);
           }
         }
+      } catch (error) {
+        console.error("Error fetching lesson data:", error);
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     }
 
     fetchData();
@@ -353,7 +365,6 @@ export default function LessonPage() {
           <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
             {lesson.content_type === "video" && (
               <VideoPlayer
-                key={`${moduleSlug}-${lessonSlug}`}
                 productSlug={productSlug}
                 moduleSlug={moduleSlug}
                 lessonSlug={lessonSlug}
@@ -366,7 +377,6 @@ export default function LessonPage() {
 
             {lesson.content_type === "audio" && (
               <AudioPlayer
-                key={`${moduleSlug}-${lessonSlug}`}
                 productSlug={productSlug}
                 moduleSlug={moduleSlug}
                 lessonSlug={lessonSlug}

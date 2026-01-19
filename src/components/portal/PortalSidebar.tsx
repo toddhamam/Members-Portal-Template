@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSidebar } from "./SidebarContext";
 
 // Icons
 function HomeIcon({ className = "w-5 h-5" }: { className?: string }) {
@@ -36,6 +37,22 @@ function UserIcon({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+function ChevronLeftIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+
 function BrandLogo({ className = "w-10 h-10" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 100 100" fill="none">
@@ -65,23 +82,30 @@ const navItems = [
 
 export function PortalSidebar() {
   const pathname = usePathname();
+  const { isCollapsed, toggleSidebar } = useSidebar();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-[#1a1a1a] border-r border-gray-800 flex flex-col z-40">
+    <aside
+      className={`fixed left-0 top-0 h-screen bg-[#1a1a1a] border-r border-gray-800 flex flex-col z-40 transition-all duration-300 ${
+        isCollapsed ? "w-16" : "w-64"
+      }`}
+    >
       {/* Logo */}
-      <div className="p-6 border-b border-gray-800">
+      <div className="p-4 border-b border-gray-800">
         <Link href="/portal" className="flex items-center gap-3">
-          <BrandLogo className="w-10 h-10" />
-          <div className="text-white">
-            <span className="text-xs font-medium tracking-widest block">INNER WEALTH</span>
-            <span className="text-xs font-medium tracking-widest">INITIATE</span>
-            <span className="text-[8px] align-top">™</span>
-          </div>
+          <BrandLogo className={`flex-shrink-0 ${isCollapsed ? "w-8 h-8" : "w-10 h-10"}`} />
+          {!isCollapsed && (
+            <div className="text-white overflow-hidden">
+              <span className="text-xs font-medium tracking-widest block">INNER WEALTH</span>
+              <span className="text-xs font-medium tracking-widest">INITIATE</span>
+              <span className="text-[8px] align-top">™</span>
+            </div>
+          )}
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-2">
         <ul className="space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href ||
@@ -92,14 +116,15 @@ export function PortalSidebar() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${
                     isActive
                       ? "bg-[#d4a574]/20 text-[#d4a574]"
                       : "text-gray-400 hover:text-white hover:bg-white/5"
-                  }`}
+                  } ${isCollapsed ? "justify-center" : ""}`}
+                  title={isCollapsed ? item.label : undefined}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span className="font-medium">{item.label}</span>
+                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  {!isCollapsed && <span className="font-medium">{item.label}</span>}
                 </Link>
               </li>
             );
@@ -107,16 +132,39 @@ export function PortalSidebar() {
         </ul>
       </nav>
 
+      {/* Toggle Button */}
+      <div className="p-2 border-t border-gray-800">
+        <button
+          onClick={toggleSidebar}
+          className={`flex items-center gap-2 text-gray-500 hover:text-gray-300 text-sm transition-colors w-full px-3 py-2 rounded-lg hover:bg-white/5 ${
+            isCollapsed ? "justify-center" : ""
+          }`}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? (
+            <ChevronRightIcon className="w-5 h-5" />
+          ) : (
+            <>
+              <ChevronLeftIcon className="w-5 h-5" />
+              <span>Collapse</span>
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Footer */}
-      <div className="p-4 border-t border-gray-800">
+      <div className="p-2 border-t border-gray-800">
         <Link
           href="/"
-          className="flex items-center gap-2 text-gray-500 hover:text-gray-400 text-sm transition-colors"
+          className={`flex items-center gap-2 text-gray-500 hover:text-gray-400 text-sm transition-colors px-3 py-2 ${
+            isCollapsed ? "justify-center" : ""
+          }`}
+          title={isCollapsed ? "Back to Website" : undefined}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          Back to Website
+          {!isCollapsed && <span>Back to Website</span>}
         </Link>
       </div>
     </aside>

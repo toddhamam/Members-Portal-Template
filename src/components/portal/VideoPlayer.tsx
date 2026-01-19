@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface VideoPlayerProps {
   productSlug: string;
@@ -32,38 +32,37 @@ export function VideoPlayer({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Reset all state when lesson changes
-    setContent(null);
+  const fetchContent = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
-    async function fetchContent() {
+    try {
+      const params = new URLSearchParams({
+        product: productSlug,
+        module: moduleSlug,
+        lesson: lessonSlug,
+      });
 
-      try {
-        const params = new URLSearchParams({
-          product: productSlug,
-          module: moduleSlug,
-          lesson: lessonSlug,
-        });
+      const response = await fetch(`/api/content/signed-url?${params}`);
+      const data = await response.json();
 
-        const response = await fetch(`/api/content/signed-url?${params}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to load video');
-        }
-
-        setContent(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load video');
-      } finally {
-        setIsLoading(false);
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load video');
       }
-    }
 
-    fetchContent();
+      setContent(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load video');
+    } finally {
+      setIsLoading(false);
+    }
   }, [productSlug, moduleSlug, lessonSlug]);
+
+  useEffect(() => {
+    // Reset content when lesson changes
+    setContent(null);
+    fetchContent();
+  }, [fetchContent]);
 
   if (isLoading) {
     return (
@@ -79,7 +78,7 @@ export function VideoPlayer({
         <div className="text-center text-white">
           <p className="text-red-400 mb-2">{error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => fetchContent()}
             className="text-sm text-gray-400 hover:text-white underline"
           >
             Try again

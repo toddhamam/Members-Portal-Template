@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 function UserAvatar({ name, className = "w-8 h-8" }: { name?: string; className?: string }) {
@@ -24,6 +25,7 @@ function UserAvatar({ name, className = "w-8 h-8" }: { name?: string; className?
 }
 
 export function PortalHeader() {
+  const router = useRouter();
   const { user, profile, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -46,10 +48,11 @@ export function PortalHeader() {
     setIsMenuOpen(false);
     try {
       await signOut();
+      router.push("/portal/login");
     } catch (error) {
       console.error('Sign out failed:', error);
+      router.push("/portal/login");
     }
-    window.location.href = "/portal/login";
   };
 
   const displayName = profile?.full_name || profile?.first_name || user?.email || "User";

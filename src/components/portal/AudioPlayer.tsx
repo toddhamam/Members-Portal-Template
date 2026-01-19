@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface AudioPlayerProps {
   productSlug: string;
@@ -25,38 +25,37 @@ export function AudioPlayer({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Reset all state when lesson changes
-    setUrl(null);
+  const fetchContent = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
-    async function fetchContent() {
+    try {
+      const params = new URLSearchParams({
+        product: productSlug,
+        module: moduleSlug,
+        lesson: lessonSlug,
+      });
 
-      try {
-        const params = new URLSearchParams({
-          product: productSlug,
-          module: moduleSlug,
-          lesson: lessonSlug,
-        });
+      const response = await fetch(`/api/content/signed-url?${params}`);
+      const data = await response.json();
 
-        const response = await fetch(`/api/content/signed-url?${params}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to load audio');
-        }
-
-        setUrl(data.url);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load audio');
-      } finally {
-        setIsLoading(false);
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load audio');
       }
-    }
 
-    fetchContent();
+      setUrl(data.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load audio');
+    } finally {
+      setIsLoading(false);
+    }
   }, [productSlug, moduleSlug, lessonSlug]);
+
+  useEffect(() => {
+    // Reset URL when lesson changes
+    setUrl(null);
+    fetchContent();
+  }, [fetchContent]);
 
   return (
     <div className="p-8 bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a]">
@@ -79,7 +78,7 @@ export function AudioPlayer({
         <div className="text-center">
           <p className="text-red-400 mb-2">{error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => fetchContent()}
             className="text-sm text-gray-400 hover:text-white underline"
           >
             Try again
