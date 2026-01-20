@@ -1,26 +1,51 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import {
-  Footer,
   StarRating,
   DownloadIcon,
   ChevronDownIcon,
 } from "@/components/shared";
 
+// Product images for the hero slider
+const productImages = [
+  { src: "/images/Products/hero-product.png", alt: "The Resistance Map™ - Complete Bundle" },
+  { src: "/images/Products/whats-inside-product.png", alt: "What's Inside - Full Spread" },
+  { src: "/images/Products/five-phase-map.png", alt: "The Five Phase Map" },
+  { src: "/images/Products/root-pattern.png", alt: "Root Pattern Analysis" },
+  { src: "/images/Products/golden-thread-hero.png", alt: "The Golden Thread" },
+  { src: "/images/Products/no-more-guesswork.png", alt: "No More Guesswork" },
+];
+
 // Product thumbnail component
-function ProductThumbnail({ active = false }: { active?: boolean }) {
+function ProductThumbnail({
+  src,
+  alt,
+  active,
+  onClick
+}: {
+  src: string;
+  alt: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
-    <div
-      className={`w-16 h-16 bg-[#2a2a2e] rounded-lg overflow-hidden cursor-pointer border-2 transition-colors ${
-        active ? "border-[#d4a574]" : "border-transparent hover:border-gray-600"
+    <button
+      onClick={onClick}
+      className={`aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+        active ? "border-[#d4a574]" : "border-gray-200 hover:border-gray-400"
       }`}
     >
-      <div className="w-full h-full bg-gradient-to-br from-[#3a3a3e] to-[#2a2a2e] flex items-center justify-center">
-        <div className="w-8 h-10 bg-gradient-to-b from-[#d4a574] to-[#b8956c] rounded-sm" />
-      </div>
-    </div>
+      <Image
+        src={src}
+        alt={alt}
+        width={120}
+        height={120}
+        className="w-full h-full object-cover"
+      />
+    </button>
   );
 }
 
@@ -58,42 +83,35 @@ function FAQItem({
   );
 }
 
-// Benefit icon components
-function ClarityIcon() {
+// Feature icon components for "What's Inside" section
+function ClockIcon() {
   return (
-    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h7" />
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   );
 }
 
-function EmpowermentIcon() {
+function DocumentIcon() {
   return (
-    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>
   );
 }
 
-function ConnectionIcon() {
+function HeartIcon() {
   return (
-    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-    </svg>
-  );
-}
-
-function WisdomIcon() {
-  return (
-    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
     </svg>
   );
 }
 
 export default function ProductPage() {
   const [openFAQ, setOpenFAQ] = useState<number>(0);
-  const [activeThumb, setActiveThumb] = useState(0);
+  const [activeImage, setActiveImage] = useState(0);
+  const [testimonialPage, setTestimonialPage] = useState(0);
 
   const faqs = [
     {
@@ -136,109 +154,74 @@ export default function ProductPage() {
     <main className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="grid lg:grid-cols-2 min-h-[600px]">
-        {/* Left: Product Image Area - Dark */}
-        <div className="bg-[#1a1a1a] p-8 lg:p-12 flex flex-col justify-center">
-          {/* Main Product Bundle Image */}
-          <div className="flex items-center justify-center mb-6">
-            <div className="relative">
-              {/* Product bundle mockup placeholder */}
-              <div className="flex items-end gap-4">
-                {/* Worksheets/Papers */}
-                <div className="w-24 h-32 bg-[#f5f3ef] rounded shadow-lg transform -rotate-6 hidden sm:block">
-                  <div className="p-2 text-[6px] text-gray-400">
-                    <div className="border-b border-gray-200 pb-1 mb-1">Worksheet</div>
-                  </div>
-                </div>
-
-                {/* Main Book */}
-                <div className="relative z-10">
-                  <div className="w-40 h-52 bg-gradient-to-b from-[#d4a574] to-[#b8956c] rounded-lg shadow-2xl flex flex-col items-center justify-center p-4">
-                    <p className="text-[#1a1a2e] text-[8px] uppercase tracking-widest mb-1">The</p>
-                    <h3 className="text-[#1a1a2e] text-lg font-serif font-bold leading-tight text-center">
-                      RESISTANCE
-                    </h3>
-                    <h3 className="text-[#1a1a2e] text-lg font-serif font-bold leading-tight text-center">
-                      MAP
-                    </h3>
-                    <div className="w-12 h-12 my-3">
-                      <svg className="w-full h-full text-[#1a1a2e]" viewBox="0 0 100 100" fill="currentColor">
-                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2"/>
-                        {[...Array(12)].map((_, i) => (
-                          <line key={i} x1="50" y1="10" x2="50" y2="20" stroke="currentColor" strokeWidth="2" transform={`rotate(${i * 30} 50 50)`}/>
-                        ))}
-                      </svg>
-                    </div>
-                    <p className="text-[#1a1a2e] text-[8px]">Todd Hamash</p>
-                  </div>
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#8B7355] text-white text-[8px] px-2 py-0.5 rounded whitespace-nowrap">
-                    THE RESISTANCE MAP™
-                  </div>
-                </div>
-
-                {/* Side book */}
-                <div className="w-8 h-48 bg-gradient-to-r from-[#c49a6c] to-[#d4a574] rounded-r shadow-lg transform rotate-3 hidden sm:block" />
-
-                {/* Phone mockup */}
-                <div className="w-16 h-28 bg-[#2a2a2e] rounded-xl shadow-lg transform rotate-6 hidden sm:block">
-                  <div className="w-full h-full p-1">
-                    <div className="w-full h-full bg-gradient-to-b from-[#d4a574] to-[#b8956c] rounded-lg flex items-center justify-center">
-                      <span className="text-[6px] text-[#1a1a2e]">GUIDE</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        {/* Left: Product Image Area */}
+        <div className="bg-white flex flex-col p-6 lg:p-8">
+          {/* Main Product Image */}
+          <div className="flex-1 flex items-center justify-center">
+            <div className="relative w-full">
+              <Image
+                src={productImages[activeImage].src}
+                alt={productImages[activeImage].alt}
+                width={700}
+                height={700}
+                className="w-full h-auto"
+                priority
+              />
             </div>
           </div>
 
           {/* Thumbnail Gallery */}
-          <div className="flex justify-center gap-2">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
+          <div className="grid grid-cols-6 gap-2 lg:gap-3 pt-4">
+            {productImages.map((img, i) => (
               <ProductThumbnail
                 key={i}
-                active={activeThumb === i}
+                src={img.src}
+                alt={img.alt}
+                active={activeImage === i}
+                onClick={() => setActiveImage(i)}
               />
             ))}
           </div>
         </div>
 
         {/* Right: Product Info - Light */}
-        <div className="p-8 lg:p-12 flex flex-col justify-center">
+        <div className="p-8 lg:p-16 flex flex-col justify-center">
           {/* Star Rating */}
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-6">
             <StarRating size="md" />
-            <span className="text-sm text-gray-500">4.9/5</span>
+            <span className="text-base text-gray-500">4.9/5</span>
           </div>
 
           {/* Title */}
-          <h1 className="font-serif text-3xl lg:text-4xl text-[#222222] leading-tight mb-6">
+          <h1 className="font-serif text-4xl lg:text-5xl text-[#222222] leading-tight mb-8">
             Resistance Mapping Guide™ - Expanded 2nd Edition
           </h1>
 
           {/* Price */}
-          <div className="flex items-baseline gap-3 mb-6">
-            <span className="text-2xl font-bold text-[#222222]">$7.00</span>
-            <span className="text-lg text-gray-400 line-through">$29.95</span>
-            <span className="bg-[#d4a574] text-white text-xs font-semibold px-2 py-1 rounded">
+          <div className="flex items-baseline gap-4 mb-8">
+            <span className="text-3xl font-bold text-[#222222]">$7.00</span>
+            <span className="text-xl text-gray-400 line-through">$29.95</span>
+            <span className="bg-[#d4a574] text-white text-sm font-semibold px-3 py-1.5 rounded">
               SAVE 77%
             </span>
           </div>
 
           {/* Feature List */}
-          <ul className="space-y-3 mb-6">
-            <li className="flex items-center gap-3 text-gray-700">
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <ul className="space-y-4 mb-8">
+            <li className="flex items-center gap-4 text-gray-700 text-lg">
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               Instant Download &amp; Access
             </li>
-            <li className="flex items-center gap-3 text-gray-700">
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <li className="flex items-center gap-4 text-gray-700 text-lg">
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               Read From Any Device
             </li>
-            <li className="flex items-center gap-3 text-gray-700">
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <li className="flex items-center gap-4 text-gray-700 text-lg">
+              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               30-Day Refund
@@ -246,12 +229,12 @@ export default function ProductPage() {
           </ul>
 
           {/* Testimonial Quote */}
-          <div className="mb-6 text-sm text-gray-600 italic">
-            <p className="mb-2">
+          <div className="mb-8 text-base text-gray-600 italic">
+            <p className="mb-3 leading-relaxed">
               &ldquo;I used these exercises to discover programs and beliefs in my sub-conscious that I never knew I had. This allowed me to move past a lot of distortions &amp; destructive patterns.&rdquo;
             </p>
-            <div className="flex items-center gap-1">
-              <span className="not-italic">Reza Q.</span>
+            <div className="flex items-center gap-2">
+              <span className="not-italic font-medium">Reza Q.</span>
               <StarRating size="sm" />
             </div>
           </div>
@@ -259,189 +242,177 @@ export default function ProductPage() {
           {/* CTA Button */}
           <Link
             href="/checkout"
-            className="inline-flex items-center justify-center gap-2 bg-[#222222] text-white px-8 py-4 text-sm font-medium tracking-wide hover:bg-black transition-colors w-full"
+            className="inline-flex items-center justify-center gap-3 bg-[#222222] text-white px-10 py-5 text-lg font-medium tracking-wide hover:bg-black transition-colors w-full"
           >
             Add to Cart
-            <DownloadIcon className="w-4 h-4" />
+            <DownloadIcon className="w-5 h-5" />
           </Link>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-16 px-4 bg-white">
+      <section className="py-20 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white p-6 rounded-lg">
-                {/* Quotation mark */}
-                <div className="text-5xl text-gray-200 leading-none mb-4">&ldquo;</div>
-
-                {/* Quote */}
-                <p className="text-gray-600 text-sm leading-relaxed mb-6">
+          {/* Desktop: Show 3 at a time */}
+          <div className="hidden md:grid md:grid-cols-3 gap-8">
+            {testimonials.slice(testimonialPage * 3, testimonialPage * 3 + 3).map((testimonial, index) => (
+              <div key={index} className="bg-white p-8 rounded-xl">
+                <div className="text-6xl text-gray-200 leading-none mb-6">&ldquo;</div>
+                <p className="text-gray-600 text-base leading-relaxed mb-8">
                   {testimonial.quote}
                 </p>
-
-                {/* Name */}
-                <p className="font-medium text-gray-900">
+                <p className="font-semibold text-lg text-gray-900">
                   {testimonial.name}
                   {testimonial.location && (
-                    <span className="text-gray-500"> - {testimonial.location}</span>
+                    <span className="text-gray-500 font-normal"> - {testimonial.location}</span>
                   )}
                 </p>
               </div>
             ))}
           </div>
 
-          {/* Carousel dots */}
-          <div className="flex items-center justify-center gap-2 mt-8">
-            <button className="text-gray-400 hover:text-gray-600">&larr;</button>
-            <button className="w-2 h-2 rounded-full bg-gray-900" />
-            <button className="w-2 h-2 rounded-full bg-gray-300" />
-            <button className="text-gray-400 hover:text-gray-600">&rarr;</button>
+          {/* Mobile: Show 1 at a time */}
+          <div className="md:hidden">
+            <div className="bg-white p-8 rounded-xl">
+              <div className="text-6xl text-gray-200 leading-none mb-6">&ldquo;</div>
+              <p className="text-gray-600 text-base leading-relaxed mb-8">
+                {testimonials[testimonialPage]?.quote}
+              </p>
+              <p className="font-semibold text-lg text-gray-900">
+                {testimonials[testimonialPage]?.name}
+                {testimonials[testimonialPage]?.location && (
+                  <span className="text-gray-500 font-normal"> - {testimonials[testimonialPage]?.location}</span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Carousel navigation */}
+          <div className="flex items-center justify-center gap-6 mt-10">
+            <button
+              onClick={() => setTestimonialPage(Math.max(0, testimonialPage - 1))}
+              className={`text-3xl transition-colors ${
+                testimonialPage === 0 ? "text-gray-300 cursor-not-allowed" : "text-gray-600 hover:text-gray-900"
+              }`}
+              disabled={testimonialPage === 0}
+            >
+              &larr;
+            </button>
+            <div className="flex gap-3">
+              {Array.from({ length: Math.ceil(testimonials.length / 3) }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setTestimonialPage(i)}
+                  className={`w-3 h-3 rounded-full transition-colors ${
+                    testimonialPage === i ? "bg-gray-900" : "bg-gray-300 hover:bg-gray-400"
+                  }`}
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => setTestimonialPage(Math.min(Math.ceil(testimonials.length / 3) - 1, testimonialPage + 1))}
+              className={`text-3xl transition-colors ${
+                testimonialPage >= Math.ceil(testimonials.length / 3) - 1
+                  ? "text-gray-300 cursor-not-allowed"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+              disabled={testimonialPage >= Math.ceil(testimonials.length / 3) - 1}
+            >
+              &rarr;
+            </button>
           </div>
         </div>
       </section>
 
-      {/* Illuminating Your Path - Dark Benefits Section */}
-      <section className="py-20 px-4 bg-[#0f0f0f] text-white">
-        <div className="max-w-6xl mx-auto">
+      {/* What's Inside The Expanded 2nd Edition Section */}
+      <section className="py-24 px-4 bg-[#0f0f0f] text-white">
+        <div className="max-w-7xl mx-auto">
           {/* Title */}
-          <div className="text-center mb-12">
-            <h2 className="font-serif text-3xl lg:text-4xl italic mb-4">
-              Illuminating Your Path
+          <div className="text-center mb-16">
+            <h2 className="font-serif text-4xl lg:text-5xl mb-8">
+              What&apos;s Inside The Expanded 2nd Edition
             </h2>
-            <h2 className="font-serif text-3xl lg:text-4xl italic mb-6">
-              Though the Darkness
-            </h2>
-            <p className="text-gray-400 text-sm max-w-xl mx-auto">
-              You don&apos;t have to do this alone. You&apos;ve been sent a guide to help you begin this journey... It&apos;s time to awaken...
+            <p className="text-gray-400 text-base lg:text-lg max-w-3xl mx-auto leading-relaxed">
+              You don&apos;t have to do this alone. You&apos;ve been sent a guide to help you discover and understand your fear loops clearly, so you can transform... It&apos;s time to awaken...
             </p>
           </div>
 
-          {/* Benefits Grid with Center Product */}
+          {/* Features Grid with Center Product */}
           <div className="relative">
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-8 items-center">
-              {/* Left Column - Clarity & Connection */}
-              <div className="space-y-12 lg:space-y-24">
-                {/* Clarity */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16 items-center">
+              {/* Left Column - Features */}
+              <div className="space-y-10 lg:space-y-16">
+                {/* Quick Run */}
                 <div className="text-left">
-                  <div className="flex items-center gap-2 mb-3 text-gray-400">
-                    <ClarityIcon />
+                  <div className="flex items-center gap-3 mb-4 text-gray-400">
+                    <ClockIcon />
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">Clarity</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">
-                    Begin making sense of what&apos;s happening to you. Understand why you feel this way and what it means for your Soul&apos;s evolution.
+                  <h3 className="font-semibold text-lg lg:text-xl mb-3">Quick Run (15 minutes)</h3>
+                  <p className="text-gray-400 text-base leading-relaxed">
+                    Map the loop while you are triggered so you can get clarity fast, instead of spiraling.
                   </p>
                 </div>
 
-                {/* Connection */}
+                {/* Printable Worksheets */}
                 <div className="text-left">
-                  <div className="flex items-center gap-2 mb-3 text-gray-400">
-                    <ConnectionIcon />
+                  <div className="flex items-center gap-3 mb-4 text-gray-400">
+                    <DocumentIcon />
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">Connection</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">
-                    Learn how to start connecting with the light of your soul and begin living in alignment with your true self.
+                  <h3 className="font-semibold text-lg lg:text-xl mb-3">Printable Worksheets + Instant Download</h3>
+                  <p className="text-gray-400 text-base leading-relaxed">
+                    Use it on any device, print the pages if you want, and return to the method whenever the pattern shows up again.
                   </p>
                 </div>
               </div>
 
               {/* Center - Product Image */}
-              <div className="hidden lg:flex justify-center items-center">
-                <div className="relative">
-                  {/* Product bundle */}
-                  <div className="flex items-end gap-2">
-                    {/* Papers */}
-                    <div className="w-20 h-28 bg-[#f5f3ef] rounded shadow-lg transform -rotate-6">
-                      <div className="p-1.5 text-[5px] text-gray-400">
-                        <div className="border-b border-gray-200 pb-0.5 mb-0.5">Worksheet</div>
-                      </div>
-                    </div>
-
-                    {/* Main Book */}
-                    <div className="w-32 h-44 bg-gradient-to-b from-[#d4a574] to-[#b8956c] rounded-lg shadow-2xl flex flex-col items-center justify-center p-3 relative z-10">
-                      <p className="text-[#1a1a2e] text-[6px] uppercase tracking-widest mb-0.5">The</p>
-                      <h3 className="text-[#1a1a2e] text-sm font-serif font-bold leading-tight text-center">
-                        RESISTANCE
-                      </h3>
-                      <h3 className="text-[#1a1a2e] text-sm font-serif font-bold leading-tight text-center">
-                        MAP
-                      </h3>
-                      <div className="w-8 h-8 my-2">
-                        <svg className="w-full h-full text-[#1a1a2e]" viewBox="0 0 100 100" fill="currentColor">
-                          <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2"/>
-                          {[...Array(12)].map((_, i) => (
-                            <line key={i} x1="50" y1="10" x2="50" y2="20" stroke="currentColor" strokeWidth="2" transform={`rotate(${i * 30} 50 50)`}/>
-                          ))}
-                        </svg>
-                      </div>
-                      <p className="text-[#1a1a2e] text-[6px]">Todd Hamash</p>
-                    </div>
-
-                    {/* Side book */}
-                    <div className="w-6 h-40 bg-gradient-to-r from-[#c49a6c] to-[#d4a574] rounded-r shadow-lg transform rotate-3" />
-                  </div>
-
-                  {/* Label */}
-                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-center">
-                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">THE RESISTANCE MAP™</span>
-                    <br />
-                    <span className="text-[8px] text-gray-600">Expanded 2nd Edition</span>
-                  </div>
+              <div className="flex justify-center items-center order-first lg:order-none my-10 lg:my-0">
+                <div className="relative w-full lg:scale-150">
+                  <Image
+                    src="/images/Products/whats-inside-product.png"
+                    alt="The Resistance Map™ bundle - book, phone guide, tablet, and worksheets"
+                    width={1200}
+                    height={1200}
+                    className="w-full h-auto"
+                  />
                 </div>
               </div>
 
-              {/* Right Column - Empowerment & Inner Wisdom */}
-              <div className="space-y-12 lg:space-y-24">
-                {/* Empowerment */}
-                <div className="text-right">
-                  <div className="flex items-center justify-end gap-2 mb-3 text-gray-400">
-                    <EmpowermentIcon />
+              {/* Right Column - Features */}
+              <div className="space-y-10 lg:space-y-16">
+                {/* Guided Prompts */}
+                <div className="text-left lg:text-right">
+                  <div className="flex items-center gap-3 mb-4 text-gray-400 lg:justify-end">
+                    <DocumentIcon />
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">Empowerment</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">
-                    Learn what self-sabotage actually is, and how to break free from destructive patterns that no longer serve you. Step into your inner power to create what you desire.
+                  <h3 className="font-semibold text-lg lg:text-xl mb-3">Guided Prompts + Real Examples</h3>
+                  <p className="text-gray-400 text-base leading-relaxed">
+                    You are never left guessing what to do next. Follow the prompts, see worked examples, and apply it to your own life immediately.
                   </p>
                 </div>
 
-                {/* Inner Wisdom */}
-                <div className="text-right">
-                  <div className="flex items-center justify-end gap-2 mb-3 text-gray-400">
-                    <WisdomIcon />
+                {/* How to Use */}
+                <div className="text-left lg:text-right">
+                  <div className="flex items-center gap-3 mb-4 text-gray-400 lg:justify-end">
+                    <HeartIcon />
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">Inner Wisdom</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">
-                    Begin understanding the nature of vibration and universal laws, so that you can become your own source of wisdom and guidance by tuning into Heart based intelligence.
+                  <h3 className="font-semibold text-lg lg:text-xl mb-3">How to Use the Resistance Map™ (Step-by-Step Walkthrough)</h3>
+                  <p className="text-gray-400 text-base leading-relaxed">
+                    A clear guided walkthrough showing you exactly how to run the map, what to write, and how to follow the process.
                   </p>
                 </div>
-              </div>
-            </div>
-
-            {/* Mobile: Show product in center */}
-            <div className="lg:hidden flex justify-center my-12">
-              <div className="w-32 h-44 bg-gradient-to-b from-[#d4a574] to-[#b8956c] rounded-lg shadow-2xl flex flex-col items-center justify-center p-3">
-                <p className="text-[#1a1a2e] text-[6px] uppercase tracking-widest mb-0.5">The</p>
-                <h3 className="text-[#1a1a2e] text-sm font-serif font-bold leading-tight text-center">
-                  RESISTANCE MAP
-                </h3>
-                <div className="w-8 h-8 my-2">
-                  <svg className="w-full h-full text-[#1a1a2e]" viewBox="0 0 100 100" fill="currentColor">
-                    <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                </div>
-                <p className="text-[#1a1a2e] text-[6px]">Todd Hamash</p>
               </div>
             </div>
           </div>
 
           {/* CTA Button */}
-          <div className="text-center mt-12">
+          <div className="text-center mt-16">
             <Link
               href="/checkout"
-              className="inline-flex items-center justify-center gap-2 bg-white text-[#222222] px-12 py-4 text-sm font-medium tracking-wide hover:bg-gray-100 transition-colors"
+              className="inline-flex items-center justify-center gap-3 bg-white text-[#222222] px-14 py-5 text-lg font-medium tracking-wide hover:bg-gray-100 transition-colors"
             >
               Add to Cart
-              <DownloadIcon className="w-4 h-4" />
+              <DownloadIcon className="w-5 h-5" />
             </Link>
           </div>
         </div>
