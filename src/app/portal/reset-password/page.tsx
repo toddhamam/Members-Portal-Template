@@ -76,7 +76,7 @@ export default function ResetPasswordPage() {
             We&apos;ve sent a password reset link to <strong className="text-[#222222]">{email}</strong>
           </p>
           <Link
-            href="/portal/login"
+            href="/login"
             className="text-[#ee5d0b] hover:text-[#d54d00] font-medium"
           >
             Back to login
@@ -144,7 +144,7 @@ export default function ResetPasswordPage() {
       {/* Footer */}
       <p className="text-center text-sm text-[#6b7280] mt-6">
         Remember your password?{" "}
-        <Link href="/portal/login" className="text-[#ee5d0b] hover:text-[#d54d00] font-medium">
+        <Link href="/login" className="text-[#ee5d0b] hover:text-[#d54d00] font-medium">
           Sign in
         </Link>
       </p>

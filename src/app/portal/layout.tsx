@@ -3,9 +3,6 @@ import { SidebarProvider } from "@/components/portal/SidebarContext";
 import { PortalSidebar } from "@/components/portal/PortalSidebar";
 import { PortalContent } from "@/components/portal/PortalContent";
 
-// Force dynamic rendering for all portal pages (requires auth)
-export const dynamic = "force-dynamic";
-
 export const metadata = {
   title: "Member Portal | Inner Wealth Initiate",
   description: "Access your purchased products and courses",

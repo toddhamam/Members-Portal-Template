@@ -44,29 +44,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, fetchProfile]);
 
   useEffect(() => {
-    // Get initial session
+    // Get initial session - unblock rendering immediately, load profile in background
     const initAuth = async () => {
       const { data: { session: initialSession } } = await supabase.auth.getSession();
+
+      // Set session and user immediately to unblock rendering
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
-
-      if (initialSession?.user) {
-        await fetchProfile(initialSession.user.id);
-      }
-
       setIsLoading(false);
+
+      // Load profile in background (don't block rendering)
+      if (initialSession?.user) {
+        fetchProfile(initialSession.user.id);
+      }
     };
 
     initAuth();
 
-    // Listen for auth changes
+    // Listen for auth changes - same pattern: unblock first, then load profile
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, newSession: Session | null) => {
+      (event: AuthChangeEvent, newSession: Session | null) => {
         setSession(newSession);
         setUser(newSession?.user ?? null);
 
         if (newSession?.user) {
-          await fetchProfile(newSession.user.id);
+          // Load profile in background
+          fetchProfile(newSession.user.id);
         } else {
           setProfile(null);
         }

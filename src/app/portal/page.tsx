@@ -112,34 +112,23 @@ export default function DashboardPage() {
     }
   }, [ownedProducts, productsLoading, getAllProductsProgress]);
 
-  const isLoading = authLoading || productsLoading || progressLoading;
+  // Find in-progress product for "Continue Learning" (only when progress is loaded)
+  const inProgressProduct = !progressLoading
+    ? ownedProducts.find((p) => productProgress[p.id] > 0 && productProgress[p.id] < 100)
+    : null;
 
-  // Find in-progress product for "Continue Learning"
-  const inProgressProduct = ownedProducts.find(
-    (p) => productProgress[p.id] > 0 && productProgress[p.id] < 100
-  );
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="h-32 bg-gray-200 rounded-xl" />
-        <div className="h-24 bg-gray-200 rounded-xl" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-64 bg-gray-200 rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
+  // Progressive rendering: show each section as its data arrives
   return (
     <div className="space-y-8">
-      {/* Welcome Card */}
-      <WelcomeCard name={profile?.full_name || profile?.first_name || ""} />
+      {/* Welcome Card - renders immediately when auth ready, skeleton otherwise */}
+      {authLoading ? (
+        <div className="h-32 bg-gray-200 rounded-xl animate-pulse" />
+      ) : (
+        <WelcomeCard name={profile?.full_name || profile?.first_name || ""} />
+      )}
 
-      {/* Continue Learning */}
-      {inProgressProduct && (
+      {/* Continue Learning - only shows when progress is loaded and there's an in-progress product */}
+      {!progressLoading && inProgressProduct && (
         <section>
           <h2 className="text-lg font-semibold text-[#222222] mb-4 font-serif">Continue Learning</h2>
           <ContinueLearningCard
@@ -149,7 +138,7 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* My Products */}
+      {/* My Products - renders when products are ready, shows progress skeletons if progress still loading */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-[#222222] font-serif">My Products</h2>
@@ -161,13 +150,19 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {ownedProducts.length > 0 ? (
+        {productsLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-64 bg-gray-200 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : ownedProducts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {ownedProducts.slice(0, 3).map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
-                progress={productProgress[product.id] || 0}
+                progress={progressLoading ? undefined : productProgress[product.id] || 0}
               />
             ))}
           </div>
@@ -176,8 +171,8 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* Available Products (Locked) */}
-      {lockedProducts.length > 0 && (
+      {/* Available Products (Locked) - renders when products are ready */}
+      {!productsLoading && lockedProducts.length > 0 && (
         <section>
           <h2 className="text-lg font-semibold text-[#222222] mb-4 font-serif">Unlock More</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

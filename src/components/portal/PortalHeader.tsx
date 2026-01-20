@@ -48,10 +48,10 @@ export function PortalHeader() {
     setIsMenuOpen(false);
     try {
       await signOut();
-      router.push("/portal/login");
+      router.push("/login");
     } catch (error) {
       console.error('Sign out failed:', error);
-      router.push("/portal/login");
+      router.push("/login");
     }
   };
 
@@ -98,14 +98,6 @@ export function PortalHeader() {
               onClick={() => setIsMenuOpen(false)}
             >
               Account Settings
-            </Link>
-
-            <Link
-              href="/portal/downloads"
-              className="block px-4 py-2 text-sm text-[#4b5563] hover:bg-[#faf9f7] hover:text-[#222222]"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              My Downloads
             </Link>
 
             <div className="border-t border-[#e5e7eb] mt-1 pt-1">

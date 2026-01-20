@@ -234,7 +234,7 @@ export default function SignupPage() {
       {/* Footer */}
       <p className="text-center text-sm text-[#6b7280] mt-6">
         Already have an account?{" "}
-        <Link href="/portal/login" className="text-[#ee5d0b] hover:text-[#d54d00] font-medium">
+        <Link href="/login" className="text-[#ee5d0b] hover:text-[#d54d00] font-medium">
           Sign in
         </Link>
       </p>
