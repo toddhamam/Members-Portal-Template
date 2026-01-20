@@ -8,9 +8,9 @@ export async function middleware(request: NextRequest) {
   // Auth routes that should NOT be rewritten on portal subdomain
   const isAuthRoute = pathname === '/login' || pathname === '/portal/signup' || pathname === '/portal/reset-password';
   const isPortalSubdomain = hostname.startsWith('portal.');
-  const isFunnelSubdomain = hostname.startsWith('go.');
+  const isFunnelSubdomain = hostname.startsWith('offer.');
 
-  // Funnel subdomain handling (go.domain.com)
+  // Funnel subdomain handling (offer.domain.com)
   if (isFunnelSubdomain) {
     // Redirect root to checkout page
     if (pathname === '/') {
