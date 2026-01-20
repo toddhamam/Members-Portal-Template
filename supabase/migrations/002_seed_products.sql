@@ -21,7 +21,7 @@ INSERT INTO products (slug, name, description, price_cents, product_type, thumbn
   'Advanced technique for tracing resistance patterns to their origin point. The most direct path to understanding ''where it all began''.',
   200, -- $2.00
   'order_bump',
-  NULL,
+  '/images/Products/golden-thread-hero.png',
   2
 ),
 (
@@ -30,7 +30,7 @@ INSERT INTO products (slug, name, description, price_cents, product_type, thumbn
   'Complete inner architecture rebuild. Where Resistance Mapping reveals what is running, The Pathless Path™ retrains where it is running from. Includes Past Life & Ancestral Regression, Subconscious Reprogramming, Nervous System Training, Body Release, and Integration Sessions.',
   14700, -- $147.00
   'upsell',
-  NULL,
+  '/images/Products/pathless-path-hero.png',
   3
 ),
 (
@@ -39,7 +39,7 @@ INSERT INTO products (slug, name, description, price_cents, product_type, thumbn
   'A focused extraction from The Pathless Path. Everything you need to stabilize your nervous system in 10 minutes a day. Includes guided sessions, somatic protocols, emergency reset plan, and progress tracker.',
   4700, -- $47.00
   'downsell',
-  NULL,
+  '/images/Products/nervous-system-reset.png',
   4
 ),
 (
