@@ -9,7 +9,7 @@ type FilterType = "all" | "owned" | "available";
 
 export default function ProductsPage() {
   const { products, isLoading } = useProducts();
-  const { getProductProgress } = useProgress();
+  const { getAllProductsProgress } = useProgress();
 
   const [filter, setFilter] = useState<FilterType>("all");
   const [productProgress, setProductProgress] = useState<Record<string, number>>({});
@@ -18,7 +18,7 @@ export default function ProductsPage() {
   const ownedProducts = products.filter((p) => p.is_owned);
   const lockedProducts = products.filter((p) => !p.is_owned);
 
-  // Fetch progress for owned products
+  // Fetch progress for all owned products in a single batch (2 queries instead of N*2)
   useEffect(() => {
     async function fetchProgress() {
       if (ownedProducts.length === 0) {
@@ -26,10 +26,8 @@ export default function ProductsPage() {
         return;
       }
 
-      const progressMap: Record<string, number> = {};
-      for (const product of ownedProducts) {
-        progressMap[product.id] = await getProductProgress(product.id);
-      }
+      const productIds = ownedProducts.map((p) => p.id);
+      const progressMap = await getAllProductsProgress(productIds);
       setProductProgress(progressMap);
       setProgressLoading(false);
     }
@@ -37,7 +35,7 @@ export default function ProductsPage() {
     if (!isLoading) {
       fetchProgress();
     }
-  }, [ownedProducts, isLoading, getProductProgress]);
+  }, [ownedProducts, isLoading, getAllProductsProgress]);
 
   const filteredProducts =
     filter === "all"

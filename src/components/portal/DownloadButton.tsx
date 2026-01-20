@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 
 interface DownloadButtonProps {
   productSlug: string;
@@ -8,6 +8,14 @@ interface DownloadButtonProps {
   lessonSlug: string;
   title: string;
 }
+
+interface CachedUrl {
+  url: string;
+  cachedAt: number;
+}
+
+// Cache TTL: 50 minutes (signed URLs expire in 60 minutes)
+const CACHE_TTL_MS = 50 * 60 * 1000;
 
 function DownloadIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -17,7 +25,7 @@ function DownloadIcon({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
-export function DownloadButton({
+export const DownloadButton = memo(function DownloadButton({
   productSlug,
   moduleSlug,
   lessonSlug,
@@ -28,10 +36,30 @@ export function DownloadButton({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchContent() {
-      setIsLoading(true);
-      setError(null);
+    // Reset state
+    setUrl(null);
+    setIsLoading(true);
+    setError(null);
 
+    // Check sessionStorage cache first
+    const cacheKey = `download-url:${productSlug}:${moduleSlug}:${lessonSlug}`;
+    const cached = sessionStorage.getItem(cacheKey);
+
+    if (cached) {
+      try {
+        const data = JSON.parse(cached) as CachedUrl;
+        // Check if cached URL is still valid
+        if (data.cachedAt && Date.now() - data.cachedAt < CACHE_TTL_MS) {
+          setUrl(data.url);
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        // Invalid cache, continue to fetch
+      }
+    }
+
+    async function fetchContent() {
       try {
         const params = new URLSearchParams({
           product: productSlug,
@@ -45,6 +73,12 @@ export function DownloadButton({
         if (!response.ok) {
           throw new Error(data.error || 'Failed to get download link');
         }
+
+        // Cache the response
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          url: data.url,
+          cachedAt: Date.now()
+        }));
 
         setUrl(data.url);
       } catch (err) {
@@ -102,4 +136,4 @@ export function DownloadButton({
       )}
     </div>
   );
-}
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -64,6 +64,9 @@ export default function LessonPage() {
 
   const { updateProgress, getProgress } = useProgress();
   const supabase = createClient();
+
+  // Debounce progress updates to avoid too many writes (5 second minimum interval)
+  const lastProgressUpdateRef = useRef<number>(0);
 
   // Find adjacent lessons for navigation (across all modules)
   const adjacentLessons = useCallback(() => {
@@ -129,7 +132,7 @@ export default function LessonPage() {
             supabase
               .from("modules")
               .select(`*, lessons (*)`)
-              .eq("product_id", currentProduct.id)
+              .eq("product_id", currentProduct!.id)
               .eq("is_published", true)
               .order("sort_order"),
             userResult.data.user
@@ -137,7 +140,7 @@ export default function LessonPage() {
                   .from("user_purchases")
                   .select("id")
                   .eq("user_id", userResult.data.user.id)
-                  .eq("product_id", currentProduct.id)
+                  .eq("product_id", currentProduct!.id)
                   .eq("status", "active")
                   .single()
               : Promise.resolve({ data: null })
@@ -165,7 +168,7 @@ export default function LessonPage() {
         const currentModule = currentModules.find((m: ModuleWithLessons) => m.slug === moduleSlug);
         const currentLesson = currentModule?.lessons.find((l: Lesson) => l.slug === lessonSlug);
 
-        if (!currentLesson || !currentProduct) {
+        if (!currentModule || !currentLesson || !currentProduct) {
           console.error("Lesson not found");
           setIsLoading(false);
           return;
@@ -251,6 +254,13 @@ export default function LessonPage() {
 
   const handleProgressUpdate = async (progressPercent: number, currentTime: number) => {
     if (!lesson) return;
+
+    // Debounce: only update every 5 seconds to reduce database writes
+    const now = Date.now();
+    if (now - lastProgressUpdateRef.current < 5000) {
+      return;
+    }
+    lastProgressUpdateRef.current = now;
 
     await updateProgress(lesson.id, {
       progress_percent: progressPercent,

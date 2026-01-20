@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User, Session, AuthChangeEvent } from "@supabase/supabase-js";
 import type { Profile } from "@/lib/supabase/types";
@@ -80,15 +80,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [supabase, fetchProfile]);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     return { error: error ? new Error(error.message) : null };
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
+  }, []);
 
-  const signUp = async (
+  const signUp = useCallback(async (
     email: string,
     password: string,
     metadata?: { full_name?: string }
@@ -101,9 +102,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
     });
     return { error: error ? new Error(error.message) : null };
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       await supabase.auth.signOut({ scope: 'global' });
     } catch (error) {
@@ -112,32 +114,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setProfile(null);
     setSession(null);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
+  }, []);
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/portal/reset-password/confirm`,
     });
     return { error: error ? new Error(error.message) : null };
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
+  }, []);
 
-  const updatePassword = async (password: string) => {
+  const updatePassword = useCallback(async (password: string) => {
     const { error } = await supabase.auth.updateUser({ password });
     return { error: error ? new Error(error.message) : null };
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
+  }, []);
 
-  const value = {
-    user,
-    profile,
-    session,
-    isLoading,
-    signIn,
-    signUp,
-    signOut,
-    resetPassword,
-    updatePassword,
-    refreshProfile,
-  };
+  const value = useMemo(
+    () => ({
+      user,
+      profile,
+      session,
+      isLoading,
+      signIn,
+      signUp,
+      signOut,
+      resetPassword,
+      updatePassword,
+      refreshProfile,
+    }),
+    [user, profile, session, isLoading, signIn, signUp, signOut, resetPassword, updatePassword, refreshProfile]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

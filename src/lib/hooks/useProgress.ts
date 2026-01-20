@@ -57,7 +57,8 @@ export function useProgress() {
         setIsUpdating(false);
       }
     },
-    [supabase]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
+    []
   );
 
   const getProgress = useCallback(
@@ -74,7 +75,8 @@ export function useProgress() {
 
       return data;
     },
-    [supabase]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
+    []
   );
 
   const getProductProgress = useCallback(
@@ -108,8 +110,73 @@ export function useProgress() {
       const completedCount = progress.filter((p: any) => p.completed_at).length;
       return Math.round((completedCount / lessons.length) * 100);
     },
-    [supabase]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
+    []
   );
 
-  return { updateProgress, getProgress, getProductProgress, isUpdating };
+  // Batch fetch progress for multiple products in 2 queries instead of N*2 sequential queries
+  const getAllProductsProgress = useCallback(
+    async (productIds: string[]): Promise<Record<string, number>> => {
+      if (productIds.length === 0) return {};
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return {};
+
+      // Single query: get all lessons for all products
+      const { data: lessons } = await supabase
+        .from("lessons")
+        .select(`
+          id,
+          modules!inner(product_id)
+        `)
+        .in("modules.product_id", productIds);
+
+      if (!lessons || lessons.length === 0) {
+        // Return 0 progress for all products
+        return productIds.reduce((acc, id) => ({ ...acc, [id]: 0 }), {});
+      }
+
+      // Single query: get progress for all lessons
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lessonIds = lessons.map((l: any) => l.id);
+      const { data: progress } = await supabase
+        .from("lesson_progress")
+        .select("lesson_id, completed_at")
+        .eq("user_id", user.id)
+        .in("lesson_id", lessonIds);
+
+      // Group lessons by product
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lessonsByProduct: Record<string, string[]> = {};
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      lessons.forEach((l: any) => {
+        const productId = l.modules.product_id;
+        if (!lessonsByProduct[productId]) lessonsByProduct[productId] = [];
+        lessonsByProduct[productId].push(l.id);
+      });
+
+      // Get completed lesson IDs
+      const completedLessonIds = new Set(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (progress || []).filter((p: any) => p.completed_at).map((p: any) => p.lesson_id)
+      );
+
+      // Calculate progress per product
+      const result: Record<string, number> = {};
+      for (const productId of productIds) {
+        const productLessons = lessonsByProduct[productId] || [];
+        if (productLessons.length === 0) {
+          result[productId] = 0;
+        } else {
+          const completed = productLessons.filter(id => completedLessonIds.has(id)).length;
+          result[productId] = Math.round((completed / productLessons.length) * 100);
+        }
+      }
+      return result;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
+    []
+  );
+
+  return { updateProgress, getProgress, getProductProgress, getAllProductsProgress, isUpdating };
 }

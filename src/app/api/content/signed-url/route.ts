@@ -3,6 +3,13 @@ import { createClient } from '@/lib/supabase/server';
 import { getSignedUrlAdmin, getLessonContentPath } from '@/lib/supabase/storage';
 import { generateSignedVideoUrl, getEmbedUrl } from '@/lib/bunny';
 
+// Helper to create cached JSON response (cache for 50 minutes, URLs expire in 60)
+function cachedJsonResponse(data: object) {
+  const response = NextResponse.json(data);
+  response.headers.set('Cache-Control', 'private, max-age=3000');
+  return response;
+}
+
 export async function GET(request: NextRequest) {
   const productSlug = request.nextUrl.searchParams.get('product');
   const moduleSlug = request.nextUrl.searchParams.get('module');
@@ -90,7 +97,7 @@ export async function GET(request: NextRequest) {
       const signedUrl = generateSignedVideoUrl(contentUrl, 3600); // 1 hour expiry
       const embedUrl = getEmbedUrl(contentUrl);
 
-      return NextResponse.json({
+      return cachedJsonResponse({
         url: signedUrl,
         embedUrl,
         type: 'bunny',
@@ -98,7 +105,7 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // External URL (YouTube, Vimeo, etc.) - return as-is
-      return NextResponse.json({
+      return cachedJsonResponse({
         url: contentUrl,
         type: 'external',
         contentType,
@@ -110,7 +117,7 @@ export async function GET(request: NextRequest) {
       // If content_url is set, use it as the storage path
       const signedUrl = await getSignedUrlAdmin(contentUrl);
       if (signedUrl) {
-        return NextResponse.json({
+        return cachedJsonResponse({
           url: signedUrl,
           type: 'supabase',
           contentType,
@@ -129,14 +136,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    return cachedJsonResponse({
       url: signedUrl,
       type: 'supabase',
       contentType,
     });
   } else {
     // Text content is stored directly in the lesson, no URL needed
-    return NextResponse.json({
+    return cachedJsonResponse({
       type: 'text',
       contentType,
     });

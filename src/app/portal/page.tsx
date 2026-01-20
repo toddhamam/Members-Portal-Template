@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useProducts } from "@/lib/hooks/useProducts";
@@ -9,7 +9,7 @@ import { ProductCard } from "@/components/portal/ProductCard";
 import { ProgressBar } from "@/components/portal/ProgressBar";
 import type { ProductWithAccess } from "@/lib/supabase/types";
 
-function WelcomeCard({ name }: { name: string }) {
+const WelcomeCard = memo(function WelcomeCard({ name }: { name: string }) {
   const firstName = name?.split(" ")[0] || "there";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -24,9 +24,9 @@ function WelcomeCard({ name }: { name: string }) {
       </p>
     </div>
   );
-}
+});
 
-function ContinueLearningCard({ product, progress }: { product: ProductWithAccess; progress: number }) {
+const ContinueLearningCard = memo(function ContinueLearningCard({ product, progress }: { product: ProductWithAccess; progress: number }) {
   return (
     <div className="bg-white border border-[#e5e7eb] rounded-xl p-6 hover:border-[#d4a574] transition-colors">
       <div className="flex items-start gap-4">
@@ -58,7 +58,7 @@ function ContinueLearningCard({ product, progress }: { product: ProductWithAcces
       </div>
     </div>
   );
-}
+});
 
 function EmptyState() {
   return (
@@ -85,7 +85,7 @@ function EmptyState() {
 export default function DashboardPage() {
   const { profile, isLoading: authLoading } = useAuth();
   const { products, isLoading: productsLoading } = useProducts();
-  const { getProductProgress } = useProgress();
+  const { getAllProductsProgress } = useProgress();
 
   const [productProgress, setProductProgress] = useState<Record<string, number>>({});
   const [progressLoading, setProgressLoading] = useState(true);
@@ -93,7 +93,7 @@ export default function DashboardPage() {
   const ownedProducts = products.filter((p) => p.is_owned);
   const lockedProducts = products.filter((p) => !p.is_owned);
 
-  // Fetch progress for owned products
+  // Fetch progress for all owned products in a single batch (2 queries instead of N*2)
   useEffect(() => {
     async function fetchProgress() {
       if (ownedProducts.length === 0) {
@@ -101,10 +101,8 @@ export default function DashboardPage() {
         return;
       }
 
-      const progressMap: Record<string, number> = {};
-      for (const product of ownedProducts) {
-        progressMap[product.id] = await getProductProgress(product.id);
-      }
+      const productIds = ownedProducts.map((p) => p.id);
+      const progressMap = await getAllProductsProgress(productIds);
       setProductProgress(progressMap);
       setProgressLoading(false);
     }
@@ -112,7 +110,7 @@ export default function DashboardPage() {
     if (!productsLoading) {
       fetchProgress();
     }
-  }, [ownedProducts, productsLoading, getProductProgress]);
+  }, [ownedProducts, productsLoading, getAllProductsProgress]);
 
   const isLoading = authLoading || productsLoading || progressLoading;
 
