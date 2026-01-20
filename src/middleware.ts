@@ -8,6 +8,22 @@ export async function middleware(request: NextRequest) {
   // Auth routes that should NOT be rewritten on portal subdomain
   const isAuthRoute = pathname === '/login' || pathname === '/portal/signup' || pathname === '/portal/reset-password';
   const isPortalSubdomain = hostname.startsWith('portal.');
+  const isFunnelSubdomain = hostname.startsWith('go.');
+
+  // Funnel subdomain handling (go.domain.com)
+  if (isFunnelSubdomain) {
+    // Redirect root to checkout page
+    if (pathname === '/') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/checkout';
+      return NextResponse.redirect(url);
+    }
+
+    // Funnel pages pass through - checkout, upsells, downsells, thank-you
+    // API routes pass through for payment processing
+    // No session management needed for public funnel pages
+    return NextResponse.next();
+  }
 
   // Portal subdomain handling
   if (isPortalSubdomain) {
