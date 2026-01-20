@@ -5,26 +5,35 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const pathname = request.nextUrl.pathname;
 
-  // Portal subdomain: rewrite all paths to /portal/*
-  if (hostname.startsWith('portal.')) {
-    // Don't rewrite if already accessing /portal paths or API routes
-    if (!pathname.startsWith('/portal') && !pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
+  // Auth routes that should NOT be rewritten on portal subdomain
+  const isAuthRoute = pathname === '/login' || pathname === '/portal/signup' || pathname === '/portal/reset-password';
+  const isPortalSubdomain = hostname.startsWith('portal.');
+
+  // Portal subdomain handling
+  if (isPortalSubdomain) {
+    // Rewrite non-portal paths to /portal/* (except auth routes, API, static)
+    if (!isAuthRoute && !pathname.startsWith('/portal') && !pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
       const url = request.nextUrl.clone();
       url.pathname = `/portal${pathname}`;
 
-      // Rewrite (not redirect) so URL stays clean
       const response = NextResponse.rewrite(url);
-
-      // Also update session for auth, passing the effective pathname for route checking
       return await updateSession(request, {
         effectivePathname: `/portal${pathname}`,
         baseResponse: response,
       });
     }
+
+    // For portal subdomain accessing /portal paths, /login, or auth routes, update session once
+    if (pathname.startsWith('/portal') || pathname === '/login') {
+      return await updateSession(request);
+    }
+
+    // All other portal subdomain requests (API, static) pass through
+    return NextResponse.next();
   }
 
-  // For portal routes (direct access), update session
-  if (pathname.startsWith('/portal')) {
+  // Main domain: update session for portal routes and login page
+  if (pathname.startsWith('/portal') || pathname === '/login') {
     return await updateSession(request);
   }
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useProduct } from "@/lib/hooks/useProducts";
 
 function ArrowLeftIcon({ className = "w-5 h-5" }: { className?: string }) {
@@ -50,6 +51,7 @@ interface ProgressSummary {
 export default function ProductDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
+  const { user } = useAuth(); // Get user from context
   const { product, isLoading: productLoading, error: productError } = useProduct(slug);
 
   const [stats, setStats] = useState({ modules: 0, lessons: 0, progress: 0 });
@@ -91,55 +93,52 @@ export default function ProductDetailPage() {
           });
         }
 
-        // If owned, fetch progress and last viewed lesson
-        if (product.is_owned) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            // Get all lesson IDs for this product
-            const lessonIds = modules.flatMap(m => m.lessons?.map(l => l.id) || []);
+        // If owned, fetch progress and last viewed lesson (using user from context)
+        if (product.is_owned && user) {
+          // Get all lesson IDs for this product
+          const lessonIds = modules.flatMap(m => m.lessons?.map(l => l.id) || []);
 
-            if (lessonIds.length > 0) {
-              // Fetch progress
-              const { data: progressData } = await supabase
-                .from("lesson_progress")
-                .select("lesson_id, completed_at, updated_at")
-                .eq("user_id", user.id)
-                .in("lesson_id", lessonIds);
+          if (lessonIds.length > 0) {
+            // Fetch progress
+            const { data: progressData } = await supabase
+              .from("lesson_progress")
+              .select("lesson_id, completed_at, updated_at")
+              .eq("user_id", user.id)
+              .in("lesson_id", lessonIds);
 
-              const progress = (progressData || []) as ProgressSummary[];
-              const completedCount = progress.filter(p => p.completed_at).length;
-              const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+            const progress = (progressData || []) as ProgressSummary[];
+            const completedCount = progress.filter(p => p.completed_at).length;
+            const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
-              setStats({
-                modules: modules.length,
-                lessons: totalLessons,
-                progress: progressPercent,
-              });
+            setStats({
+              modules: modules.length,
+              lessons: totalLessons,
+              progress: progressPercent,
+            });
 
-              // Find the most recently updated incomplete lesson, or fall back to first lesson
-              if (progress.length > 0) {
-                const incompleteLessons = progress
-                  .filter(p => !p.completed_at)
-                  .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+            // Find the most recently updated incomplete lesson, or fall back to first lesson
+            if (progress.length > 0) {
+              const incompleteLessons = progress
+                .filter(p => !p.completed_at)
+                .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
 
-                if (incompleteLessons.length > 0) {
-                  // Find the lesson details for the most recent incomplete
-                  const lastLessonId = incompleteLessons[0].lesson_id;
-                  for (const module of modules) {
-                    const lesson = module.lessons?.find(l => l.id === lastLessonId);
-                    if (lesson) {
-                      setContinueLesson({
-                        moduleSlug: module.slug,
-                        lessonSlug: lesson.slug,
-                      });
-                      break;
-                    }
+              if (incompleteLessons.length > 0) {
+                // Find the lesson details for the most recent incomplete
+                const lastLessonId = incompleteLessons[0].lesson_id;
+                for (const module of modules) {
+                  const lesson = module.lessons?.find(l => l.id === lastLessonId);
+                  if (lesson) {
+                    setContinueLesson({
+                      moduleSlug: module.slug,
+                      lessonSlug: lesson.slug,
+                    });
+                    break;
                   }
                 }
               }
-            } else {
-              setStats({ modules: modules.length, lessons: totalLessons, progress: 0 });
             }
+          } else {
+            setStats({ modules: modules.length, lessons: totalLessons, progress: 0 });
           }
         } else {
           setStats({ modules: modules.length, lessons: totalLessons, progress: 0 });
@@ -154,12 +153,12 @@ export default function ProductDetailPage() {
     if (product) {
       fetchStats();
     }
-  }, [product, supabase]);
+  }, [product, user, supabase]);
 
-  const isLoading = productLoading || statsLoading;
   const targetLesson = continueLesson || firstLesson;
 
-  if (isLoading) {
+  // Show skeleton only while product is loading (progressive rendering)
+  if (productLoading) {
     return (
       <div className="max-w-4xl mx-auto space-y-8 animate-pulse">
         <div className="h-8 bg-gray-200 rounded w-32" />

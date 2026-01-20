@@ -2,9 +2,11 @@
 
 import { useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import type { LessonProgress } from "@/lib/supabase/types";
 
 export function useProgress() {
+  const { user } = useAuth(); // Get user from context instead of calling getUser()
   const [isUpdating, setIsUpdating] = useState(false);
   const supabase = createClient();
 
@@ -17,14 +19,13 @@ export function useProgress() {
         completed?: boolean;
       }
     ) => {
+      if (!user) {
+        throw new Error("Not authenticated");
+      }
+
       setIsUpdating(true);
 
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          throw new Error("Not authenticated");
-        }
-
         const updateData: Partial<LessonProgress> = {
           progress_percent: progress.progress_percent,
           last_position_seconds: progress.last_position_seconds,
@@ -57,13 +58,11 @@ export function useProgress() {
         setIsUpdating(false);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
-    []
+    [user, supabase]
   );
 
   const getProgress = useCallback(
     async (lessonId: string): Promise<LessonProgress | null> => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
       const { data } = await supabase
@@ -75,13 +74,11 @@ export function useProgress() {
 
       return data;
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
-    []
+    [user, supabase]
   );
 
   const getProductProgress = useCallback(
     async (productId: string): Promise<number> => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return 0;
 
       // Get all lessons for this product
@@ -110,16 +107,13 @@ export function useProgress() {
       const completedCount = progress.filter((p: any) => p.completed_at).length;
       return Math.round((completedCount / lessons.length) * 100);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
-    []
+    [user, supabase]
   );
 
   // Batch fetch progress for multiple products in 2 queries instead of N*2 sequential queries
   const getAllProductsProgress = useCallback(
     async (productIds: string[]): Promise<Record<string, number>> => {
       if (productIds.length === 0) return {};
-
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return {};
 
       // Single query: get all lessons for all products
@@ -174,8 +168,7 @@ export function useProgress() {
       }
       return result;
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
-    []
+    [user, supabase]
   );
 
   return { updateProgress, getProgress, getProductProgress, getAllProductsProgress, isUpdating };

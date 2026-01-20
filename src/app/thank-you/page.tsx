@@ -312,7 +312,7 @@ export default function ThankYouPage() {
 
                 <p className="text-xs text-gray-500 mt-4 text-center">
                   Already have an account?{" "}
-                  <a href="/portal/login" className="text-[#7c5cff] hover:underline">
+                  <a href="/login" className="text-[#7c5cff] hover:underline">
                     Sign in
                   </a>
                 </p>

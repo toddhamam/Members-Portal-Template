@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import type { Product, ProductWithAccess } from "@/lib/supabase/types";
 
 export function useProducts() {
+  const { user } = useAuth(); // Get user from context instead of calling getUser()
   const [products, setProducts] = useState<ProductWithAccess[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -16,32 +18,29 @@ export function useProducts() {
     setError(null);
 
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      // Fetch products and purchases in parallel using Promise.all
+      const [productsResult, purchasesResult] = await Promise.all([
+        supabase
+          .from("products")
+          .select("*")
+          .eq("is_active", true)
+          .order("sort_order"),
+        user
+          ? supabase
+              .from("user_purchases")
+              .select("product_id")
+              .eq("user_id", user.id)
+              .eq("status", "active")
+          : Promise.resolve({ data: [], error: null }),
+      ]);
 
-      // Fetch all active products
-      const { data: productsData, error: productsError } = await supabase
-        .from("products")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order");
-
-      if (productsError) throw productsError;
-
-      // If user is logged in, fetch their purchases
-      let purchases: { product_id: string }[] = [];
-      if (user) {
-        const { data: purchasesData } = await supabase
-          .from("user_purchases")
-          .select("product_id")
-          .eq("user_id", user.id)
-          .eq("status", "active");
-        purchases = purchasesData || [];
-      }
+      if (productsResult.error) throw productsResult.error;
 
       // Combine products with ownership status
-      const purchasedProductIds = new Set(purchases.map((p) => p.product_id));
-      const productsWithAccess: ProductWithAccess[] = (productsData || []).map(
+      const purchasedProductIds = new Set(
+        (purchasesResult.data || []).map((p: { product_id: string }) => p.product_id)
+      );
+      const productsWithAccess: ProductWithAccess[] = (productsResult.data || []).map(
         (product: Product) => ({
           ...product,
           is_owned: purchasedProductIds.has(product.id),
@@ -54,8 +53,7 @@ export function useProducts() {
     } finally {
       setIsLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
-  }, []);
+  }, [user, supabase]);
 
   useEffect(() => {
     fetchProducts();
@@ -65,6 +63,7 @@ export function useProducts() {
 }
 
 export function useProduct(slug: string) {
+  const { user } = useAuth(); // Get user from context instead of calling getUser()
   const [product, setProduct] = useState<ProductWithAccess | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -77,9 +76,6 @@ export function useProduct(slug: string) {
       setError(null);
 
       try {
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-
         // Fetch product by slug
         const { data: productData, error: productError } = await supabase
           .from("products")
@@ -90,7 +86,7 @@ export function useProduct(slug: string) {
 
         if (productError) throw productError;
 
-        // Check if user owns this product
+        // Check if user owns this product (using user from context)
         let isOwned = false;
         if (user && productData) {
           const { data: purchase } = await supabase
@@ -114,8 +110,7 @@ export function useProduct(slug: string) {
     if (slug) {
       fetchProduct();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
-  }, [slug]);
+  }, [slug, user, supabase]);
 
   return { product, isLoading, error };
 }

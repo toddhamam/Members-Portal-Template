@@ -51,14 +51,14 @@ export async function updateSession(
   // Protect portal routes
   const isPortalRoute = pathname.startsWith('/portal');
   const isAuthRoute =
-    pathname === '/portal/login' ||
+    pathname === '/login' ||
     pathname === '/portal/signup' ||
     pathname === '/portal/reset-password';
 
   // If trying to access protected portal route without auth, redirect to login
   if (isPortalRoute && !isAuthRoute && !user) {
     const url = request.nextUrl.clone();
-    url.pathname = '/portal/login';
+    url.pathname = '/login';
     // Use original pathname for redirect param so user returns to correct place
     url.searchParams.set('redirect', request.nextUrl.pathname);
     return NextResponse.redirect(url);
