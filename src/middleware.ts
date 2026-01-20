@@ -12,14 +12,14 @@ export async function middleware(request: NextRequest) {
 
   // Funnel subdomain handling (offer.domain.com)
   if (isFunnelSubdomain) {
-    // Redirect root to checkout page
+    // Redirect root to product/landing page
     if (pathname === '/') {
       const url = request.nextUrl.clone();
-      url.pathname = '/checkout';
+      url.pathname = '/product';
       return NextResponse.redirect(url);
     }
 
-    // Funnel pages pass through - checkout, upsells, downsells, thank-you
+    // Funnel pages pass through - product, checkout, upsells, downsells, thank-you
     // API routes pass through for payment processing
     // No session management needed for public funnel pages
     return NextResponse.next();
