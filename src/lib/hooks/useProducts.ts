@@ -54,7 +54,8 @@ export function useProducts() {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
+  }, []);
 
   useEffect(() => {
     fetchProducts();
@@ -113,7 +114,8 @@ export function useProduct(slug: string) {
     if (slug) {
       fetchProduct();
     }
-  }, [slug, supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
+  }, [slug]);
 
   return { product, isLoading, error };
 }

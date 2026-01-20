@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Link from "next/link";
 import type { ProductWithAccess } from "@/lib/supabase/types";
 
@@ -25,7 +26,7 @@ interface ProductCardProps {
   showPrice?: boolean;
 }
 
-export function ProductCard({ product, progress = 0, showPrice = true }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ product, progress = 0, showPrice = true }: ProductCardProps) {
   const isOwned = product.is_owned;
   // Use portal_price_cents for unlock pricing (falls back to price_cents if not set)
   const displayPrice = product.portal_price_cents ?? product.price_cents;
@@ -120,4 +121,4 @@ export function ProductCard({ product, progress = 0, showPrice = true }: Product
       </div>
     </div>
   );
-}
+});

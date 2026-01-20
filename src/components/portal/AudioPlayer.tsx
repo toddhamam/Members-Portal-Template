@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, memo } from 'react';
 
 interface AudioPlayerProps {
   productSlug: string;
@@ -12,7 +12,15 @@ interface AudioPlayerProps {
   initialPosition?: number;
 }
 
-export function AudioPlayer({
+interface CachedUrl {
+  url: string;
+  cachedAt: number;
+}
+
+// Cache TTL: 50 minutes (signed URLs expire in 60 minutes)
+const CACHE_TTL_MS = 50 * 60 * 1000;
+
+export const AudioPlayer = memo(function AudioPlayer({
   productSlug,
   moduleSlug,
   lessonSlug,
@@ -25,37 +33,96 @@ export function AudioPlayer({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchContent = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const params = new URLSearchParams({
-        product: productSlug,
-        module: moduleSlug,
-        lesson: lessonSlug,
-      });
-
-      const response = await fetch(`/api/content/signed-url?${params}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to load audio');
-      }
-
-      setUrl(data.url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load audio');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [productSlug, moduleSlug, lessonSlug]);
-
   useEffect(() => {
     // Reset URL when lesson changes
     setUrl(null);
+    setIsLoading(true);
+    setError(null);
+
+    // Check sessionStorage cache first
+    const cacheKey = `audio-url:${productSlug}:${moduleSlug}:${lessonSlug}`;
+    const cached = sessionStorage.getItem(cacheKey);
+
+    if (cached) {
+      try {
+        const data = JSON.parse(cached) as CachedUrl;
+        // Check if cached URL is still valid
+        if (data.cachedAt && Date.now() - data.cachedAt < CACHE_TTL_MS) {
+          setUrl(data.url);
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        // Invalid cache, continue to fetch
+      }
+    }
+
+    // Fetch fresh signed URL
+    async function fetchContent() {
+      try {
+        const params = new URLSearchParams({
+          product: productSlug,
+          module: moduleSlug,
+          lesson: lessonSlug,
+        });
+
+        const response = await fetch(`/api/content/signed-url?${params}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load audio');
+        }
+
+        // Cache the response
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          url: data.url,
+          cachedAt: Date.now()
+        }));
+
+        setUrl(data.url);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load audio');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
     fetchContent();
-  }, [fetchContent]);
+  }, [productSlug, moduleSlug, lessonSlug]);
+
+  const retryFetch = () => {
+    // Clear cache and refetch
+    const cacheKey = `audio-url:${productSlug}:${moduleSlug}:${lessonSlug}`;
+    sessionStorage.removeItem(cacheKey);
+    setUrl(null);
+    setIsLoading(true);
+    setError(null);
+
+    const params = new URLSearchParams({
+      product: productSlug,
+      module: moduleSlug,
+      lesson: lessonSlug,
+    });
+
+    fetch(`/api/content/signed-url?${params}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          url: data.url,
+          cachedAt: Date.now()
+        }));
+        setUrl(data.url);
+      })
+      .catch(err => {
+        setError(err instanceof Error ? err.message : 'Failed to load audio');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
 
   return (
     <div className="p-8 bg-gradient-to-br from-[#1a1a1a] to-[#2a2a2a]">
@@ -78,7 +145,7 @@ export function AudioPlayer({
         <div className="text-center">
           <p className="text-red-400 mb-2">{error}</p>
           <button
-            onClick={() => fetchContent()}
+            onClick={retryFetch}
             className="text-sm text-gray-400 hover:text-white underline"
           >
             Try again
@@ -112,4 +179,4 @@ export function AudioPlayer({
       )}
     </div>
   );
-}
+});

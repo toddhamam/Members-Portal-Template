@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, memo } from 'react';
 
 interface VideoPlayerProps {
   productSlug: string;
@@ -17,9 +17,13 @@ interface ContentData {
   embedUrl?: string;
   type: 'bunny' | 'supabase' | 'external' | null;
   contentType: string;
+  cachedAt?: number;
 }
 
-export function VideoPlayer({
+// Cache TTL: 50 minutes (signed URLs expire in 60 minutes)
+const CACHE_TTL_MS = 50 * 60 * 1000;
+
+export const VideoPlayer = memo(function VideoPlayer({
   productSlug,
   moduleSlug,
   lessonSlug,
@@ -32,37 +36,93 @@ export function VideoPlayer({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchContent = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const params = new URLSearchParams({
-        product: productSlug,
-        module: moduleSlug,
-        lesson: lessonSlug,
-      });
-
-      const response = await fetch(`/api/content/signed-url?${params}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to load video');
-      }
-
-      setContent(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load video');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [productSlug, moduleSlug, lessonSlug]);
-
   useEffect(() => {
     // Reset content when lesson changes
     setContent(null);
+    setIsLoading(true);
+    setError(null);
+
+    // Check sessionStorage cache first
+    const cacheKey = `video-url:${productSlug}:${moduleSlug}:${lessonSlug}`;
+    const cached = sessionStorage.getItem(cacheKey);
+
+    if (cached) {
+      try {
+        const data = JSON.parse(cached) as ContentData;
+        // Check if cached URL is still valid
+        if (data.cachedAt && Date.now() - data.cachedAt < CACHE_TTL_MS) {
+          setContent(data);
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        // Invalid cache, continue to fetch
+      }
+    }
+
+    // Fetch fresh signed URL
+    async function fetchContent() {
+      try {
+        const params = new URLSearchParams({
+          product: productSlug,
+          module: moduleSlug,
+          lesson: lessonSlug,
+        });
+
+        const response = await fetch(`/api/content/signed-url?${params}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to load video');
+        }
+
+        // Cache the response
+        const dataWithTimestamp = { ...data, cachedAt: Date.now() };
+        sessionStorage.setItem(cacheKey, JSON.stringify(dataWithTimestamp));
+
+        setContent(dataWithTimestamp);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load video');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
     fetchContent();
-  }, [fetchContent]);
+  }, [productSlug, moduleSlug, lessonSlug]);
+
+  const retryFetch = () => {
+    // Clear cache and refetch
+    const cacheKey = `video-url:${productSlug}:${moduleSlug}:${lessonSlug}`;
+    sessionStorage.removeItem(cacheKey);
+    setContent(null);
+    setIsLoading(true);
+    setError(null);
+
+    // Trigger re-fetch by forcing state update
+    const params = new URLSearchParams({
+      product: productSlug,
+      module: moduleSlug,
+      lesson: lessonSlug,
+    });
+
+    fetch(`/api/content/signed-url?${params}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        const dataWithTimestamp = { ...data, cachedAt: Date.now() };
+        sessionStorage.setItem(cacheKey, JSON.stringify(dataWithTimestamp));
+        setContent(dataWithTimestamp);
+      })
+      .catch(err => {
+        setError(err instanceof Error ? err.message : 'Failed to load video');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
 
   if (isLoading) {
     return (
@@ -78,7 +138,7 @@ export function VideoPlayer({
         <div className="text-center text-white">
           <p className="text-red-400 mb-2">{error}</p>
           <button
-            onClick={() => fetchContent()}
+            onClick={retryFetch}
             className="text-sm text-gray-400 hover:text-white underline"
           >
             Try again
@@ -177,4 +237,4 @@ export function VideoPlayer({
       Video unavailable
     </div>
   );
-}
+});
