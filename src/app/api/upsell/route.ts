@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     switch (upsellType) {
       case 'upsell-1':
-        priceAmount = 14700; // $147 in cents
+        priceAmount = 9700; // $97 in cents
         productName = 'The Pathless Path™ Program';
         productSlug = 'pathless-path';
         acceptedEvent = FunnelEvents.UPSELL_1_ACCEPTED;
