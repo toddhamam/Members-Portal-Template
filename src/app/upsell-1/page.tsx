@@ -17,8 +17,8 @@ function Upsell1Content() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId,
-          product: "pathless_path",
-          amount: 14700, // $147 in cents
+          upsellType: "upsell-1",
+          action: "accept",
         }),
       });
 
