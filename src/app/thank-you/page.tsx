@@ -25,6 +25,7 @@ interface OrderItem {
   title: string;
   quantity: number;
   price: string;
+  product_type?: string;
 }
 
 interface SessionData {
@@ -39,11 +40,15 @@ function ThankYouContent() {
   const sessionId = searchParams.get("session_id");
 
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch session data from Stripe
+  // Fetch session data and order details
   useEffect(() => {
     async function fetchSessionData() {
-      if (!sessionId) return;
+      if (!sessionId) {
+        setIsLoading(false);
+        return;
+      }
 
       try {
         const response = await fetch(`/api/auth/session-email?session_id=${sessionId}`);
@@ -53,18 +58,14 @@ function ThankYouContent() {
           setSessionData({
             email: data.email,
             name: data.name || "",
-            items: [
-              {
-                title: "Resistance Mapping Guide™ - Expanded 2nd Edition",
-                quantity: 1,
-                price: "7.00",
-              },
-            ],
-            total: "7.00",
+            items: data.items || [],
+            total: data.total || "0.00",
           });
         }
       } catch (err) {
         console.error("Failed to fetch session data:", err);
+      } finally {
+        setIsLoading(false);
       }
     }
 
@@ -132,27 +133,41 @@ function ThankYouContent() {
                 <div className="col-span-3 md:col-span-2 text-right">Price</div>
               </div>
 
-              {/* Product Rows */}
-              {sessionData?.items.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 py-4 text-sm border-b border-gray-200">
-                  <div className="col-span-7 md:col-span-8 text-gray-800">{item.title}</div>
-                  <div className="col-span-2 text-center text-gray-600">{item.quantity}</div>
-                  <div className="col-span-3 md:col-span-2 text-right text-gray-800">AU${item.price}</div>
+              {/* Loading State */}
+              {isLoading && (
+                <div className="py-8 text-center text-gray-500">
+                  Loading order details...
                 </div>
-              )) || (
-                <div className="grid grid-cols-12 py-4 text-sm border-b border-gray-200">
-                  <div className="col-span-7 md:col-span-8 text-gray-800">Resistance Mapping Guide™ - Expanded 2nd Edition</div>
-                  <div className="col-span-2 text-center text-gray-600">1</div>
-                  <div className="col-span-3 md:col-span-2 text-right text-gray-800">AU$7.00</div>
+              )}
+
+              {/* Product Rows */}
+              {!isLoading && sessionData?.items && sessionData.items.length > 0 ? (
+                sessionData.items.map((item, index) => (
+                  <div key={index} className="grid grid-cols-12 py-4 text-sm border-b border-gray-200">
+                    <div className="col-span-7 md:col-span-8 text-gray-800">
+                      {item.title}
+                      {item.product_type && item.product_type !== "main" && (
+                        <span className="ml-2 text-xs text-gray-500 capitalize">({item.product_type.replace("_", " ")})</span>
+                      )}
+                    </div>
+                    <div className="col-span-2 text-center text-gray-600">{item.quantity}</div>
+                    <div className="col-span-3 md:col-span-2 text-right text-gray-800">AU${item.price}</div>
+                  </div>
+                ))
+              ) : !isLoading && (
+                <div className="py-8 text-center text-gray-500">
+                  Your order is being processed. Check your email for confirmation.
                 </div>
               )}
 
               {/* Total Row */}
-              <div className="grid grid-cols-12 py-4 text-sm font-semibold">
-                <div className="col-span-7 md:col-span-8 text-gray-800">Total</div>
-                <div className="col-span-2 text-center"></div>
-                <div className="col-span-3 md:col-span-2 text-right text-gray-800">AU${sessionData?.total || "7.00"}</div>
-              </div>
+              {!isLoading && sessionData?.items && sessionData.items.length > 0 && (
+                <div className="grid grid-cols-12 py-4 text-sm font-semibold">
+                  <div className="col-span-7 md:col-span-8 text-gray-800">Total</div>
+                  <div className="col-span-2 text-center"></div>
+                  <div className="col-span-3 md:col-span-2 text-right text-gray-800">AU${sessionData.total}</div>
+                </div>
+              )}
             </div>
           </div>
         </section>
