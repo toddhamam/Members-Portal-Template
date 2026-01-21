@@ -196,7 +196,7 @@ async function main() {
     });
 
   console.log('  Content types in system:');
-  for (const [type, count] of lessonTypes.data || []) {
+  for (const [type, count] of lessonTypes || []) {
     console.log(`    • ${type}: ${count} lessons`);
   }
 
