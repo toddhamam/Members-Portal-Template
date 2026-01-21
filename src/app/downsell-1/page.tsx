@@ -9,6 +9,56 @@ function Downsell1Content() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const testimonials = [
+    {
+      name: "Walter Were",
+      time: "1:32am",
+      image: "/images/Products/Downsell1/walter-profile.png",
+      message: "Excellent- thank you Todd. I'll get back to you in this. Yes, Module 3... quite something. There's more layers but I'm really at the earliest memories which I segregate based on where we lived at the time. Likely 4yrs old is what these are - wow! One just came up!!! Woh! When my mom reversed and ran over the cat. That's the third memory at the home we mover out of 1981 (I was born 1976) and we stayed at the next two homes like 1 yr each, then 2yrs at next - so that's how I remember my age and tie with the memory. That first home I have like 3 memories - they were two( locking keys in my dad's car, going to kindergarten-hated that, and now the dead cat)",
+    },
+    {
+      name: "Walter Were",
+      time: "1:32am",
+      image: "/images/Products/Downsell1/walter-profile.png",
+      message: "Amazing how that memory just came up as I was typing! That's maybe 3 or 4yrs old.",
+    },
+  ];
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe && testimonialIndex < testimonials.length - 1) {
+      setTestimonialIndex(testimonialIndex + 1);
+    }
+    if (isRightSwipe && testimonialIndex > 0) {
+      setTestimonialIndex(testimonialIndex - 1);
+    }
+  };
+
+  const nextTestimonial = () => {
+    setTestimonialIndex((prev) => (prev + 1) % testimonials.length);
+  };
+
+  const prevTestimonial = () => {
+    setTestimonialIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  };
 
   const handleAccept = async () => {
     setIsProcessing(true);
@@ -40,9 +90,9 @@ function Downsell1Content() {
     <button
       onClick={handleAccept}
       disabled={isProcessing}
-      className={`w-full bg-white hover:bg-gray-200 text-black font-bold py-4 px-5 md:py-5 md:px-8 text-base md:text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-lg rounded-md ${className}`}
+      className={`w-full bg-white hover:bg-gray-200 text-black font-bold py-4 px-5 md:py-5 md:px-12 text-base md:text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-lg rounded-md ${className}`}
     >
-      <span className="text-center leading-tight">{isProcessing ? "Processing..." : "Yes - Add The Nervous System Reset Kit™ to My Order"}</span>
+      <span className="text-center leading-tight md:whitespace-nowrap">{isProcessing ? "Processing..." : "Yes - Add The Nervous System Reset Kit™ to My Order"}</span>
       {!isProcessing && (
         <svg className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -100,9 +150,13 @@ function Downsell1Content() {
               <span className="text-[#d4a574] text-[10px] md:text-xs mt-1 md:mt-2 text-center font-medium leading-tight max-w-[60px] md:max-w-none">Reset Kit</span>
             </div>
 
-            {/* Line 2-3 */}
-            <div className="flex-1 flex items-center h-6 md:h-8 mx-1">
+            {/* Line 2-3 with partial progress */}
+            <div className="flex-1 flex items-center h-6 md:h-8 mx-1 relative">
               <div className="w-full h-px bg-gray-600" />
+              {/* Partial gold fill indicating progress */}
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[45%] h-px bg-[#d4a574]" />
+              {/* Small circle at progress point */}
+              <div className="absolute left-[45%] top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 md:w-2.5 md:h-2.5 rounded-full bg-[#d4a574]" />
             </div>
 
             {/* Step 3 - Upcoming */}
@@ -158,7 +212,7 @@ function Downsell1Content() {
           </div>
 
           {/* CTA */}
-          <div className="max-w-lg mx-auto px-2">
+          <div className="max-w-lg md:max-w-2xl mx-auto px-2">
             <CTAButton />
             <p className="text-white text-xs md:text-sm mt-2 text-center">
               Clicking will add just $27 to your order for Lifetime access
@@ -338,20 +392,14 @@ function Downsell1Content() {
               { title: "Quick Start", subtitle: "Path", image: "/images/Products/Downsell1/icon-quick-start.png" },
             ].map((item, index) => (
               <div key={index} className="bg-[#2a2520] rounded-xl p-3 md:p-6 text-center border border-[#3a3530]">
-                <div className="w-20 h-20 md:w-36 md:h-36 mx-auto mb-2 md:mb-4 rounded-lg overflow-hidden flex items-center justify-center">
-                  {item.image ? (
-                    <Image
-                      src={item.image}
-                      alt={`${item.title} ${item.subtitle}`}
-                      width={144}
-                      height={144}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-b from-[#d4a574]/30 to-[#b8956c]/10 flex items-center justify-center">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-b from-amber-600/40 to-amber-800/20" />
-                    </div>
-                  )}
+                <div className="w-20 h-20 md:w-36 md:h-36 mx-auto mb-2 md:mb-4 rounded-lg overflow-hidden flex items-center justify-center bg-[#2a2520]">
+                  <Image
+                    src={item.image}
+                    alt={`${item.title} ${item.subtitle}`}
+                    width={144}
+                    height={144}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <p className="text-white text-sm md:text-xl font-serif">{item.title}</p>
                 <p className="text-white text-sm md:text-xl font-serif">{item.subtitle}</p>
@@ -360,7 +408,7 @@ function Downsell1Content() {
           </div>
 
           {/* CTA */}
-          <div className="max-w-lg mx-auto px-2">
+          <div className="max-w-lg md:max-w-2xl mx-auto px-2">
             <CTAButton />
             <p className="text-gray-500 text-xs md:text-sm mt-2 text-center">
               Clicking will add just $27 to your order for Lifetime access
@@ -461,7 +509,7 @@ function Downsell1Content() {
           </div>
 
           {/* CTA */}
-          <div className="max-w-lg mx-auto px-2">
+          <div className="max-w-lg md:max-w-2xl mx-auto px-2">
             <CTAButton />
             <p className="text-white text-xs md:text-sm mt-2 text-center">
               Clicking will add just $27 to your order for Lifetime access
@@ -498,38 +546,68 @@ function Downsell1Content() {
             What People Are Saying
           </h3>
 
-          <div className="bg-white p-4 md:p-6 rounded-lg border border-gray-200 mb-4 md:mb-6">
-            <div className="flex items-start gap-3 md:gap-4">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-300 flex-shrink-0" />
-              <div className="min-w-0">
-                <p className="font-medium text-sm md:text-base">Walter Were</p>
-                <p className="text-gray-500 text-xs md:text-sm mb-2 md:mb-3">1:32am</p>
-                <p className="text-gray-700 text-sm md:text-base">
-                  Excellent- thank you Todd. I&apos;ll get back to you in this. Yes, Module 3... quite something. There&apos;s more layers but I&apos;m really at the earliest memories which I segregate based on where we lived at the time. Likely 4yrs old is what these are - wow! One just came up!!! Woh! When my mom reversed and ran over the cat. That&apos;s the third memory at the home we mover out of 1981 (I was born 1976) and we stayed at the next two homes like 1 yr each, then 2yrs at next - so that&apos;s how I remember my age and tie with the memory. That first home I have like 3 memories - they were two( locking keys in my dad&apos;s car, going to kindergarten-hated that, and now the dead cat)
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* Testimonial Slider */}
+          <div className="relative">
+            {/* Left Arrow */}
+            <button
+              onClick={prevTestimonial}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-6 w-10 h-10 md:w-12 md:h-12 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:shadow-xl transition-all z-10"
+              aria-label="Previous testimonial"
+            >
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
 
-          <div className="bg-white p-4 md:p-6 rounded-lg border border-gray-200">
-            <div className="flex items-start gap-3 md:gap-4">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-300 flex-shrink-0" />
-              <div className="min-w-0">
-                <p className="font-medium text-sm md:text-base">Walter Were</p>
-                <p className="text-gray-500 text-xs md:text-sm mb-2 md:mb-3">1:32am</p>
-                <p className="text-gray-700 text-sm md:text-base">
-                  Amazing how that memory just came up as I was typing! That&apos;s maybe 3 or 4yrs old.
-                </p>
+            {/* Right Arrow */}
+            <button
+              onClick={nextTestimonial}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-6 w-10 h-10 md:w-12 md:h-12 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:shadow-xl transition-all z-10"
+              aria-label="Next testimonial"
+            >
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            {/* Testimonial Card */}
+            <div
+              className="bg-white p-4 md:p-6 rounded-lg border border-gray-200 mx-6 md:mx-0"
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+            >
+              <div className="flex items-start gap-3 md:gap-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-300 flex-shrink-0 overflow-hidden">
+                  <Image
+                    src={testimonials[testimonialIndex].image}
+                    alt={testimonials[testimonialIndex].name}
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium text-sm md:text-base">{testimonials[testimonialIndex].name}</p>
+                  <p className="text-gray-500 text-xs md:text-sm mb-2 md:mb-3">{testimonials[testimonialIndex].time}</p>
+                  <p className="text-gray-700 text-sm md:text-base">
+                    {testimonials[testimonialIndex].message}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Dots indicator */}
           <div className="flex items-center justify-center gap-2 mt-6">
-            <div className="w-2 h-2 rounded-full bg-gray-900" />
-            <div className="w-2 h-2 rounded-full bg-gray-300" />
-            <div className="w-2 h-2 rounded-full bg-gray-300" />
-            <div className="w-2 h-2 rounded-full bg-gray-300" />
+            {testimonials.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setTestimonialIndex(idx)}
+                className={`w-2 h-2 rounded-full transition-colors ${idx === testimonialIndex ? 'bg-gray-900' : 'bg-gray-300 hover:bg-gray-400'}`}
+                aria-label={`Go to testimonial ${idx + 1}`}
+              />
+            ))}
           </div>
         </div>
       </section>
@@ -618,7 +696,7 @@ function Downsell1Content() {
           </div>
 
           {/* Final CTA */}
-          <div className="max-w-lg mx-auto px-2">
+          <div className="max-w-lg md:max-w-2xl mx-auto px-2">
             <CTAButton className="!bg-black !text-white hover:!bg-gray-700 hover:!shadow-lg" />
             <p className="text-black text-xs md:text-sm mt-2 text-center">
               Clicking will add just $27 to your order for Lifetime access
