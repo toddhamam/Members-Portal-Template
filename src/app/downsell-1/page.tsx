@@ -18,8 +18,8 @@ function Downsell1Content() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId,
-          product: "nervous_system_reset",
-          amount: 4700, // $47 in cents
+          upsellType: "downsell-1",
+          action: "accept",
         }),
       });
 
