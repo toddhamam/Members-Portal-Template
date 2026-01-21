@@ -160,10 +160,10 @@ export default function ProductDetailPage() {
   // Show skeleton only while product is loading (progressive rendering)
   if (productLoading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-8 animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-32" />
-        <div className="h-[400px] bg-gray-200 rounded-2xl" />
-        <div className="h-32 bg-gray-200 rounded-xl" />
+      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 animate-pulse">
+        <div className="h-6 sm:h-8 bg-gray-200 rounded w-28 sm:w-32" />
+        <div className="h-[300px] sm:h-[350px] md:h-[400px] bg-gray-200 rounded-xl sm:rounded-2xl" />
+        <div className="h-24 sm:h-32 bg-gray-200 rounded-xl" />
       </div>
     );
   }
@@ -181,18 +181,18 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
       {/* Back Link */}
       <Link
         href="/portal/products"
-        className="inline-flex items-center gap-2 text-[#4b5563] hover:text-[#222222] transition-colors"
+        className="inline-flex items-center gap-2 text-[#4b5563] hover:text-[#222222] transition-colors text-sm sm:text-base"
       >
         <ArrowLeftIcon className="w-4 h-4" />
         Back to Products
       </Link>
 
       {/* Hero Section */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460]">
+      <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460]">
         {/* Background Image */}
         {product.thumbnail_url && (
           <div className="absolute inset-0">
@@ -206,34 +206,34 @@ export default function ProductDetailPage() {
         )}
 
         {/* Content */}
-        <div className="relative z-10 p-8 md:p-12 text-center">
-          <h1 className="text-3xl md:text-4xl font-serif font-semibold text-white mb-4">
+        <div className="relative z-10 p-5 sm:p-8 md:p-12 text-center">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-semibold text-white mb-3 sm:mb-4">
             {product.name}
           </h1>
 
           {product.description && (
-            <p className="text-lg text-white/80 max-w-2xl mx-auto mb-8 leading-relaxed">
+            <p className="text-sm sm:text-base md:text-lg text-white/80 max-w-2xl mx-auto mb-5 sm:mb-8 leading-relaxed">
               {product.description}
             </p>
           )}
 
           {/* Stats */}
-          <div className="flex items-center justify-center gap-8 mb-8 text-white/70">
-            <div>
-              <span className="text-2xl font-semibold text-white">{stats.modules}</span>
-              <span className="ml-2">Modules</span>
+          <div className="flex items-center justify-center gap-4 sm:gap-8 mb-5 sm:mb-8 text-white/70 text-sm sm:text-base">
+            <div className="text-center">
+              <span className="text-xl sm:text-2xl font-semibold text-white block">{stats.modules}</span>
+              <span>Modules</span>
             </div>
-            <div className="w-px h-8 bg-white/20" />
-            <div>
-              <span className="text-2xl font-semibold text-white">{stats.lessons}</span>
-              <span className="ml-2">Lessons</span>
+            <div className="w-px h-6 sm:h-8 bg-white/20" />
+            <div className="text-center">
+              <span className="text-xl sm:text-2xl font-semibold text-white block">{stats.lessons}</span>
+              <span>Lessons</span>
             </div>
             {product.is_owned && stats.progress > 0 && (
               <>
-                <div className="w-px h-8 bg-white/20" />
-                <div>
-                  <span className="text-2xl font-semibold text-white">{stats.progress}%</span>
-                  <span className="ml-2">Complete</span>
+                <div className="w-px h-6 sm:h-8 bg-white/20" />
+                <div className="text-center">
+                  <span className="text-xl sm:text-2xl font-semibold text-white block">{stats.progress}%</span>
+                  <span>Complete</span>
                 </div>
               </>
             )}
@@ -244,21 +244,21 @@ export default function ProductDetailPage() {
             targetLesson ? (
               <Link
                 href={`/portal/products/${slug}/modules/${targetLesson.moduleSlug}/lessons/${targetLesson.lessonSlug}`}
-                className="inline-flex items-center gap-3 bg-white text-[#1a1a2e] font-semibold px-8 py-4 rounded-xl hover:bg-gray-100 transition-colors text-lg shadow-lg"
+                className="inline-flex items-center gap-2 sm:gap-3 bg-white text-[#1a1a2e] font-semibold px-5 sm:px-8 py-3 sm:py-4 rounded-xl hover:bg-gray-100 transition-colors text-base sm:text-lg shadow-lg"
               >
-                <PlayIcon className="w-6 h-6" />
+                <PlayIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                 {continueLesson ? "Continue Learning" : "Start Learning"}
               </Link>
             ) : (
-              <div className="inline-flex items-center gap-3 bg-white/20 text-white/60 font-semibold px-8 py-4 rounded-xl text-lg cursor-not-allowed">
-                <PlayIcon className="w-6 h-6" />
+              <div className="inline-flex items-center gap-2 sm:gap-3 bg-white/20 text-white/60 font-semibold px-5 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg cursor-not-allowed">
+                <PlayIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                 Coming Soon
               </div>
             )
           ) : (
             <Link
               href={`/?product=${product.slug}`}
-              className="inline-flex items-center gap-3 bg-[#ee5d0b] hover:bg-[#d54d00] text-white font-semibold px-8 py-4 rounded-xl transition-colors text-lg shadow-lg"
+              className="inline-flex items-center gap-2 sm:gap-3 bg-[#ee5d0b] hover:bg-[#d54d00] text-white font-semibold px-5 sm:px-8 py-3 sm:py-4 rounded-xl transition-colors text-base sm:text-lg shadow-lg"
             >
               <LockIcon className="w-5 h-5" />
               Unlock for ${((product.portal_price_cents ?? product.price_cents) / 100).toFixed(2)}
@@ -268,10 +268,10 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Instructor Section */}
-      <div className="bg-white border border-[#e5e7eb] rounded-xl p-8">
-        <div className="flex flex-col md:flex-row items-center gap-6">
+      <div className="bg-white border border-[#e5e7eb] rounded-xl p-5 sm:p-8">
+        <div className="flex flex-col md:flex-row items-center gap-4 sm:gap-6">
           {/* Instructor Photo */}
-          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-[#d4a574] to-[#b8956c] flex-shrink-0 overflow-hidden shadow-md">
+          <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-[#d4a574] to-[#b8956c] flex-shrink-0 overflow-hidden shadow-md">
             <img
               src="/images/instructor/your-guide.png"
               alt="Your Guide"
@@ -279,17 +279,17 @@ export default function ProductDetailPage() {
               onError={(e) => {
                 // Fallback if image doesn't exist
                 e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement!.innerHTML = '<span class="text-white text-3xl font-serif flex items-center justify-center w-full h-full">IW</span>';
+                e.currentTarget.parentElement!.innerHTML = '<span class="text-white text-2xl sm:text-3xl font-serif flex items-center justify-center w-full h-full">IW</span>';
               }}
             />
           </div>
 
           {/* Instructor Info */}
           <div className="text-center md:text-left">
-            <h3 className="text-xl font-semibold text-[#222222] font-serif mb-2">
+            <h3 className="text-lg sm:text-xl font-semibold text-[#222222] font-serif mb-2">
               Your Guide
             </h3>
-            <p className="text-[#4b5563] leading-relaxed">
+            <p className="text-sm sm:text-base text-[#4b5563] leading-relaxed">
               Welcome to this transformational journey. I&apos;m here to guide you through each step,
               helping you uncover and release the patterns that have been running beneath the surface.
               Take your time with each lesson—this is your space for deep inner work.
@@ -300,12 +300,12 @@ export default function ProductDetailPage() {
 
       {/* Progress Section (for owned products) */}
       {product.is_owned && stats.progress > 0 && stats.progress < 100 && (
-        <div className="bg-[#f5f3ef] border border-[#e5e7eb] rounded-xl p-6">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-[#f5f3ef] border border-[#e5e7eb] rounded-xl p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-3 text-sm sm:text-base">
             <span className="text-[#4b5563] font-medium">Your Progress</span>
             <span className="text-[#222222] font-semibold">{stats.progress}% Complete</span>
           </div>
-          <div className="h-3 bg-white rounded-full overflow-hidden shadow-inner">
+          <div className="h-2 sm:h-3 bg-white rounded-full overflow-hidden shadow-inner">
             <div
               className="h-full bg-gradient-to-r from-[#d4a574] to-[#b8956c] transition-all duration-500"
               style={{ width: `${stats.progress}%` }}
@@ -316,16 +316,16 @@ export default function ProductDetailPage() {
 
       {/* Completion Badge */}
       {product.is_owned && stats.progress === 100 && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-5 sm:p-6 text-center">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-green-800 font-serif mb-2">
+          <h3 className="text-base sm:text-lg font-semibold text-green-800 font-serif mb-2">
             Course Complete!
           </h3>
-          <p className="text-green-700">
+          <p className="text-sm sm:text-base text-green-700">
             Congratulations on completing this course. Feel free to revisit any lesson at any time.
           </p>
         </div>

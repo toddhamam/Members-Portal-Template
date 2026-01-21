@@ -146,28 +146,28 @@ function ResourceItem({ resource }: { resource: LessonResource }) {
         href={resource.external_url || '#'}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-4 p-4 bg-[#f5f3ef] hover:bg-[#eceae6] rounded-lg transition-colors group"
+        className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-[#f5f3ef] hover:bg-[#eceae6] rounded-lg transition-colors group"
       >
-        <div className="w-10 h-10 rounded-lg bg-[#d4a574]/20 flex items-center justify-center flex-shrink-0">
-          <Icon className="w-5 h-5 text-[#d4a574]" />
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[#d4a574]/20 flex items-center justify-center flex-shrink-0">
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-[#d4a574]" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-[#222222] truncate">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-[#222222] text-sm sm:text-base truncate">
               {resource.title}
             </span>
-            <span className="text-xs text-[#6b7280] bg-white px-2 py-0.5 rounded">
+            <span className="text-xs text-[#6b7280] bg-white px-2 py-0.5 rounded flex-shrink-0">
               {getResourceLabel(resource.resource_type)}
             </span>
           </div>
           {resource.description && (
-            <p className="text-sm text-[#6b7280] mt-0.5 line-clamp-1">
+            <p className="text-xs sm:text-sm text-[#6b7280] mt-0.5 line-clamp-1">
               {resource.description}
             </p>
           )}
         </div>
         <div className="flex-shrink-0 text-[#6b7280] group-hover:text-[#222222] transition-colors">
-          <LinkIcon className="w-5 h-5" />
+          <LinkIcon className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
       </a>
     );
@@ -177,22 +177,22 @@ function ResourceItem({ resource }: { resource: LessonResource }) {
     <button
       onClick={handleDownload}
       disabled={isDownloading}
-      className="w-full flex items-center gap-4 p-4 bg-[#f5f3ef] hover:bg-[#eceae6] rounded-lg transition-colors group text-left disabled:opacity-50 disabled:cursor-wait"
+      className="w-full flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-[#f5f3ef] hover:bg-[#eceae6] rounded-lg transition-colors group text-left disabled:opacity-50 disabled:cursor-wait"
     >
-      <div className="w-10 h-10 rounded-lg bg-[#d4a574]/20 flex items-center justify-center flex-shrink-0">
-        <Icon className="w-5 h-5 text-[#d4a574]" />
+      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[#d4a574]/20 flex items-center justify-center flex-shrink-0">
+        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-[#d4a574]" />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-[#222222] truncate">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-[#222222] text-sm sm:text-base truncate">
             {resource.title}
           </span>
-          <span className="text-xs text-[#6b7280] bg-white px-2 py-0.5 rounded">
+          <span className="text-xs text-[#6b7280] bg-white px-2 py-0.5 rounded flex-shrink-0">
             {getResourceLabel(resource.resource_type)}
           </span>
         </div>
         {resource.description && (
-          <p className="text-sm text-[#6b7280] mt-0.5 line-clamp-1">
+          <p className="text-xs sm:text-sm text-[#6b7280] mt-0.5 line-clamp-1">
             {resource.description}
           </p>
         )}
@@ -204,9 +204,9 @@ function ResourceItem({ resource }: { resource: LessonResource }) {
       </div>
       <div className="flex-shrink-0 text-[#6b7280] group-hover:text-[#222222] transition-colors">
         {isDownloading ? (
-          <div className="w-5 h-5 border-2 border-[#6b7280] border-t-transparent rounded-full animate-spin" />
+          <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-[#6b7280] border-t-transparent rounded-full animate-spin" />
         ) : (
-          <DownloadIcon className="w-5 h-5" />
+          <DownloadIcon className="w-4 h-4 sm:w-5 sm:h-5" />
         )}
       </div>
     </button>
@@ -219,12 +219,12 @@ export function LessonResources({ resources }: LessonResourcesProps) {
   }
 
   return (
-    <div className="bg-white border border-[#e5e7eb] rounded-xl p-6">
-      <h3 className="text-lg font-semibold text-[#222222] mb-4 font-serif">
+    <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 sm:p-6">
+      <h3 className="text-base sm:text-lg font-semibold text-[#222222] mb-3 sm:mb-4 font-serif">
         Resources & Downloads
       </h3>
 
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {resources.map((resource) => (
           <ResourceItem key={resource.id} resource={resource} />
         ))}
