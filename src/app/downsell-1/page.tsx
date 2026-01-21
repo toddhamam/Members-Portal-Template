@@ -3,12 +3,12 @@
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 function Downsell1Content() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [testimonialIndex, setTestimonialIndex] = useState(0);
 
   const handleAccept = async () => {
     setIsProcessing(true);
@@ -36,583 +36,600 @@ function Downsell1Content() {
     }
   };
 
-  const testimonials = [
-    {
-      name: "Walter Were",
-      time: "1:32am",
-      messages: [
-        "Excellent- thank you Todd. I'll get back to you in this. Yes, Module 3.. quite something. There's more layers but I'm really at the earliest memories which I segregate based on where we lived at the time. Likely 4yrs old is what these are - wow! One just came up!!! Woh! When my mom reversed and ran over the cat. That's the third memory at the home we mover out of 1981 (I was born 1976) and we stayed at the next two homes like 1 yr each, then 2yrs at next - so that's how I remember my age and tie with the memory. That first home I have like 3 memories - they were two( locking keys in my dad's car, going to kindergarten-hated that, and now the dead cat)",
-        "Amazing how that memory just came up as I was typing! That's maybe 3 or 4yrs old.",
-      ],
-    },
-  ];
+  const CTAButton = ({ className = "" }: { className?: string }) => (
+    <button
+      onClick={handleAccept}
+      disabled={isProcessing}
+      className={`w-full bg-white hover:bg-gray-200 text-black font-bold py-4 px-5 md:py-5 md:px-8 text-base md:text-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-lg rounded-md ${className}`}
+    >
+      <span className="text-center leading-tight">{isProcessing ? "Processing..." : "Yes - Add The Nervous System Reset Kit™ to My Order"}</span>
+      {!isProcessing && (
+        <svg className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      )}
+    </button>
+  );
+
+  const DeclineLink = ({ className = "" }: { className?: string }) => (
+    <Link
+      href={`/upsell-2?session_id=${sessionId}`}
+      className={`block text-center text-white hover:text-gray-300 text-sm mt-3 underline ${className}`}
+    >
+      No thanks, I don&apos;t want the nervous system reset kit
+    </Link>
+  );
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Header with Step Indicator */}
-      <header className="bg-black py-4 px-4">
-        <div className="max-w-5xl mx-auto">
-          {/* Logo */}
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <div className="w-8 h-8 flex items-center justify-center">
-              <svg viewBox="0 0 40 40" className="w-full h-full">
-                <circle cx="20" cy="30" r="8" fill="#d4a574" />
-                <ellipse cx="20" cy="18" rx="6" ry="12" fill="url(#flameGradient)" />
-                <defs>
-                  <linearGradient id="flameGradient" x1="0%" y1="100%" x2="0%" y2="0%">
-                    <stop offset="0%" stopColor="#d4a574" />
-                    <stop offset="50%" stopColor="#f4d03f" />
-                    <stop offset="100%" stopColor="#fff" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-            <span className="text-white text-sm tracking-widest uppercase">Inner Wealth Initiate</span>
-          </div>
-
-          {/* Progress Steps */}
-          <div className="flex items-center justify-center gap-2 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="border border-gray-600 text-gray-400 px-3 py-1.5 rounded text-[10px]">
-                Step 1: Resistance Map™
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="bg-[#d4a574] text-black px-3 py-1.5 rounded text-[10px] font-medium">
-                2b: Nervous System Reset Kit™
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="border border-gray-600 text-gray-400 px-3 py-1.5 rounded text-[10px]">
-                3: Bridge to Mastery
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="border border-gray-600 text-gray-400 px-3 py-1.5 rounded text-[10px]">
-                4: Order Complete
-              </span>
-            </div>
-          </div>
+      {/* Header with Logo */}
+      <header className="py-6 px-4 bg-black">
+        <div className="max-w-4xl mx-auto text-center">
+          <Image
+            src="/logo.png"
+            alt="Inner Wealth Initiate"
+            width={200}
+            height={50}
+            className="mx-auto"
+          />
         </div>
       </header>
 
-      {/* Hero Section - Dark with starfield */}
-      <section className="bg-black text-white py-12 px-4 relative overflow-hidden">
-        {/* Starfield/nebula background effect */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-[#1a0a00] to-black opacity-80" />
-        <div className="absolute inset-0" style={{
-          background: 'radial-gradient(ellipse at center bottom, rgba(212,165,116,0.3) 0%, transparent 60%)',
-        }} />
-
-        <div className="max-w-4xl mx-auto relative z-10">
-          {/* Headline */}
-          <div className="text-center mb-10">
-            <p className="text-[#d4a574] text-sm mb-4 tracking-wide">
-              Wait! <span className="underline">Almost There</span>...
-            </p>
-            <h1 className="font-serif italic text-3xl md:text-4xl lg:text-[42px] leading-tight mb-6">
-              Not Ready For The Full System Yet?
-              <br />
-              Stabilize And Calm Your Nervous System First...
-            </h1>
-            <p className="text-gray-300 max-w-2xl mx-auto leading-relaxed">
-              A step-by-step nervous system reset guide extracted from the full program, designed to help release fear charge, reduce tension, and restore calm in your body and nervous system.
-            </p>
-          </div>
-
-          {/* Product Mockup */}
-          <div className="relative max-w-3xl mx-auto">
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#d4a574]/30 via-transparent to-transparent blur-2xl" />
-
-            <div className="relative bg-gradient-to-b from-[#2a1a0a] to-[#1a0a00] rounded-lg p-8 border border-[#d4a574]/20">
-              {/* Product title */}
-              <div className="text-center mb-8">
-                <p className="text-[#d4a574]/60 text-xs uppercase tracking-[0.3em] mb-2">The</p>
-                <h2 className="font-serif italic text-3xl md:text-4xl text-[#d4a574]">
-                  Nervous System Reset Kit
-                </h2>
+      {/* Progress Steps */}
+      <div className="bg-black py-4 md:py-6 px-2 md:px-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-start justify-between">
+            {/* Step 1 - Completed */}
+            <div className="flex flex-col items-center min-w-0">
+              <div className="w-6 h-6 md:w-8 md:h-8 rounded-full border-2 border-gray-500 bg-black flex items-center justify-center">
+                <span className="text-gray-400 text-xs md:text-sm font-medium">1</span>
               </div>
+              <span className="text-gray-400 text-[10px] md:text-xs mt-1 md:mt-2 text-center leading-tight max-w-[60px] md:max-w-none">Resistance Map™</span>
+            </div>
 
-              {/* Laptop mockups */}
-              <div className="flex items-center justify-center gap-8">
-                <div className="text-center">
-                  <div className="bg-gray-800 rounded-t-lg p-2 w-40">
-                    <div className="bg-gradient-to-br from-[#3a2a1a] to-[#2a1a0a] rounded h-24 flex items-center justify-center">
-                      <span className="text-[#d4a574] text-xs">Module Preview</span>
-                    </div>
-                  </div>
-                  <div className="bg-gray-700 h-2 w-48 rounded-b-lg mx-auto" />
-                  <p className="text-[#d4a574] text-xs mt-3 uppercase tracking-wider">Extracted From Full Program</p>
-                </div>
-                <div className="text-center">
-                  <div className="bg-gray-800 rounded-t-lg p-2 w-40">
-                    <div className="bg-gradient-to-br from-[#3a2a1a] to-[#2a1a0a] rounded h-24 flex items-center justify-center">
-                      <span className="text-[#d4a574] text-xs">Quick Access</span>
-                    </div>
-                  </div>
-                  <div className="bg-gray-700 h-2 w-48 rounded-b-lg mx-auto" />
-                  <p className="text-[#d4a574] text-xs mt-3 uppercase tracking-wider">Instant Access</p>
-                </div>
+            {/* Line 1-2 */}
+            <div className="flex-1 flex items-center h-6 md:h-8 mx-1">
+              <div className="w-full h-px bg-gray-600" />
+            </div>
+
+            {/* Step 2b - Current (highlighted in gold) */}
+            <div className="flex flex-col items-center min-w-0">
+              <div className="w-6 h-6 md:w-8 md:h-8 rounded-full border-2 border-[#d4a574] bg-[#d4a574] flex items-center justify-center">
+                <span className="text-black text-xs md:text-sm font-bold">2</span>
               </div>
+              <span className="text-[#d4a574] text-[10px] md:text-xs mt-1 md:mt-2 text-center font-medium leading-tight max-w-[60px] md:max-w-none">Reset Kit</span>
+            </div>
+
+            {/* Line 2-3 */}
+            <div className="flex-1 flex items-center h-6 md:h-8 mx-1">
+              <div className="w-full h-px bg-gray-600" />
+            </div>
+
+            {/* Step 3 - Upcoming */}
+            <div className="flex flex-col items-center min-w-0">
+              <div className="w-6 h-6 md:w-8 md:h-8 rounded-full border-2 border-gray-500 bg-black flex items-center justify-center">
+                <span className="text-gray-400 text-xs md:text-sm font-medium">3</span>
+              </div>
+              <span className="text-gray-400 text-[10px] md:text-xs mt-1 md:mt-2 text-center leading-tight max-w-[60px] md:max-w-none">Bridge to Mastery</span>
+            </div>
+
+            {/* Line 3-4 */}
+            <div className="flex-1 flex items-center h-6 md:h-8 mx-1">
+              <div className="w-full h-px bg-gray-600" />
+            </div>
+
+            {/* Step 4 - Upcoming */}
+            <div className="flex flex-col items-center min-w-0">
+              <div className="w-6 h-6 md:w-8 md:h-8 rounded-full border-2 border-gray-500 bg-black flex items-center justify-center">
+                <span className="text-gray-400 text-xs md:text-sm font-medium">4</span>
+              </div>
+              <span className="text-gray-400 text-[10px] md:text-xs mt-1 md:mt-2 text-center leading-tight max-w-[60px] md:max-w-none">Order Complete</span>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* CTA Button Section */}
-      <section className="bg-black py-8 px-4">
-        <div className="max-w-xl mx-auto space-y-3">
-          <button
-            onClick={handleAccept}
-            disabled={isProcessing}
-            className="w-full bg-[#222] hover:bg-black text-white font-medium py-4 px-8 text-center transition-colors disabled:opacity-50"
-          >
-            {isProcessing ? (
-              "Processing..."
-            ) : (
-              <>
-                Yes - Add The Nervous System Reset™ to My Order
-                <br />
-                <span className="text-xs text-gray-400 font-normal">Clicking this will add $47 to your order</span>
-              </>
-            )}
-          </button>
-          <Link
-            href={`/upsell-2?session_id=${sessionId}`}
-            className="block text-center text-gray-500 hover:text-gray-300 text-sm underline py-2"
-          >
-            No thanks, I don&apos;t Want The Nervous System Reset
-          </Link>
+      {/* Hero Section */}
+      <section className="bg-black text-white py-12 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <p className="text-white text-xl md:text-2xl font-medium mb-4 underline decoration-white">
+            Wait! Almost There...
+          </p>
+          <h1 className="text-2xl md:text-4xl lg:text-5xl font-medium mb-4 leading-tight">
+            Not Ready For The Full System Yet?
+            <span className="hidden md:inline"><br /></span>
+            <span className="md:hidden"> </span>
+            Stabilize Your Nervous System First...
+          </h1>
+          <p className="text-gray-400 mb-8">
+            60-second read - Lifetime Access...
+          </p>
+
+          {/* Hero Image */}
+          <div className="relative rounded-lg overflow-hidden mb-8">
+            <Image
+              src="/images/Products/Downsell1/hero-main.png"
+              alt="Nervous System Reset Kit™"
+              width={800}
+              height={600}
+              className="w-full h-auto"
+              priority
+            />
+          </div>
+
+          {/* CTA */}
+          <div className="max-w-lg mx-auto px-2">
+            <CTAButton />
+            <p className="text-white text-xs md:text-sm mt-2 text-center">
+              Clicking will add just $27 to your order for Lifetime access
+            </p>
+            <DeclineLink />
+          </div>
         </div>
       </section>
 
       {/* A Calm Body Creates A Calm Mind */}
-      <section className="bg-white py-16 px-4">
+      <section className="py-16 px-4 bg-white">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-serif italic text-3xl md:text-4xl text-center mb-8">
+          <h2 className="font-serif text-3xl md:text-4xl italic text-center mb-6">
             A Calm Body Creates A Calm Mind
           </h2>
-          <div className="space-y-4 text-gray-700 leading-relaxed">
-            <p>
-              If you have already gained insight, but your body still reacts the same way, that is not a mindset issue.
-            </p>
-            <p>It is a nervous system pattern.</p>
-            <p>
-              When the system detects threat, it pulls you into automatic protection mode... Tightness. Panic. Shutdown. Overthinking. Avoidance. Control.
-            </p>
-            <p>
-              This kit is designed to interrupt that pattern at the source, so you can return to calm faster and stop feeding the loop.
-            </p>
-          </div>
-        </div>
-      </section>
+          <p className="text-center text-gray-700 italic mb-12">
+            A step-by-step nervous system reset guide extracted from the full program, designed to help release fear charge, reduce tension, and restore calm.
+          </p>
 
-      {/* What This Reset Kit Is */}
-      <section className="bg-white py-12 px-4 border-t border-gray-100">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="font-serif italic text-2xl md:text-3xl mb-6">
+          <div className="border-l-4 border-gray-900 pl-6 mb-12">
+            <h3 className="font-serif text-2xl italic mb-4">
+              If You&apos;ve Gained Insight But Your Body Still Reacts...
+            </h3>
+            <div className="text-gray-700 space-y-4">
+              <p>That is not a mindset issue.</p>
+              <p>It is a nervous system pattern.</p>
+              <p>When the system detects threat, it pulls you into automatic protection mode...</p>
+              <p className="font-medium">Tightness. Panic. Shutdown. Overthinking. Avoidance. Control.</p>
+              <p>This kit is designed to interrupt that pattern at the source, so you can return to calm faster and stop feeding the loop.</p>
+            </div>
+          </div>
+
+          <h3 className="font-serif text-2xl italic mb-4">
             What This Reset Kit Is
-          </h2>
-          <div className="space-y-4 text-gray-700 leading-relaxed">
-            <p>
-              This is a focused nervous system reset guide extracted from the full program.
-            </p>
-            <p>
-              It includes the somatic body release and nervous system regulation work as a standalone kit, so you can start with stability first, without committing to the full system today.
-            </p>
+          </h3>
+          <div className="text-gray-700 space-y-4 mb-12">
+            <p>This is a focused nervous system reset guide extracted from the full program.</p>
+            <p>It includes the somatic body release and nervous system regulation work as a standalone kit, so you can start with stability first, without committing to the full system today.</p>
             <p>No extra theory.</p>
             <p>No long program to keep up with.</p>
-            <p>Just a clear, guided process you can use right away.</p>
+            <p className="font-medium">Just a clear, guided process you can use right away.</p>
           </div>
         </div>
       </section>
 
       {/* Core Training Layers - Dark Section */}
-      <section className="bg-black py-12 px-4 relative overflow-hidden">
-        <div className="absolute inset-0" style={{
-          background: 'radial-gradient(ellipse at center, rgba(212,165,116,0.15) 0%, transparent 70%)',
-        }} />
-
-        <div className="max-w-2xl mx-auto relative z-10">
-          <div className="border border-[#d4a574]/30 rounded-lg p-8 bg-gradient-to-b from-[#1a0a00]/80 to-black/80">
-            <h3 className="text-center text-[#d4a574] uppercase tracking-[0.2em] text-sm mb-8">
+      <section className="py-20 px-4 bg-gradient-to-b from-[#0f0d0b] via-[#1a1512] to-[#0f0d0b]">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-[#e8c9a0] text-base uppercase tracking-[0.3em] mb-3">The Kit</p>
+            <h2 className="text-white font-serif text-4xl md:text-5xl mb-4">
               Core Training Layers
-            </h3>
-            <div className="space-y-3">
-              {[
-                "Nervous System Regulation",
-                "Somatic Body Release",
-                "Trigger-to-Reset Protocol",
-                "Daily Stabilization Rhythm",
-              ].map((item, index) => (
-                <div
-                  key={index}
-                  className="border border-[#d4a574]/40 rounded px-6 py-3 text-center text-[#d4a574] font-serif"
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
+            </h2>
+            <p className="text-gray-400 max-w-xl mx-auto">
+              A focused approach targeting the nervous system and body where fear charge lives
+            </p>
           </div>
-        </div>
-      </section>
 
-      {/* What You Get */}
-      <section className="bg-white py-16 px-4">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="font-serif italic text-2xl md:text-3xl mb-6">
-            What You Get in the Nervous System Reset Kit™ Today
-          </h2>
-          <p className="text-gray-700 mb-6">
-            Everything inside is guided, step-by-step, and designed to be used in real moments of activation.
-          </p>
-          <p className="text-gray-700 mb-4">Here&apos;s Just Some of What You Get Inside the Reset Kit:</p>
-          <ul className="space-y-2 text-gray-700 mb-4">
-            <li>-Guided nervous system reset sessions</li>
-            <li>-Somatic body release protocol</li>
-            <li>-Trigger-to-Reset emergency plan (one-page)</li>
-            <li>- Daily stabilization rhythm (simple plan)</li>
-            <li>- Progress tracker (7-14 days)</li>
-            <li>-Quick start path so you know exactly what to do first</li>
-          </ul>
-          <button className="text-gray-500 text-sm">... More</button>
-        </div>
-      </section>
+          <div className="relative">
+            {/* Connecting line */}
+            <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-[#d4a574]/0 via-[#d4a574]/30 to-[#d4a574]/0 hidden md:block" />
 
-      {/* What's Included Grid - Dark Section */}
-      <section className="bg-black py-12 px-4 relative overflow-hidden">
-        <div className="absolute inset-0" style={{
-          background: 'radial-gradient(ellipse at center, rgba(212,165,116,0.2) 0%, transparent 60%)',
-        }} />
-
-        <div className="max-w-2xl mx-auto relative z-10">
-          <div className="border border-[#d4a574]/30 rounded-lg p-8 bg-gradient-to-b from-[#1a0a00]/60 to-black/80">
-            <h3 className="text-center uppercase tracking-[0.15em] text-sm mb-2 text-white">
-              What&apos;s Included
-            </h3>
-            <p className="text-center text-[#d4a574]/70 text-xs mb-8">In The Nervous System Reset Kit</p>
-
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { icon: "🎧", title: "Guided", subtitle: "Reset Sessions" },
-                { icon: "🧘", title: "Somatic", subtitle: "Release Protocol" },
-                { icon: "📄", title: "Emergency", subtitle: "Plan (1-Page)" },
-                { icon: "📅", title: "Daily Rhythm", subtitle: "Plan" },
-                { icon: "📊", title: "7-14 Day", subtitle: "Tracker" },
-                { icon: "🚀", title: "Quick Start", subtitle: "Path" },
-              ].map((item, index) => (
-                <div key={index} className="border border-[#d4a574]/40 rounded-lg p-4 text-center bg-[#1a0a00]/50">
-                  <div className="text-2xl mb-2">{item.icon}</div>
-                  <p className="text-[#d4a574] text-sm font-medium">{item.title}</p>
-                  <p className="text-[#d4a574]/70 text-xs">{item.subtitle}</p>
+            <div className="space-y-6">
+              {/* Layer 1 */}
+              <div className="relative flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                <div className="md:w-1/2 md:text-right md:pr-8">
+                  <div className="bg-gradient-to-r md:bg-gradient-to-l from-[#d4a574]/10 to-transparent p-6 rounded-lg border border-[#d4a574]/20">
+                    <div className="flex items-center gap-3 md:justify-end mb-3">
+                      <span className="text-[#e8c9a0] text-sm uppercase tracking-wider font-medium">Layer 01</span>
+                    </div>
+                    <h3 className="text-[#d4a574] font-serif text-xl md:text-2xl mb-2">Nervous System Regulation</h3>
+                    <p className="text-white text-sm">Calm the reactive patterns and restore regulation to your autonomic nervous system</p>
+                  </div>
                 </div>
-              ))}
+                <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-[#d4a574] border-4 border-[#1a1512]" />
+                <div className="md:w-1/2" />
+              </div>
+
+              {/* Layer 2 */}
+              <div className="relative flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                <div className="md:w-1/2" />
+                <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-[#d4a574] border-4 border-[#1a1512]" />
+                <div className="md:w-1/2 md:pl-8">
+                  <div className="bg-gradient-to-r from-[#d4a574]/10 to-transparent p-6 rounded-lg border border-[#d4a574]/20">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-[#e8c9a0] text-sm uppercase tracking-wider font-medium">Layer 02</span>
+                    </div>
+                    <h3 className="text-[#d4a574] font-serif text-xl md:text-2xl mb-2">Somatic Body Release</h3>
+                    <p className="text-white text-sm">Release stored tension and fear charge held in the body</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Layer 3 */}
+              <div className="relative flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                <div className="md:w-1/2 md:text-right md:pr-8">
+                  <div className="bg-gradient-to-r md:bg-gradient-to-l from-[#d4a574]/10 to-transparent p-6 rounded-lg border border-[#d4a574]/20">
+                    <div className="flex items-center gap-3 md:justify-end mb-3">
+                      <span className="text-[#e8c9a0] text-sm uppercase tracking-wider font-medium">Layer 03</span>
+                    </div>
+                    <h3 className="text-[#d4a574] font-serif text-xl md:text-2xl mb-2">Trigger-to-Reset Protocol</h3>
+                    <p className="text-white text-sm">A clear emergency plan for when activation happens in real time</p>
+                  </div>
+                </div>
+                <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-[#d4a574] border-4 border-[#1a1512]" />
+                <div className="md:w-1/2" />
+              </div>
+
+              {/* Layer 4 */}
+              <div className="relative flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                <div className="md:w-1/2" />
+                <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-[#d4a574] border-4 border-[#1a1512]" />
+                <div className="md:w-1/2 md:pl-8">
+                  <div className="bg-gradient-to-r from-[#d4a574]/10 to-transparent p-6 rounded-lg border border-[#d4a574]/20">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-[#e8c9a0] text-sm uppercase tracking-wider font-medium">Layer 04</span>
+                    </div>
+                    <h3 className="text-[#d4a574] font-serif text-xl md:text-2xl mb-2">Daily Stabilization Rhythm</h3>
+                    <p className="text-white text-sm">Build a steadier baseline over time with a simple daily practice</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Two Ways To Use */}
-      <section className="bg-white py-16 px-4">
+      <section className="py-16 px-4 bg-white">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-serif italic text-2xl md:text-3xl mb-8">
+          <h2 className="font-serif text-3xl md:text-4xl italic text-center mb-12">
             Two Ways To Use The Reset Kit
           </h2>
 
-          <div className="space-y-8">
-            <div>
-              <h3 className="font-semibold mb-2">1) The Quick Reset (When Triggered)</h3>
-              <ul className="space-y-1 text-gray-700">
-                <li>-Use this when you feel activated in real time.</li>
-                <li>-Follow the emergency plan</li>
-                <li>-Run one guided reset session</li>
-                <li>-Release fear charge in the body</li>
-                <li>-Return to calm faster</li>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="border-l-4 border-[#d4a574] pl-6">
+              <h3 className="font-serif text-xl italic mb-4">1) The Quick Reset</h3>
+              <p className="text-gray-600 text-sm mb-3">When Triggered</p>
+              <ul className="text-gray-700 space-y-2">
+                <li>• Use when you feel activated in real time</li>
+                <li>• Follow the emergency plan</li>
+                <li>• Run one guided reset session</li>
+                <li>• Release fear charge in the body</li>
+                <li>• Return to calm faster</li>
               </ul>
             </div>
 
-            <div>
-              <h3 className="font-semibold mb-2">2) Daily Stabilization (Baseline Training)</h3>
-              <ul className="space-y-1 text-gray-700">
-                <li>-Use this to build a steadier baseline over time.</li>
-                <li>-Short daily regulation practice while working through the modules</li>
-                <li>-Repeat for 14-30 days as a start, then as needed</li>
-                <li>-Build nervous system stability</li>
-                <li>-Reduce how often the loop starts</li>
+            <div className="border-l-4 border-[#d4a574] pl-6">
+              <h3 className="font-serif text-xl italic mb-4">2) Daily Stabilization</h3>
+              <p className="text-gray-600 text-sm mb-3">Baseline Training</p>
+              <ul className="text-gray-700 space-y-2">
+                <li>• Build a steadier baseline over time</li>
+                <li>• Short daily regulation practice</li>
+                <li>• Repeat for 14-30 days as a start</li>
+                <li>• Build nervous system stability</li>
+                <li>• Reduce how often the loop starts</li>
               </ul>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Time & Effort - Dark Section */}
-      <section className="bg-black py-12 px-4 relative overflow-hidden">
-        <div className="absolute inset-0" style={{
-          background: 'radial-gradient(ellipse at center, rgba(212,165,116,0.2) 0%, transparent 60%)',
-        }} />
+      {/* What's Included - Dark Section */}
+      <section className="py-16 px-4 bg-gradient-to-b from-[#1a1512] via-[#2a1f1a] to-[#1a1512]">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-center text-white font-serif text-3xl mb-12">
+            What&apos;s Included
+          </h2>
 
-        <div className="max-w-2xl mx-auto relative z-10">
-          <div className="border border-[#d4a574]/30 rounded-lg p-8 bg-gradient-to-b from-[#1a0a00]/60 to-black/80">
-            <h3 className="text-center uppercase tracking-[0.2em] text-sm mb-8 text-white">
-              Time & Effort
-            </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-8">
+            {[
+              { title: "Guided", subtitle: "Reset Sessions", image: "/images/Products/Downsell1/icon-reset-sessions.png" },
+              { title: "Somatic", subtitle: "Release Protocol", image: "/images/Products/Downsell1/icon-somatic-release.png" },
+              { title: "Emergency", subtitle: "Plan (1-Page)", image: "/images/Products/Downsell1/icon-emergency-plan.png" },
+              { title: "Daily Rhythm", subtitle: "Plan", image: "/images/Products/Downsell1/icon-daily-rhythm.png" },
+              { title: "7-14 Day", subtitle: "Progress Tracker", image: "/images/Products/Downsell1/icon-progress-tracker.png" },
+              { title: "Quick Start", subtitle: "Path", image: "/images/Products/Downsell1/icon-quick-start.png" },
+            ].map((item, index) => (
+              <div key={index} className="bg-[#2a2520] rounded-xl p-3 md:p-6 text-center border border-[#3a3530]">
+                <div className="w-20 h-20 md:w-36 md:h-36 mx-auto mb-2 md:mb-4 rounded-lg overflow-hidden flex items-center justify-center">
+                  {item.image ? (
+                    <Image
+                      src={item.image}
+                      alt={`${item.title} ${item.subtitle}`}
+                      width={144}
+                      height={144}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-b from-[#d4a574]/30 to-[#b8956c]/10 flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-b from-amber-600/40 to-amber-800/20" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-white text-sm md:text-xl font-serif">{item.title}</p>
+                <p className="text-white text-sm md:text-xl font-serif">{item.subtitle}</p>
+              </div>
+            ))}
+          </div>
 
-            <div className="grid grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="w-16 h-16 rounded-full border-2 border-[#d4a574] flex items-center justify-center mx-auto mb-3">
-                  <span className="text-[#d4a574] text-lg font-serif">~10</span>
-                </div>
-                <p className="text-[#d4a574] text-sm">10 Minutes</p>
-                <p className="text-[#d4a574]/70 text-xs">Daily</p>
-              </div>
-              <div className="text-center">
-                <div className="w-16 h-16 rounded-full border-2 border-[#d4a574] flex items-center justify-center mx-auto mb-3">
-                  <svg className="w-8 h-8 text-[#d4a574]" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <p className="text-[#d4a574] text-sm">Use When</p>
-                <p className="text-[#d4a574]/70 text-xs">Triggered</p>
-              </div>
-              <div className="text-center">
-                <div className="w-16 h-16 rounded-full border-2 border-[#d4a574] flex items-center justify-center mx-auto mb-3">
-                  <svg className="w-8 h-8 text-[#d4a574]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </div>
-                <p className="text-[#d4a574] text-sm">Repeatable</p>
-                <p className="text-[#d4a574]/70 text-xs">System</p>
-              </div>
-            </div>
+          {/* CTA */}
+          <div className="max-w-lg mx-auto px-2">
+            <CTAButton />
+            <p className="text-gray-500 text-xs md:text-sm mt-2 text-center">
+              Clicking will add just $27 to your order for Lifetime access
+            </p>
+            <DeclineLink />
           </div>
         </div>
       </section>
 
-      {/* Second CTA */}
-      <section className="bg-white py-8 px-4">
-        <div className="max-w-xl mx-auto space-y-3">
-          <button
-            onClick={handleAccept}
-            disabled={isProcessing}
-            className="w-full bg-[#222] hover:bg-black text-white font-medium py-4 px-8 text-center transition-colors disabled:opacity-50"
-          >
-            {isProcessing ? (
-              "Processing..."
-            ) : (
-              <>
-                Yes - Add The Nervous System Reset™ to My Order 🛒
-                <br />
-                <span className="text-xs text-gray-400 font-normal">Clicking this will add $47 to your order</span>
-              </>
-            )}
-          </button>
-          <Link
-            href={`/upsell-2?session_id=${sessionId}`}
-            className="block text-center text-gray-500 hover:text-gray-300 text-sm underline py-2"
-          >
-            No thanks, I don&apos;t Want The Nervous System Reset
-          </Link>
+      {/* Your Instant Access Portal - Mockup Section */}
+      <section className="py-20 px-4 bg-gradient-to-b from-[#0a0908] via-[#141210] to-[#0a0908]">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-[#e8c9a0] text-base uppercase tracking-[0.3em] mb-3">Your Member Portal</p>
+            <h2 className="text-white font-serif text-3xl md:text-4xl mb-4">
+              Instant Access, Anytime, Anywhere
+            </h2>
+            <p className="text-gray-400 max-w-xl mx-auto">
+              Everything organized in one beautiful, easy-to-navigate portal
+            </p>
+          </div>
+
+          {/* Portal Mockup Container */}
+          <div className="relative mb-12">
+            {/* Browser/Device Frame */}
+            <div className="bg-gradient-to-b from-[#2a2520] to-[#1a1512] rounded-xl p-2 shadow-2xl border border-[#3a3530]">
+              {/* Browser Top Bar */}
+              <div className="flex items-center gap-2 px-4 py-3 bg-[#1a1512] rounded-t-lg border-b border-[#3a3530]">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+                  <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+                  <div className="w-3 h-3 rounded-full bg-[#27ca40]" />
+                </div>
+                <div className="flex-1 flex justify-center">
+                  <div className="bg-[#2a2520] rounded-md px-4 py-1 text-gray-500 text-xs">
+                    portal.innerwealthinitiate.com
+                  </div>
+                </div>
+              </div>
+
+              {/* Portal Screenshot */}
+              <div className="relative bg-[#1a1512] rounded-b-lg overflow-hidden">
+                <Image
+                  src="/images/Products/Downsell1/portal-mockup.png"
+                  alt="Nervous System Reset Kit™ Member Portal"
+                  width={1200}
+                  height={800}
+                  className="w-full h-auto"
+                />
+              </div>
+            </div>
+
+            {/* Decorative glow effect */}
+            <div className="absolute -inset-4 bg-gradient-to-r from-[#d4a574]/0 via-[#d4a574]/5 to-[#d4a574]/0 rounded-2xl blur-xl -z-10" />
+          </div>
+
+          {/* Portal Features Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-12">
+            <div className="bg-[#1a1512] rounded-lg p-3 md:p-5 border border-[#d4a574]/20 text-center">
+              <div className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2 md:mb-3 rounded-full bg-[#d4a574]/10 flex items-center justify-center">
+                <svg className="w-4 h-4 md:w-5 md:h-5 text-[#d4a574]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <p className="text-white text-xs md:text-sm font-medium">Instant Access</p>
+              <p className="text-gray-500 text-[10px] md:text-xs mt-1">Available immediately</p>
+            </div>
+
+            <div className="bg-[#1a1512] rounded-lg p-3 md:p-5 border border-[#d4a574]/20 text-center">
+              <div className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2 md:mb-3 rounded-full bg-[#d4a574]/10 flex items-center justify-center">
+                <svg className="w-4 h-4 md:w-5 md:h-5 text-[#d4a574]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-white text-xs md:text-sm font-medium">~10 Min Daily</p>
+              <p className="text-gray-500 text-[10px] md:text-xs mt-1">Short sessions</p>
+            </div>
+
+            <div className="bg-[#1a1512] rounded-lg p-3 md:p-5 border border-[#d4a574]/20 text-center">
+              <div className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2 md:mb-3 rounded-full bg-[#d4a574]/10 flex items-center justify-center">
+                <svg className="w-4 h-4 md:w-5 md:h-5 text-[#d4a574]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </div>
+              <p className="text-white text-xs md:text-sm font-medium">Repeatable</p>
+              <p className="text-gray-500 text-[10px] md:text-xs mt-1">Use anytime</p>
+            </div>
+
+            <div className="bg-[#1a1512] rounded-lg p-3 md:p-5 border border-[#d4a574]/20 text-center">
+              <div className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2 md:mb-3 rounded-full bg-[#d4a574]/10 flex items-center justify-center">
+                <svg className="w-4 h-4 md:w-5 md:h-5 text-[#d4a574]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <p className="text-white text-xs md:text-sm font-medium">Mobile Friendly</p>
+              <p className="text-gray-500 text-[10px] md:text-xs mt-1">Practice anywhere</p>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="max-w-lg mx-auto px-2">
+            <CTAButton />
+            <p className="text-white text-xs md:text-sm mt-2 text-center">
+              Clicking will add just $27 to your order for Lifetime access
+            </p>
+            <DeclineLink />
+          </div>
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="bg-white py-16 px-4 border-t border-gray-100">
+      <section className="py-16 px-4 bg-white">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-serif italic text-2xl md:text-3xl mb-6">
+          <h3 className="font-serif text-2xl italic mb-6">
             How It Works
-          </h2>
-          <p className="text-gray-700 mb-6">
-            This kit trains your system through a simple progression:
-          </p>
-          <ul className="space-y-3">
-            {[
-              "Regulate the immediate threat response",
-              "Release stored tension and charge from the body",
-              "Reinforce a stable baseline through a simple daily rhythm",
-              "This is how you stop the reaction from turning into a spiral.",
-              "Not by forcing calm. By training the system to return to neutral.",
-            ].map((item, index) => (
-              <li key={index} className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-gray-700">{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* What Changes */}
-      <section className="bg-white py-16 px-4 border-t border-gray-100">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="font-serif italic text-2xl md:text-3xl mb-6">
-            What Changes When The Nervous System Stabilizes
-          </h2>
-          <div className="space-y-4 text-gray-700 leading-relaxed">
-            <p>When the nervous system is dysregulated, the body treats ordinary life like a threat.</p>
-            <p>That threat response becomes the fuel for the loop.</p>
-            <p>As the system stabilizes, a few things begin to change:</p>
-            <p>You recover faster after triggers</p>
-            <p>The intensity in the body reduces</p>
-            <p>You get more space between stimulus and reaction</p>
-            <p>You stop needing to &ldquo;fight&rdquo; your own system to feel okay</p>
-            <p>This is the foundation that makes deeper work possible.</p>
+          </h3>
+          <div className="text-gray-700 space-y-4">
+            <p>This kit trains your system through a simple progression:</p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li>Regulate the immediate threat response</li>
+              <li>Release stored tension and charge from the body</li>
+              <li>Reinforce a stable baseline through a simple daily rhythm</li>
+            </ul>
+            <p className="mt-4">This is how you stop the reaction from turning into a spiral.</p>
+            <p>Not by forcing calm.</p>
+            <p className="font-medium">By training the system to return to neutral.</p>
           </div>
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="bg-white py-16 px-4 border-t border-gray-100">
+      <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-serif italic text-2xl md:text-3xl mb-8">
+          <h3 className="font-serif text-2xl italic mb-8">
             What People Are Saying
-          </h2>
+          </h3>
 
-          <div className="relative">
-            {/* Testimonial Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0">
-                  <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{testimonials[testimonialIndex].name}</p>
-                  <p className="text-xs text-gray-500">{testimonials[testimonialIndex].time}</p>
-                </div>
-              </div>
-              <div className="space-y-4">
-                {testimonials[testimonialIndex].messages.map((msg, idx) => (
-                  <p key={idx} className="text-gray-700 text-sm leading-relaxed">{msg}</p>
-                ))}
+          <div className="bg-white p-4 md:p-6 rounded-lg border border-gray-200 mb-4 md:mb-6">
+            <div className="flex items-start gap-3 md:gap-4">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-300 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="font-medium text-sm md:text-base">Walter Were</p>
+                <p className="text-gray-500 text-xs md:text-sm mb-2 md:mb-3">1:32am</p>
+                <p className="text-gray-700 text-sm md:text-base">
+                  Excellent- thank you Todd. I&apos;ll get back to you in this. Yes, Module 3... quite something. There&apos;s more layers but I&apos;m really at the earliest memories which I segregate based on where we lived at the time. Likely 4yrs old is what these are - wow! One just came up!!! Woh! When my mom reversed and ran over the cat. That&apos;s the third memory at the home we mover out of 1981 (I was born 1976) and we stayed at the next two homes like 1 yr each, then 2yrs at next - so that&apos;s how I remember my age and tie with the memory. That first home I have like 3 memories - they were two( locking keys in my dad&apos;s car, going to kindergarten-hated that, and now the dead cat)
+                </p>
               </div>
             </div>
+          </div>
 
-            {/* Navigation arrows */}
-            <button className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-8 h-8 bg-white rounded-full shadow border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600">
-              ‹
-            </button>
-            <button className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-8 h-8 bg-white rounded-full shadow border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600">
-              ›
-            </button>
+          <div className="bg-white p-4 md:p-6 rounded-lg border border-gray-200">
+            <div className="flex items-start gap-3 md:gap-4">
+              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-300 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="font-medium text-sm md:text-base">Walter Were</p>
+                <p className="text-gray-500 text-xs md:text-sm mb-2 md:mb-3">1:32am</p>
+                <p className="text-gray-700 text-sm md:text-base">
+                  Amazing how that memory just came up as I was typing! That&apos;s maybe 3 or 4yrs old.
+                </p>
+              </div>
+            </div>
+          </div>
 
-            {/* Dots */}
-            <div className="flex justify-center gap-2 mt-6">
-              {[0, 1, 2, 3].map((idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setTestimonialIndex(idx % testimonials.length)}
-                  className={`w-2 h-2 rounded-full ${idx === testimonialIndex ? 'bg-gray-800' : 'bg-gray-300'}`}
-                />
-              ))}
+          {/* Dots indicator */}
+          <div className="flex items-center justify-center gap-2 mt-6">
+            <div className="w-2 h-2 rounded-full bg-gray-900" />
+            <div className="w-2 h-2 rounded-full bg-gray-300" />
+            <div className="w-2 h-2 rounded-full bg-gray-300" />
+            <div className="w-2 h-2 rounded-full bg-gray-300" />
+          </div>
+        </div>
+      </section>
+
+      {/* What Changes */}
+      <section className="py-16 px-4 bg-white">
+        <div className="max-w-3xl mx-auto">
+          <h3 className="font-serif text-2xl italic mb-6">
+            What Changes When The Nervous System Stabilizes
+          </h3>
+          <div className="text-gray-700 space-y-4">
+            <p>When the nervous system is dysregulated, the body treats ordinary life like a threat.</p>
+            <p>That threat response becomes the fuel for the loop.</p>
+            <p>As the system stabilizes, a few things begin to change:</p>
+            <ul className="list-disc list-inside space-y-2 ml-4">
+              <li>You recover faster after triggers</li>
+              <li>The intensity in the body reduces</li>
+              <li>You get more space between stimulus and reaction</li>
+              <li>You stop needing to &ldquo;fight&rdquo; your own system to feel okay</li>
+            </ul>
+            <p className="mt-4 font-medium">This is the foundation that makes deeper work possible.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* What People Love - Dark Section */}
+      <section className="py-16 px-4 bg-gradient-to-b from-[#1a1512] via-[#2a1f1a] to-[#1a1512]">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-center text-white font-serif text-3xl mb-12">
+            What People Love
+          </h2>
+
+          <div className="grid grid-cols-2 gap-3 md:gap-6">
+            <div className="bg-[#2a2520] rounded-lg p-4 md:p-6 text-center border border-[#d4a574]/30">
+              <h4 className="text-[#d4a574] font-serif text-base md:text-xl mb-1 md:mb-2">No</h4>
+              <h4 className="text-[#d4a574] font-serif text-base md:text-xl mb-2 md:mb-4">Subscriptions</h4>
+              <p className="text-[#d4a574]/70 text-xs md:text-sm">One-Time Payment</p>
+            </div>
+            <div className="bg-[#2a2520] rounded-lg p-4 md:p-6 text-center border border-[#d4a574]/30">
+              <h4 className="text-[#d4a574] font-serif text-base md:text-xl mb-1 md:mb-2">No</h4>
+              <h4 className="text-[#d4a574] font-serif text-base md:text-xl mb-2 md:mb-4">Experience Needed</h4>
+              <p className="text-[#d4a574]/70 text-xs md:text-sm">Step-by-Step Guidance</p>
+            </div>
+            <div className="bg-[#2a2520] rounded-lg p-4 md:p-6 text-center border border-[#d4a574]/30">
+              <h4 className="text-[#d4a574] font-serif text-base md:text-xl mb-1 md:mb-2">~10</h4>
+              <h4 className="text-[#d4a574] font-serif text-base md:text-xl mb-2 md:mb-4">Minutes Daily</h4>
+              <p className="text-[#d4a574]/70 text-xs md:text-sm">Short Sessions</p>
+            </div>
+            <div className="bg-[#2a2520] rounded-lg p-4 md:p-6 text-center border border-[#d4a574]/30">
+              <h4 className="text-[#d4a574] font-serif text-base md:text-xl mb-1 md:mb-2">Repeatable</h4>
+              <h4 className="text-[#d4a574] font-serif text-base md:text-xl mb-2 md:mb-4">System</h4>
+              <p className="text-[#d4a574]/70 text-xs md:text-sm">Use Anytime</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* What People Notice First */}
-      <section className="bg-white py-16 px-4 border-t border-gray-100">
+      {/* Why This Is $27 */}
+      <section className="py-16 px-4 bg-white">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-serif italic text-2xl md:text-3xl mb-6">
-            What People Notice First
-          </h2>
-          <div className="space-y-2 text-gray-700 mb-8">
-            <p>People usually notice practical changes before anything else:</p>
-            <p>Faster recovery after triggers</p>
-            <p>Less intensity in the body</p>
-            <p>More space between stimulus and reaction</p>
-            <p>A steadier baseline over time</p>
-          </div>
-        </div>
-      </section>
-
-      {/* What People Notice First - Dark Graphic */}
-      <section className="bg-black py-12 px-4 relative overflow-hidden">
-        <div className="absolute inset-0" style={{
-          background: 'radial-gradient(ellipse at center, rgba(212,165,116,0.2) 0%, transparent 60%)',
-        }} />
-
-        <div className="max-w-2xl mx-auto relative z-10">
-          <div className="border border-[#d4a574]/30 rounded-lg p-8 bg-gradient-to-b from-[#1a0a00]/60 to-black/80">
-            <h3 className="text-center uppercase tracking-[0.15em] text-sm mb-8 text-white">
-              What People Notice First
-            </h3>
-
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { title: "Faster", subtitle: "recovery", desc: "after triggers" },
-                { title: "Less Intensity", subtitle: "", desc: "in the body" },
-                { title: "Steadier", subtitle: "baseline", desc: "over time" },
-              ].map((item, index) => (
-                <div key={index} className="border border-[#d4a574]/40 rounded-lg p-4 text-center bg-[#1a0a00]/50">
-                  <p className="text-[#d4a574] text-sm font-medium">{item.title}</p>
-                  {item.subtitle && <p className="text-[#d4a574] text-sm">{item.subtitle}</p>}
-                  <p className="text-[#d4a574]/70 text-xs">{item.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Why This Is $47 */}
-      <section className="bg-white py-16 px-4">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="font-serif italic text-2xl md:text-3xl mb-6">
-            Why This Is $47
-          </h2>
-          <div className="space-y-4 text-gray-700 leading-relaxed">
+          <h3 className="font-serif text-2xl italic mb-6">
+            Why You&apos;re Being Offered This Now
+          </h3>
+          <div className="text-gray-700 space-y-4">
             <p><span className="underline">This is not</span> a collection of calming audios.</p>
-            <p>
-              It is a structured reset protocol you can use repeatedly, built from the full program and designed for the moments that actually matter.
-            </p>
+            <p>It is a structured reset protocol you can use repeatedly, built from the full program and designed for the moments that actually matter.</p>
             <p>If you want stability first, this is the cleanest place to start.</p>
+            <p>Not as a subscription.</p>
+            <p>Not as an ongoing commitment.</p>
+            <p className="font-medium">As a one-time opportunity to start with nervous system stability.</p>
           </div>
         </div>
       </section>
 
-      {/* Final CTA Section */}
-      <section className="bg-white py-16 px-4 border-t border-gray-100">
+      {/* Access the Reset Kit - Final CTA */}
+      <section className="py-16 px-4 bg-white">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-serif italic text-2xl md:text-3xl mb-6">
-            Start With Reset & Stability
-          </h2>
-          <div className="space-y-2 text-gray-700 mb-8">
+          <h3 className="font-serif text-2xl italic mb-6">
+            Start With Reset &amp; Stability
+          </h3>
+          <div className="text-gray-700 space-y-4 mb-8">
             <p>If you are not ready for the full system today, this gives you a powerful first step.</p>
             <p>Stabilize the nervous system.</p>
             <p>Release fear charge.</p>
-            <p>Restore calm.</p>
+            <p className="font-medium">Restore calm.</p>
           </div>
 
-          <div className="max-w-xl mx-auto space-y-3">
-            <button
-              onClick={handleAccept}
-              disabled={isProcessing}
-              className="w-full bg-[#222] hover:bg-black text-white font-medium py-4 px-8 text-center transition-colors disabled:opacity-50"
-            >
-              {isProcessing ? (
-                "Processing..."
-              ) : (
-                <>
-                  Yes - Add The Nervous System Reset™ to My Order 🛒
-                  <br />
-                  <span className="text-xs text-gray-400 font-normal">Clicking this will add $47 to your order</span>
-                </>
-              )}
-            </button>
-            <Link
-              href={`/upsell-2?session_id=${sessionId}`}
-              className="block text-center text-gray-500 hover:text-gray-300 text-sm underline py-2"
-            >
-              No thanks, I don&apos;t Want The Nervous System Reset
-            </Link>
+          {/* Final CTA */}
+          <div className="max-w-lg mx-auto px-2">
+            <CTAButton className="!bg-black !text-white hover:!bg-gray-700 hover:!shadow-lg" />
+            <p className="text-black text-xs md:text-sm mt-2 text-center">
+              Clicking will add just $27 to your order for Lifetime access
+            </p>
+            <DeclineLink className="!text-black hover:!text-gray-600" />
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#1a1a1a] py-8 px-4">
+      <footer className="py-8 px-4 bg-black">
         <div className="max-w-4xl mx-auto text-center text-sm text-gray-500">
           <p>All rights reserved {new Date().getFullYear()}.</p>
         </div>
