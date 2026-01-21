@@ -17,7 +17,7 @@ export default function PortalLayout({
   return (
     <AuthProvider>
       <SidebarProvider>
-        <div className="min-h-screen bg-[#faf9f7]">
+        <div className="min-h-screen bg-[#faf9f7] overflow-x-hidden max-w-[100vw]">
           {/* Mobile navigation - visible on mobile/tablet only */}
           <MobileNav />
           {/* Desktop sidebar - hidden on mobile/tablet */}

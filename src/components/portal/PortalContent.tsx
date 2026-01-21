@@ -9,7 +9,7 @@ export function PortalContent({ children }: { children: ReactNode }) {
 
   return (
     <div
-      className={`transition-all duration-300 pt-16 md:pt-0 ${
+      className={`transition-all duration-300 pt-16 md:pt-0 overflow-x-hidden ${
         isCollapsed ? "md:ml-16" : "md:ml-64"
       }`}
     >
@@ -17,7 +17,7 @@ export function PortalContent({ children }: { children: ReactNode }) {
       <div className="hidden md:block">
         <PortalHeader />
       </div>
-      <main className="p-4 md:p-6">{children}</main>
+      <main className="p-4 md:p-6 overflow-x-hidden max-w-full">{children}</main>
     </div>
   );
 }

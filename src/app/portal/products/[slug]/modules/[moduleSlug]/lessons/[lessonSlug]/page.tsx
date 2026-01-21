@@ -287,11 +287,11 @@ export default function LessonPage() {
 
   if (isLoading) {
     return (
-      <div className="-m-4 md:-m-6">
+      <div className="-m-4 md:-m-6 overflow-hidden">
         {/* Mobile loading skeleton */}
         <div className="md:hidden bg-white border-b border-[#e5e7eb] p-4 animate-pulse">
           <div className="h-4 bg-gray-200 rounded w-24 mb-2" />
-          <div className="h-5 bg-gray-200 rounded w-48" />
+          <div className="h-5 bg-gray-200 rounded w-48 max-w-full" />
         </div>
 
         <div className="flex md:h-[calc(100vh-64px)]">
@@ -307,10 +307,10 @@ export default function LessonPage() {
               </div>
             </div>
           </div>
-          <div className="flex-1 p-4 md:p-6 animate-pulse">
+          <div className="flex-1 min-w-0 p-4 md:p-6 animate-pulse">
             <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
-              <div className="h-8 bg-gray-200 rounded w-64" />
-              <div className="h-64 md:h-96 bg-gray-200 rounded-xl" />
+              <div className="h-8 bg-gray-200 rounded w-64 max-w-full" />
+              <div className="h-48 sm:h-64 md:h-96 bg-gray-200 rounded-xl" />
             </div>
           </div>
         </div>
@@ -343,7 +343,7 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="-m-4 md:-m-6">
+    <div className="-m-4 md:-m-6 overflow-hidden">
       {/* Mobile Course Navigation */}
       <MobileCourseNav
         product={product}
@@ -356,7 +356,7 @@ export default function LessonPage() {
 
       <div className="flex md:h-[calc(100vh-64px)]">
         {/* Course Sidebar - Desktop only */}
-        <div className="hidden md:block">
+        <div className="hidden md:block flex-shrink-0">
           <CourseSidebar
             product={product}
             modules={modules}
@@ -368,13 +368,13 @@ export default function LessonPage() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 md:overflow-y-auto">
-          <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+        <div className="flex-1 min-w-0 md:overflow-y-auto overflow-x-hidden">
+          <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6 overflow-x-hidden">
           {/* Lesson Header */}
-          <div className="flex items-start justify-between gap-4">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+            <div className="min-w-0">
               <p className="text-sm text-[#6b7280] mb-1">{lesson.module.title}</p>
-              <h1 className="text-2xl font-semibold text-[#222222] font-serif">{lesson.title}</h1>
+              <h1 className="text-xl sm:text-2xl font-semibold text-[#222222] font-serif">{lesson.title}</h1>
             </div>
 
             {/* Completion Toggle */}
@@ -382,20 +382,20 @@ export default function LessonPage() {
               <button
                 onClick={handleMarkComplete}
                 disabled={isCompleting || isCompleted}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors font-medium ${
+                className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-colors font-medium text-sm sm:text-base flex-shrink-0 ${
                   isCompleted
                     ? "bg-green-100 text-green-700 cursor-default"
                     : "bg-[#222222] hover:bg-black text-white"
                 }`}
               >
                 <CheckIcon className="w-4 h-4" />
-                {isCompleted ? "Completed" : isCompleting ? "Saving..." : "Mark Complete"}
+                <span className="whitespace-nowrap">{isCompleted ? "Completed" : isCompleting ? "Saving..." : "Mark Complete"}</span>
               </button>
             )}
           </div>
 
           {/* Content Area */}
-          <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden">
+          <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden w-full max-w-full">
             {lesson.content_type === "video" && (
               <VideoPlayer
                 productSlug={productSlug}
@@ -430,7 +430,7 @@ export default function LessonPage() {
             )}
 
             {lesson.content_type === "text" && (
-              <div className="p-8 prose prose-gray max-w-none">
+              <div className="p-4 sm:p-6 md:p-8 prose prose-gray max-w-none prose-sm sm:prose-base">
                 {lesson.description || "Content coming soon..."}
               </div>
             )}
@@ -438,9 +438,9 @@ export default function LessonPage() {
 
           {/* Description */}
           {lesson.description && lesson.content_type !== "text" && (
-            <div className="bg-white border border-[#e5e7eb] rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-[#222222] mb-3 font-serif">About This Lesson</h3>
-              <p className="text-[#4b5563] whitespace-pre-wrap">{lesson.description}</p>
+            <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-[#222222] mb-2 sm:mb-3 font-serif">About This Lesson</h3>
+              <p className="text-sm sm:text-base text-[#4b5563] whitespace-pre-wrap break-words">{lesson.description}</p>
             </div>
           )}
 
@@ -461,40 +461,40 @@ export default function LessonPage() {
           )}
 
           {/* Navigation */}
-          <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb]">
+          <div className="flex items-center justify-between gap-4 pt-4 border-t border-[#e5e7eb]">
             {prev && prevModule ? (
               <Link
                 href={`/portal/products/${productSlug}/modules/${prevModule.slug}/lessons/${prev.slug}`}
-                className="flex items-center gap-2 text-[#4b5563] hover:text-[#222222] transition-colors"
+                className="flex items-center gap-1 sm:gap-2 text-[#4b5563] hover:text-[#222222] transition-colors min-w-0 flex-1"
               >
-                <ChevronLeftIcon className="w-5 h-5" />
-                <div className="text-left">
+                <ChevronLeftIcon className="w-5 h-5 flex-shrink-0" />
+                <div className="text-left min-w-0">
                   <span className="text-xs text-[#6b7280] block">Previous</span>
-                  <span className="font-medium text-[#222222]">{prev.title}</span>
+                  <span className="font-medium text-[#222222] text-sm sm:text-base line-clamp-1">{prev.title}</span>
                 </div>
               </Link>
             ) : (
-              <div />
+              <div className="flex-1" />
             )}
 
             {next && nextModule ? (
               <Link
                 href={`/portal/products/${productSlug}/modules/${nextModule.slug}/lessons/${next.slug}`}
-                className="flex items-center gap-2 text-[#4b5563] hover:text-[#222222] transition-colors"
+                className="flex items-center gap-1 sm:gap-2 text-[#4b5563] hover:text-[#222222] transition-colors min-w-0 flex-1 justify-end"
               >
-                <div className="text-right">
+                <div className="text-right min-w-0">
                   <span className="text-xs text-[#6b7280] block">Next</span>
-                  <span className="font-medium text-[#222222]">{next.title}</span>
+                  <span className="font-medium text-[#222222] text-sm sm:text-base line-clamp-1">{next.title}</span>
                 </div>
-                <ChevronRightIcon className="w-5 h-5" />
+                <ChevronRightIcon className="w-5 h-5 flex-shrink-0" />
               </Link>
             ) : (
               <Link
                 href={`/portal/products/${productSlug}`}
-                className="flex items-center gap-2 text-[#ee5d0b] hover:text-[#d54d00] font-medium transition-colors"
+                className="flex items-center gap-1 sm:gap-2 text-[#ee5d0b] hover:text-[#d54d00] font-medium transition-colors text-sm sm:text-base"
               >
-                Back to Course
-                <ChevronRightIcon className="w-5 h-5" />
+                <span className="whitespace-nowrap">Back to Course</span>
+                <ChevronRightIcon className="w-5 h-5 flex-shrink-0" />
               </Link>
             )}
           </div>
