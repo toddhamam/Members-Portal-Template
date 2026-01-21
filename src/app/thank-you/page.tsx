@@ -151,7 +151,7 @@ function ThankYouContent() {
                       )}
                     </div>
                     <div className="col-span-2 text-center text-gray-600">{item.quantity}</div>
-                    <div className="col-span-3 md:col-span-2 text-right text-gray-800">AU${item.price}</div>
+                    <div className="col-span-3 md:col-span-2 text-right text-gray-800">${item.price}</div>
                   </div>
                 ))
               ) : !isLoading && (
@@ -165,7 +165,7 @@ function ThankYouContent() {
                 <div className="grid grid-cols-12 py-4 text-sm font-semibold">
                   <div className="col-span-7 md:col-span-8 text-gray-800">Total</div>
                   <div className="col-span-2 text-center"></div>
-                  <div className="col-span-3 md:col-span-2 text-right text-gray-800">AU${sessionData.total}</div>
+                  <div className="col-span-3 md:col-span-2 text-right text-gray-800">${sessionData.total}</div>
                 </div>
               )}
             </div>
