@@ -368,8 +368,8 @@ export default function LessonPage() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 min-w-0 md:overflow-y-auto">
-          <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
+        <div className="flex-1 min-w-0 md:overflow-y-auto overflow-x-hidden">
+          <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6 overflow-x-hidden">
           {/* Lesson Header */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
             <div className="min-w-0">
@@ -395,7 +395,7 @@ export default function LessonPage() {
           </div>
 
           {/* Content Area */}
-          <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden w-full">
+          <div className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden w-full max-w-full">
             {lesson.content_type === "video" && (
               <VideoPlayer
                 productSlug={productSlug}

@@ -159,11 +159,11 @@ export const VideoPlayer = memo(function VideoPlayer({
   // Bunny Stream embed (most secure - uses their player with token auth)
   if (content.type === 'bunny' && content.embedUrl) {
     return (
-      <div className="aspect-video bg-black">
+      <div className="aspect-video bg-black w-full max-w-full overflow-hidden">
         <iframe
           src={content.embedUrl}
           loading="lazy"
-          className="w-full h-full border-0"
+          className="w-full h-full border-0 max-w-full"
           allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
           allowFullScreen
         />
@@ -177,11 +177,11 @@ export const VideoPlayer = memo(function VideoPlayer({
     if (content.url.includes('.m3u8')) {
       // For HLS, we'd use hls.js - for now, use native support or fallback
       return (
-        <div className="aspect-video bg-black">
+        <div className="aspect-video bg-black w-full max-w-full overflow-hidden">
           <video
             src={content.url}
             controls
-            className="w-full h-full"
+            className="w-full h-full max-w-full"
             poster={thumbnailUrl}
             onTimeUpdate={(e) => {
               const video = e.currentTarget;
@@ -206,11 +206,11 @@ export const VideoPlayer = memo(function VideoPlayer({
 
     // Regular video file
     return (
-      <div className="aspect-video bg-black">
+      <div className="aspect-video bg-black w-full max-w-full overflow-hidden">
         <video
           src={content.url}
           controls
-          className="w-full h-full"
+          className="w-full h-full max-w-full"
           poster={thumbnailUrl}
           onTimeUpdate={(e) => {
             const video = e.currentTarget;
