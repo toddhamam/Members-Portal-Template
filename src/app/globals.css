@@ -124,3 +124,19 @@ html {
   margin-top: 2rem;
   margin-bottom: 1rem;
 }
+
+/* Portal mobile responsiveness - prevent horizontal overflow */
+@media (max-width: 767px) {
+  /* Force all iframes and videos to respect container width */
+  iframe,
+  video {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Prevent any element from causing horizontal scroll */
+  .aspect-video {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+}
