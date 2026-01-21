@@ -142,22 +142,6 @@ export function PortalSidebar() {
           )}
         </button>
       </div>
-
-      {/* Footer */}
-      <div className="p-2 border-t border-gray-800">
-        <Link
-          href="/"
-          className={`flex items-center gap-2 text-gray-500 hover:text-gray-400 text-sm transition-colors px-3 py-2 ${
-            isCollapsed ? "justify-center" : ""
-          }`}
-          title={isCollapsed ? "Back to Website" : undefined}
-        >
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          {!isCollapsed && <span>Back to Website</span>}
-        </Link>
-      </div>
     </aside>
   );
 }

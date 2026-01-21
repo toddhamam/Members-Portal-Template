@@ -9,12 +9,15 @@ export function PortalContent({ children }: { children: ReactNode }) {
 
   return (
     <div
-      className={`transition-all duration-300 ${
-        isCollapsed ? "ml-16" : "ml-64"
+      className={`transition-all duration-300 pt-16 md:pt-0 ${
+        isCollapsed ? "md:ml-16" : "md:ml-64"
       }`}
     >
-      <PortalHeader />
-      <main className="p-6">{children}</main>
+      {/* Header only shown on desktop */}
+      <div className="hidden md:block">
+        <PortalHeader />
+      </div>
+      <main className="p-4 md:p-6">{children}</main>
     </div>
   );
 }

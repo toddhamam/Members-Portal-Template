@@ -15,12 +15,12 @@ const WelcomeCard = memo(function WelcomeCard({ name }: { name: string }) {
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
-    <div className="bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] rounded-xl p-8 text-white">
-      <h1 className="text-3xl font-semibold mb-2 font-serif">
+    <div className="bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] rounded-xl p-5 md:p-8 text-white">
+      <h1 className="text-2xl md:text-3xl font-semibold mb-2 font-serif">
         {greeting}, {firstName}!
       </h1>
-      <p className="text-[#9ca3af]">
-        Welcome to your Inner Wealth Initiate member portal. Access your products and track your progress below.
+      <p className="text-sm md:text-base text-[#9ca3af]">
+        Welcome to your member portal. Access your products and track your progress below.
       </p>
     </div>
   );
@@ -28,33 +28,33 @@ const WelcomeCard = memo(function WelcomeCard({ name }: { name: string }) {
 
 const ContinueLearningCard = memo(function ContinueLearningCard({ product, progress }: { product: ProductWithAccess; progress: number }) {
   return (
-    <div className="bg-white border border-[#e5e7eb] rounded-xl p-6 hover:border-[#d4a574] transition-colors">
-      <div className="flex items-start gap-4">
+    <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 md:p-6 hover:border-[#d4a574] transition-colors">
+      <div className="flex items-start gap-3 md:gap-4">
         {/* Thumbnail */}
-        <div className="w-20 h-20 rounded-lg bg-gradient-to-b from-[#d4a574] to-[#b8956c] flex-shrink-0 flex items-center justify-center overflow-hidden">
+        <div className="w-16 h-16 md:w-20 md:h-20 rounded-lg bg-gradient-to-b from-[#d4a574] to-[#b8956c] flex-shrink-0 flex items-center justify-center overflow-hidden">
           {product.thumbnail_url ? (
             <img src={product.thumbnail_url} alt={product.name} className="w-full h-full object-cover" />
           ) : (
-            <span className="text-white text-2xl font-serif">{product.name.charAt(0)}</span>
+            <span className="text-white text-xl md:text-2xl font-serif">{product.name.charAt(0)}</span>
           )}
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-[#222222] mb-1 truncate">{product.name}</h3>
+          <h3 className="font-semibold text-[#222222] mb-1 truncate text-sm md:text-base">{product.name}</h3>
           <div className="mb-2">
             <ProgressBar progress={progress} size="sm" />
           </div>
-          <p className="text-sm text-[#6b7280]">{progress}% complete</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs md:text-sm text-[#6b7280]">{progress}% complete</p>
+            <Link
+              href={`/portal/products/${product.slug}`}
+              className="flex-shrink-0 bg-[#222222] hover:bg-black text-white text-xs md:text-sm font-medium px-3 md:px-4 py-1.5 md:py-2 rounded-lg transition-colors"
+            >
+              Continue
+            </Link>
+          </div>
         </div>
-
-        {/* Action */}
-        <Link
-          href={`/portal/products/${product.slug}`}
-          className="flex-shrink-0 bg-[#222222] hover:bg-black text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          Continue
-        </Link>
       </div>
     </div>
   );
@@ -119,7 +119,7 @@ export default function DashboardPage() {
 
   // Progressive rendering: show each section as its data arrives
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {/* Welcome Card - renders immediately when auth ready, skeleton otherwise */}
       {authLoading ? (
         <div className="h-32 bg-gray-200 rounded-xl animate-pulse" />

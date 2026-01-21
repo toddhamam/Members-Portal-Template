@@ -10,6 +10,7 @@ import { VideoPlayer } from "@/components/portal/VideoPlayer";
 import { AudioPlayer } from "@/components/portal/AudioPlayer";
 import { DownloadButton } from "@/components/portal/DownloadButton";
 import { CourseSidebar } from "@/components/portal/CourseSidebar";
+import { MobileCourseNav } from "@/components/portal/MobileCourseNav";
 import { LessonResources } from "@/components/portal/LessonResources";
 import type { Lesson, Module, Product, LessonProgress, ModuleWithLessons, LessonResource } from "@/lib/supabase/types";
 
@@ -286,22 +287,31 @@ export default function LessonPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-[calc(100vh-64px)]">
-        <div className="w-72 flex-shrink-0 bg-white border-r border-[#e5e7eb] animate-pulse">
-          <div className="p-4 space-y-4">
-            <div className="h-6 bg-gray-200 rounded w-3/4" />
-            <div className="h-2 bg-gray-200 rounded" />
-            <div className="space-y-2 pt-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-10 bg-gray-200 rounded" />
-              ))}
+      <div className="-m-4 md:-m-6">
+        {/* Mobile loading skeleton */}
+        <div className="md:hidden bg-white border-b border-[#e5e7eb] p-4 animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-24 mb-2" />
+          <div className="h-5 bg-gray-200 rounded w-48" />
+        </div>
+
+        <div className="flex md:h-[calc(100vh-64px)]">
+          {/* Desktop sidebar skeleton */}
+          <div className="hidden md:block w-72 flex-shrink-0 bg-white border-r border-[#e5e7eb] animate-pulse">
+            <div className="p-4 space-y-4">
+              <div className="h-6 bg-gray-200 rounded w-3/4" />
+              <div className="h-2 bg-gray-200 rounded" />
+              <div className="space-y-2 pt-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="h-10 bg-gray-200 rounded" />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex-1 p-6 animate-pulse">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="h-8 bg-gray-200 rounded w-64" />
-            <div className="h-96 bg-gray-200 rounded-xl" />
+          <div className="flex-1 p-4 md:p-6 animate-pulse">
+            <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
+              <div className="h-8 bg-gray-200 rounded w-64" />
+              <div className="h-64 md:h-96 bg-gray-200 rounded-xl" />
+            </div>
           </div>
         </div>
       </div>
@@ -333,9 +343,9 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-64px)] -m-6">
-      {/* Course Sidebar */}
-      <CourseSidebar
+    <div className="-m-4 md:-m-6">
+      {/* Mobile Course Navigation */}
+      <MobileCourseNav
         product={product}
         modules={modules}
         progressMap={progressMap}
@@ -344,9 +354,22 @@ export default function LessonPage() {
         overallProgress={overallProgress}
       />
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="flex md:h-[calc(100vh-64px)]">
+        {/* Course Sidebar - Desktop only */}
+        <div className="hidden md:block">
+          <CourseSidebar
+            product={product}
+            modules={modules}
+            progressMap={progressMap}
+            currentModuleSlug={moduleSlug}
+            currentLessonSlug={lessonSlug}
+            overallProgress={overallProgress}
+          />
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 md:overflow-y-auto">
+          <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-4 md:space-y-6">
           {/* Lesson Header */}
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -478,5 +501,6 @@ export default function LessonPage() {
         </div>
       </div>
     </div>
+  </div>
   );
 }
