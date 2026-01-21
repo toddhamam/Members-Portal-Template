@@ -407,7 +407,7 @@ export default function LessonPage() {
                 thumbnailUrl={lesson.thumbnail_url || undefined}
                 initialPosition={progress?.last_position_seconds || 0}
                 onProgress={handleProgressUpdate}
-                onComplete={() => handleMarkComplete()}
+                onComplete={() => !isCompleted && handleToggleComplete()}
               />
             )}
 
@@ -419,7 +419,7 @@ export default function LessonPage() {
                 title={lesson.title}
                 initialPosition={progress?.last_position_seconds || 0}
                 onProgress={handleProgressUpdate}
-                onComplete={() => handleMarkComplete()}
+                onComplete={() => !isCompleted && handleToggleComplete()}
               />
             )}
 
