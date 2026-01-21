@@ -15,7 +15,7 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-async function measureQuery(name: string, queryFn: () => Promise<unknown>): Promise<number> {
+async function measureQuery(name: string, queryFn: () => PromiseLike<unknown>): Promise<number> {
   const start = performance.now();
   await queryFn();
   const duration = performance.now() - start;
