@@ -31,9 +31,13 @@ export function useProgress() {
           last_position_seconds: progress.last_position_seconds,
         };
 
-        if (progress.completed) {
+        // Handle completion toggle
+        if (progress.completed === true) {
           updateData.completed_at = new Date().toISOString();
           updateData.progress_percent = 100;
+        } else if (progress.completed === false) {
+          // Explicitly uncomplete - set completed_at to null
+          updateData.completed_at = null;
         }
 
         // Upsert progress record
