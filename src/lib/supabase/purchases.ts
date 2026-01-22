@@ -20,11 +20,14 @@ export async function grantProductAccess({
 }: GrantProductAccessParams) {
   const supabase = createAdminClientInstance();
 
-  // Check if user already exists in profiles
+  // Normalize email to lowercase for consistent storage and lookup
+  const emailLower = email.toLowerCase();
+
+  // Check if user already exists in profiles (case-insensitive)
   const { data: existingProfile } = await supabase
     .from('profiles')
     .select('id')
-    .eq('email', email)
+    .ilike('email', emailLower)
     .single();
 
   let userId: string;
@@ -48,7 +51,7 @@ export async function grantProductAccess({
     const lastName = lastNameParts.join(' ');
 
     const { data: newUser, error: createUserError } = await supabase.auth.admin.createUser({
-      email,
+      email: emailLower,
       email_confirm: true, // Auto-confirm since they made a purchase
       user_metadata: {
         full_name: fullName || '',
@@ -59,7 +62,9 @@ export async function grantProductAccess({
       // User might already exist in auth but not in profiles (edge case)
       // Try to get user by email from auth
       const { data: authUsers } = await supabase.auth.admin.listUsers();
-      const existingAuthUser = authUsers.users.find((u: { email?: string }) => u.email === email);
+      const existingAuthUser = authUsers.users.find((u: { email?: string }) =>
+        u.email?.toLowerCase() === emailLower
+      );
 
       if (existingAuthUser) {
         userId = existingAuthUser.id;
@@ -67,7 +72,7 @@ export async function grantProductAccess({
         // Create profile if it doesn't exist
         await supabase.from('profiles').upsert({
           id: userId,
-          email,
+          email: emailLower,
           full_name: fullName || '',
           first_name: firstName,
           last_name: lastName,
@@ -83,7 +88,7 @@ export async function grantProductAccess({
       // The trigger should create the profile, but let's update it with more info
       await supabase.from('profiles').upsert({
         id: userId,
-        email,
+        email: emailLower,
         full_name: fullName || '',
         first_name: firstName,
         last_name: lastName,
@@ -121,6 +126,6 @@ export async function grantProductAccess({
     throw purchaseError;
   }
 
-  console.log(`Granted access to ${productSlug} for user ${email}`);
+  console.log(`Granted access to ${productSlug} for user ${emailLower}`);
   return { userId, granted: true };
 }
