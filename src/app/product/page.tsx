@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   StarRating,
   DownloadIcon,
   ChevronDownIcon,
 } from "@/components/shared";
+import { trackViewContent } from "@/lib/meta-pixel";
 
 // Product images for the hero slider
 const productImages = [
@@ -112,6 +113,17 @@ export default function ProductPage() {
   const [openFAQ, setOpenFAQ] = useState<number>(0);
   const [activeImage, setActiveImage] = useState(0);
   const [testimonialPage, setTestimonialPage] = useState(0);
+
+  // Track ViewContent for Meta Pixel
+  useEffect(() => {
+    trackViewContent({
+      content_name: 'Resistance Mapping Guide',
+      content_ids: ['resistance-mapping-guide'],
+      content_type: 'product',
+      value: 7.00,
+      currency: 'USD',
+    });
+  }, []);
 
   const faqs = [
     {

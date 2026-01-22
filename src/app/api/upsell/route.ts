@@ -3,6 +3,7 @@ import { stripe, processOneClickUpsell } from '@/lib/stripe';
 import { trackEvent, FunnelEvents } from '@/lib/klaviyo';
 import { createShopifyOrder } from '@/lib/shopify';
 import { grantProductAccess } from '@/lib/supabase/purchases';
+import { trackServerPurchase } from '@/lib/meta-capi';
 
 export async function POST(request: NextRequest) {
   try {
@@ -88,6 +89,23 @@ export async function POST(request: NextRequest) {
           value: priceAmount / 100,
         },
         value: priceAmount / 100,
+      });
+
+      // Track in Meta Conversions API (server-side)
+      const [firstName, ...lastNameParts] = (session.customer_details?.name || '').split(' ');
+      const lastName = lastNameParts.join(' ');
+
+      await trackServerPurchase({
+        email: customerEmail,
+        value: priceAmount / 100,
+        currency: 'USD',
+        orderId: upsellPayment.id,
+        contentIds: [productSlug],
+        contentName: productName,
+        numItems: 1,
+        firstName,
+        lastName,
+        eventSourceUrl: `https://offer.innerwealthinitiate.com/${upsellType}`,
       });
 
       // Create order in Shopify

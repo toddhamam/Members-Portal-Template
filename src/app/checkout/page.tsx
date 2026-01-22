@@ -11,6 +11,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { cn } from "@/styles/style-guide";
+import { trackInitiateCheckout, trackAddToCart } from "@/lib/meta-pixel";
 
 // Initialize Stripe
 const stripePromise = loadStripe(
@@ -287,6 +288,31 @@ export default function CheckoutPage() {
   const orderBumpPrice = 27.0;
   const total = includeOrderBump ? mainProductPrice + orderBumpPrice : mainProductPrice;
 
+  // Track InitiateCheckout for Meta Pixel
+  useEffect(() => {
+    trackInitiateCheckout({
+      content_ids: ['resistance-mapping-guide'],
+      content_name: 'Resistance Mapping Guide',
+      value: mainProductPrice,
+      currency: 'USD',
+      num_items: 1,
+    });
+  }, []);
+
+  // Track AddToCart when order bump is added
+  const handleOrderBumpChange = (include: boolean) => {
+    setIncludeOrderBump(include);
+    if (include) {
+      trackAddToCart({
+        content_ids: ['golden-thread-technique'],
+        content_name: 'Golden Thread Technique',
+        content_type: 'product',
+        value: orderBumpPrice,
+        currency: 'USD',
+      });
+    }
+  };
+
   // Create PaymentIntent only on initial load
   useEffect(() => {
     const createPaymentIntent = async () => {
@@ -390,7 +416,7 @@ export default function CheckoutPage() {
                   includeOrderBump={includeOrderBump}
                   total={total}
                   onFormDataChange={setFormData}
-                  onOrderBumpChange={setIncludeOrderBump}
+                  onOrderBumpChange={handleOrderBumpChange}
                 />
               </Elements>
             )}

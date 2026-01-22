@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { trackPurchase, generateEventId } from "@/lib/meta-pixel";
 
 function CheckCircleIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -41,6 +42,7 @@ function ThankYouContent() {
 
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const purchaseTracked = useRef(false);
 
   // Fetch session data and order details
   useEffect(() => {
@@ -61,6 +63,21 @@ function ThankYouContent() {
             items: data.items || [],
             total: data.total || "0.00",
           });
+
+          // Track Purchase event (only once)
+          if (!purchaseTracked.current && data.total && parseFloat(data.total) > 0) {
+            purchaseTracked.current = true;
+            const eventId = generateEventId();
+            trackPurchase(
+              {
+                value: parseFloat(data.total),
+                currency: 'USD',
+                content_ids: data.items?.map((item: OrderItem) => item.title) || [],
+                num_items: data.items?.length || 1,
+              },
+              eventId
+            );
+          }
         }
       } catch (err) {
         console.error("Failed to fetch session data:", err);
