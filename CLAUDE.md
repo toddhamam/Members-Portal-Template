@@ -7,6 +7,12 @@ This is a sales funnel for digital products (courses/guides) with Stripe checkou
 
 ---
 
+## Browser Console Debugging
+
+When you need to see what's appearing in the browser console (e.g., to verify tracking events, debug JavaScript errors, or check client-side behavior), **use the Claude Chrome extension to inspect console output directly**. Do not ask the user to manually check the console - use the extension yourself for efficiency.
+
+---
+
 ## Funnel Flow
 
 ```
@@ -147,6 +153,78 @@ await grantProductAccess({
 | Shopify | Order sync for fulfillment | `SHOPIFY_*` env vars |
 | Meta CAPI | Server-side conversion tracking | `META_*` env vars |
 | Hotjar | Session recordings | Client-side |
+| GA4 | Google Analytics 4 tracking | `NEXT_PUBLIC_GA4_MEASUREMENT_ID` |
+
+---
+
+## Analytics Implementation
+
+### Google Analytics 4 (GA4)
+
+GA4 is implemented across all funnel pages for comprehensive event tracking.
+
+**Configuration:**
+- Measurement ID: `G-QW04PDPSDS`
+- Environment Variable: `NEXT_PUBLIC_GA4_MEASUREMENT_ID`
+- Must be set in Vercel environment variables (baked into build at build time)
+
+**Key Files:**
+- `src/lib/ga4.ts` - GA4 tracking library with all event methods
+- `src/components/GoogleAnalytics.tsx` - Script loader component (loads gtag.js via Next.js Script)
+
+**Events Tracked:**
+
+| Page | Events |
+|------|--------|
+| Landing (`/`) | `landing_page_view` |
+| Product (`/product`) | `view_item` |
+| Checkout (`/checkout`) | `checkout_view`, `checkout_started`, `order_bump_added`, `order_bump_removed` |
+| Upsell 1 (`/upsell-1`) | `upsell_view`, `upsell_accepted`, `upsell_declined` |
+| Downsell 1 (`/downsell-1`) | `downsell_view`, `downsell_accepted`, `downsell_declined` |
+| Upsell 2 (`/upsell-2`) | `upsell_view`, `upsell_accepted`, `upsell_declined` |
+| Thank You (`/thank-you`) | `funnel_completed` (with total value) |
+
+**Debug Console Log:**
+On page load, the console shows: `[GA4] Measurement ID configured: Yes` (or `No` if env var is missing)
+
+**Adding GA4 to a New Page:**
+```tsx
+import { useEffect } from "react";
+import { ga4 } from "@/lib/ga4";
+
+function MyPageContent() {
+  useEffect(() => {
+    ga4.pageView(); // Basic page view
+    // Or use specific funnel events:
+    // ga4.upsellView(2, 'Product Name', 49.99);
+  }, []);
+
+  const handleAccept = () => {
+    ga4.upsellAccepted(2, 'Product Name', 49.99);
+    // ... rest of accept logic
+  };
+}
+```
+
+### Meta Pixel (Facebook)
+
+Meta Pixel is implemented for Facebook/Instagram ad tracking.
+
+**Key Files:**
+- `src/lib/meta-pixel.ts` - Meta Pixel tracking functions
+- `src/components/MetaPixel.tsx` - Pixel script loader
+
+**Events:**
+- `InitiateCheckout` - Checkout page
+- `AddToCart` - Order bump added
+- `CompleteRegistration` - Thank you page
+- `Purchase` - Tracked server-side via Stripe webhook (Conversions API for accuracy)
+
+### Hotjar
+
+Session recording and heatmaps via Hotjar.
+
+**Key File:** `src/components/HotjarPixel.tsx`
 
 ---
 
