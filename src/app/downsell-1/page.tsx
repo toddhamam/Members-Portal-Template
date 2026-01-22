@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSessionId } from "@/hooks/useSessionId";
+import { ga4 } from "@/lib/ga4";
 
 function Downsell1Content() {
   const sessionId = useSessionId();
@@ -59,7 +60,14 @@ function Downsell1Content() {
     setTestimonialIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
+  // Track downsell viewed on mount
+  useEffect(() => {
+    ga4.downsellView(1, 'Nervous System Reset Kit', 27);
+  }, []);
+
   const handleAccept = async () => {
+    // Track for GA4
+    ga4.downsellAccepted(1, 'Nervous System Reset Kit', 27);
     setIsProcessing(true);
     try {
       const response = await fetch("/api/upsell", {
@@ -104,6 +112,9 @@ function Downsell1Content() {
     <Link
       href={`/upsell-2?session_id=${sessionId}`}
       className={`block text-center text-white hover:text-gray-300 text-sm mt-3 underline ${className}`}
+      onClick={() => {
+        ga4.downsellDeclined(1, 'Nervous System Reset Kit', 27);
+      }}
     >
       No thanks, I don&apos;t want the nervous system reset kit
     </Link>

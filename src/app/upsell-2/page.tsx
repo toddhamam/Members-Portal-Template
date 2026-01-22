@@ -1,19 +1,28 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Script from "next/script";
 import { useSessionId } from "@/hooks/useSessionId";
+import { ga4 } from "@/lib/ga4";
 
 function Upsell2Content() {
   const sessionId = useSessionId();
+
+  // Track upsell viewed on mount
+  useEffect(() => {
+    ga4.upsellView(2, 'Bridge to Mastery', 0);
+  }, []);
 
   const CTAButton = ({ className = "" }: { className?: string }) => (
     <a
       href="https://lunacal.ai/todd-hamam/bridge-to-mastery-discovery-call?date=2026-01-22&month=2026-01"
       target="_blank"
       rel="noopener noreferrer"
+      onClick={() => {
+        ga4.upsellAccepted(2, 'Bridge to Mastery', 0);
+      }}
       className={`w-full bg-white hover:bg-gray-200 text-black font-bold py-4 px-5 md:py-5 md:px-8 text-base md:text-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg rounded-md ${className}`}
     >
       <span className="text-center leading-tight">Book Discovery Call</span>
@@ -27,6 +36,9 @@ function Upsell2Content() {
     <Link
       href={`/thank-you?session_id=${sessionId}`}
       className={`block text-center text-white hover:text-gray-300 text-sm mt-3 underline ${className}`}
+      onClick={() => {
+        ga4.upsellDeclined(2, 'Bridge to Mastery', 0);
+      }}
     >
       No thanks, I don&apos;t want personal guidance
     </Link>

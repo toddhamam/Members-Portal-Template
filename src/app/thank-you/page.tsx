@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { trackCompleteRegistration } from "@/lib/meta-pixel";
 import { useSessionId, clearSessionId } from "@/hooks/useSessionId";
+import { ga4 } from "@/lib/ga4";
 
 function CheckCircleIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -68,12 +69,15 @@ function ThankYouContent() {
           // Note: Purchase events are tracked server-side via Stripe webhook to avoid double-counting
           if (!registrationTracked.current) {
             registrationTracked.current = true;
+            const totalValue = parseFloat(data.total) || 0;
             trackCompleteRegistration({
               content_name: 'Resistance Mapping Guide Purchase',
               status: 'success',
-              value: parseFloat(data.total) || 0,
+              value: totalValue,
               currency: 'USD',
             });
+            // Track funnel completed for GA4
+            ga4.funnelCompleted(totalValue);
           }
         }
       } catch (err) {

@@ -1,15 +1,23 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSessionId } from "@/hooks/useSessionId";
+import { ga4 } from "@/lib/ga4";
 
 function Upsell1Content() {
   const sessionId = useSessionId();
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Track upsell viewed on mount
+  useEffect(() => {
+    ga4.upsellView(1, 'The Pathless Path', 97);
+  }, []);
+
   const handleAccept = async () => {
+    // Track for GA4
+    ga4.upsellAccepted(1, 'The Pathless Path', 97);
     setIsProcessing(true);
     try {
       const response = await fetch("/api/upsell", {
@@ -54,6 +62,9 @@ function Upsell1Content() {
     <Link
       href={`/downsell-1?session_id=${sessionId}`}
       className={`block text-center text-white hover:text-gray-300 text-sm mt-3 underline ${className}`}
+      onClick={() => {
+        ga4.upsellDeclined(1, 'The Pathless Path', 97);
+      }}
     >
       No thanks, I don&apos;t want the lifetime access offer
     </Link>

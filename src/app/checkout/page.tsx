@@ -12,6 +12,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { cn } from "@/styles/style-guide";
 import { trackInitiateCheckout, trackAddToCart } from "@/lib/meta-pixel";
+import { ga4 } from "@/lib/ga4";
 
 // Initialize Stripe
 const stripePromise = loadStripe(
@@ -288,7 +289,7 @@ export default function CheckoutPage() {
   const orderBumpPrice = 27.0;
   const total = includeOrderBump ? mainProductPrice + orderBumpPrice : mainProductPrice;
 
-  // Track InitiateCheckout for Meta Pixel
+  // Track InitiateCheckout for Meta Pixel and GA4
   useEffect(() => {
     trackInitiateCheckout({
       content_ids: ['resistance-mapping-guide'],
@@ -297,6 +298,9 @@ export default function CheckoutPage() {
       currency: 'USD',
       num_items: 1,
     });
+    // Track for GA4
+    ga4.checkoutView(mainProductPrice);
+    ga4.checkoutStarted(mainProductPrice);
   }, []);
 
   // Track AddToCart when order bump is added
@@ -310,6 +314,11 @@ export default function CheckoutPage() {
         value: orderBumpPrice,
         currency: 'USD',
       });
+      // Track for GA4
+      ga4.orderBumpAdded();
+    } else {
+      // Track for GA4
+      ga4.orderBumpRemoved();
     }
   };
 

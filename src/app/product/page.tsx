@@ -9,6 +9,7 @@ import {
   ChevronDownIcon,
 } from "@/components/shared";
 import { trackViewContent } from "@/lib/meta-pixel";
+import { ga4 } from "@/lib/ga4";
 
 // Product images for the hero slider
 const productImages = [
@@ -114,7 +115,7 @@ export default function ProductPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [testimonialPage, setTestimonialPage] = useState(0);
 
-  // Track ViewContent for Meta Pixel
+  // Track ViewContent for Meta Pixel and GA4
   useEffect(() => {
     trackViewContent({
       content_name: 'Resistance Mapping Guide',
@@ -123,6 +124,17 @@ export default function ProductPage() {
       value: 7.00,
       currency: 'USD',
     });
+    // Track for GA4
+    ga4.viewItem(
+      {
+        item_id: 'resistance-mapping-guide',
+        item_name: 'Resistance Mapping Guide',
+        item_category: 'main_product',
+        price: 7.00,
+        quantity: 1,
+      },
+      7.00
+    );
   }, []);
 
   const faqs = [
