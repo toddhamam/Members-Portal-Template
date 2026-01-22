@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { trackCompleteRegistration } from "@/lib/meta-pixel";
 
 function CheckCircleIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -41,6 +42,7 @@ function ThankYouContent() {
 
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const registrationTracked = useRef(false);
 
   // Fetch session data and order details
   useEffect(() => {
@@ -61,6 +63,18 @@ function ThankYouContent() {
             items: data.items || [],
             total: data.total || "0.00",
           });
+
+          // Track CompleteRegistration event (only once)
+          // Note: Purchase events are tracked server-side via Stripe webhook to avoid double-counting
+          if (!registrationTracked.current) {
+            registrationTracked.current = true;
+            trackCompleteRegistration({
+              content_name: 'Resistance Mapping Guide Purchase',
+              status: 'success',
+              value: parseFloat(data.total) || 0,
+              currency: 'USD',
+            });
+          }
         }
       } catch (err) {
         console.error("Failed to fetch session data:", err);

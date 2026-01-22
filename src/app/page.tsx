@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { trackViewContent } from "@/lib/meta-pixel";
 
 // Download icon component
 function DownloadIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -108,6 +109,15 @@ function FAQItem({ question, answer, isOpen, onClick }: { question: string; answ
 
 export default function SalesPage() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
+
+  // Track ViewContent for Meta Pixel
+  useEffect(() => {
+    trackViewContent({
+      content_name: 'Resistance Mapping Guide - Landing Page',
+      content_category: 'funnel',
+      content_type: 'product',
+    });
+  }, []);
 
   const faqs = [
     {

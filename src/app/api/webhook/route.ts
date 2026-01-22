@@ -3,6 +3,7 @@ import { stripe } from '@/lib/stripe';
 import { trackEvent, upsertProfile, addProfileToList, FunnelEvents, FunnelLists } from '@/lib/klaviyo';
 import { createShopifyOrder, findOrCreateCustomer } from '@/lib/shopify';
 import { grantProductAccess } from '@/lib/supabase/purchases';
+import { trackServerPurchase } from '@/lib/meta-capi';
 import Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
@@ -64,6 +65,27 @@ export async function POST(request: NextRequest) {
             include_order_bump: session.metadata?.includeOrderBump === 'true',
           },
           value: (session.amount_total || 0) / 100,
+        });
+
+        // 3.5. Track purchase event in Meta Conversions API (server-side)
+        const orderValue = (session.amount_total || 0) / 100;
+        const contentIds = ['resistance-mapping-guide'];
+        if (session.metadata?.includeOrderBump === 'true') {
+          contentIds.push('golden-thread-technique');
+        }
+
+        await trackServerPurchase({
+          email: customerEmail,
+          value: orderValue,
+          currency: 'USD',
+          orderId: session.id,
+          contentIds,
+          contentName: 'Resistance Mapping Guide' + (session.metadata?.includeOrderBump === 'true' ? ' + Golden Thread' : ''),
+          contentCategory: 'checkout',
+          numItems: contentIds.length,
+          firstName,
+          lastName,
+          eventSourceUrl: 'https://offer.innerwealthinitiate.com/thank-you',
         });
 
         // 4. Create order in Shopify
