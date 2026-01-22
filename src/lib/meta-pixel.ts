@@ -118,6 +118,21 @@ export function trackLead(params: {
   }
 }
 
+// Track CompleteRegistration event (for thank-you page confirmation)
+export function trackCompleteRegistration(params?: {
+  content_name?: string;
+  status?: string;
+  value?: number;
+  currency?: string;
+}) {
+  if (typeof window !== 'undefined' && window.fbq) {
+    window.fbq('track', 'CompleteRegistration', {
+      ...params,
+      currency: params?.currency || 'USD',
+    });
+  }
+}
+
 // Track custom events
 export function trackCustomEvent(
   eventName: string,

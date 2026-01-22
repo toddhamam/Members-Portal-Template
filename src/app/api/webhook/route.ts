@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
           orderId: session.id,
           contentIds,
           contentName: 'Resistance Mapping Guide' + (session.metadata?.includeOrderBump === 'true' ? ' + Golden Thread' : ''),
+          contentCategory: 'checkout',
           numItems: contentIds.length,
           firstName,
           lastName,

@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { trackPurchase, generateEventId } from "@/lib/meta-pixel";
+import { trackCompleteRegistration } from "@/lib/meta-pixel";
 
 function CheckCircleIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -42,7 +42,7 @@ function ThankYouContent() {
 
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const purchaseTracked = useRef(false);
+  const registrationTracked = useRef(false);
 
   // Fetch session data and order details
   useEffect(() => {
@@ -64,19 +64,16 @@ function ThankYouContent() {
             total: data.total || "0.00",
           });
 
-          // Track Purchase event (only once)
-          if (!purchaseTracked.current && data.total && parseFloat(data.total) > 0) {
-            purchaseTracked.current = true;
-            const eventId = generateEventId();
-            trackPurchase(
-              {
-                value: parseFloat(data.total),
-                currency: 'USD',
-                content_ids: data.items?.map((item: OrderItem) => item.title) || [],
-                num_items: data.items?.length || 1,
-              },
-              eventId
-            );
+          // Track CompleteRegistration event (only once)
+          // Note: Purchase events are tracked server-side via Stripe webhook to avoid double-counting
+          if (!registrationTracked.current) {
+            registrationTracked.current = true;
+            trackCompleteRegistration({
+              content_name: 'Resistance Mapping Guide Purchase',
+              status: 'success',
+              value: parseFloat(data.total) || 0,
+              currency: 'USD',
+            });
           }
         }
       } catch (err) {

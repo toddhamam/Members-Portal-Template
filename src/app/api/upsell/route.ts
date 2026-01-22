@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
         orderId: upsellPayment.id,
         contentIds: [productSlug],
         contentName: productName,
+        contentCategory: upsellType.startsWith('downsell') ? 'downsell' : 'upsell',
         numItems: 1,
         firstName,
         lastName,

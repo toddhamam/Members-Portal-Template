@@ -188,6 +188,7 @@ export async function trackServerPurchase(params: {
   orderId?: string;
   contentIds?: string[];
   contentName?: string;
+  contentCategory?: string; // 'checkout', 'upsell', or 'downsell'
   numItems?: number;
   eventId?: string;
   eventSourceUrl?: string;
@@ -217,6 +218,7 @@ export async function trackServerPurchase(params: {
       orderId: params.orderId,
       contentIds: params.contentIds,
       contentName: params.contentName,
+      contentCategory: params.contentCategory,
       numItems: params.numItems,
     },
   });
