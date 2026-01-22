@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, Suspense, useRef } from "react";
-import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { trackCompleteRegistration } from "@/lib/meta-pixel";
+import { useSessionId, clearSessionId } from "@/hooks/useSessionId";
 
 function CheckCircleIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -37,12 +37,12 @@ interface SessionData {
 }
 
 function ThankYouContent() {
-  const searchParams = useSearchParams();
-  const sessionId = searchParams.get("session_id");
+  const sessionId = useSessionId();
 
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const registrationTracked = useRef(false);
+  const sessionCleared = useRef(false);
 
   // Fetch session data and order details
   useEffect(() => {
@@ -80,6 +80,12 @@ function ThankYouContent() {
         console.error("Failed to fetch session data:", err);
       } finally {
         setIsLoading(false);
+        // Clear the session_id from storage after order is complete
+        // This ensures the next funnel flow starts fresh
+        if (!sessionCleared.current) {
+          sessionCleared.current = true;
+          clearSessionId();
+        }
       }
     }
 

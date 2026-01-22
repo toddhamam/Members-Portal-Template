@@ -1,14 +1,13 @@
 "use client";
 
 import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import Script from "next/script";
+import { useSessionId } from "@/hooks/useSessionId";
 
 function Upsell2Content() {
-  const searchParams = useSearchParams();
-  const sessionId = searchParams.get("session_id");
+  const sessionId = useSessionId();
 
   const CTAButton = ({ className = "" }: { className?: string }) => (
     <a

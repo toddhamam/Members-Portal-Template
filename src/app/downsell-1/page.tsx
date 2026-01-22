@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { useSessionId } from "@/hooks/useSessionId";
 
 function Downsell1Content() {
-  const searchParams = useSearchParams();
-  const sessionId = searchParams.get("session_id");
+  const sessionId = useSessionId();
   const [isProcessing, setIsProcessing] = useState(false);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
