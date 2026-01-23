@@ -94,6 +94,25 @@ export default function MyPage() {
 }
 ```
 
+### 4. File Path Case Sensitivity (Linux Deployment)
+macOS is case-insensitive by default, but Linux (production) is case-sensitive. File path mismatches will work locally but break in production.
+
+**Always:**
+- Use consistent casing for directories and files (prefer lowercase)
+- Use `git mv` to rename files/directories when changing case (regular rename may not be tracked)
+- Test that image paths exactly match the actual file casing
+
+**Example issue:** `/images/Instructor/photo.png` in code but `/images/instructor/photo.png` on disk works on macOS, fails on Linux.
+
+### 5. Static Assets Must Be Git Tracked
+All files in `/public` that you want deployed MUST be added to git. Untracked static assets will not be included in the deployment.
+
+**Before committing changes with new images:**
+```bash
+git status  # Check for untracked files in public/
+git add public/images/new-image.png  # Explicitly add new assets
+```
+
 ---
 
 ## API Endpoints
@@ -345,6 +364,10 @@ Users can purchase products they don't own directly from the portal. This uses d
 3. User enters payment details via Stripe Elements
 4. On success, `/api/portal/confirm-purchase` grants access via `grantProductAccess()`
 5. Modal shows success and page refreshes to show owned status
+
+**Required Environment Variables:**
+- `SUPABASE_SERVICE_ROLE_KEY` - Required for server-side Supabase operations (granting product access)
+- `STRIPE_SECRET_KEY` - For creating PaymentIntents
 
 **Setting Portal Pricing:**
 Update the `products` table in Supabase:
