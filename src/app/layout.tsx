@@ -18,12 +18,17 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Resistance Mapping Guide™ - Clear Your Fears, Blocks & Patterns",
-  description: "The Resistance Mapping™ Expanded 2nd Edition is a System that helps you identify the deeper cause behind your fear & blocks so you can finally clear them, and align with your true self.",
+  title: {
+    default: "Inner Wealth Initiate - Transform Your Inner World",
+    template: "%s | Inner Wealth Initiate",
+  },
+  description: "Clear the fears, blocks, and patterns that keep you stuck. Discover tools for spiritual awakening and align with your true self.",
   openGraph: {
-    title: "Resistance Mapping Guide™ - Clear Your Fears, Blocks & Patterns",
-    description: "A system to help you identify the deeper cause behind your fear & blocks so you can finally clear them.",
+    siteName: "Inner Wealth Initiate",
+    title: "Inner Wealth Initiate - Transform Your Inner World",
+    description: "Clear the fears, blocks, and patterns that keep you stuck. Discover tools for spiritual awakening and align with your true self.",
     type: "website",
+    locale: "en_US",
   },
 };
 
