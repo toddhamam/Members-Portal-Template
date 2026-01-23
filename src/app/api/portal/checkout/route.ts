@@ -2,12 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createAdminClientInstance } from '@/lib/supabase/server';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-12-15.clover',
-});
-
 export async function POST(request: NextRequest) {
   try {
+    // Check for Stripe secret key
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('STRIPE_SECRET_KEY is not configured');
+      return NextResponse.json(
+        { error: 'Payment system not configured' },
+        { status: 500 }
+      );
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-12-15.clover',
+    });
+
     const body = await request.json();
     const { productSlug, email, fullName } = body;
 
@@ -28,7 +37,15 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true)
       .single();
 
-    if (productError || !product) {
+    if (productError) {
+      console.error('Supabase product query error:', productError);
+      return NextResponse.json(
+        { error: `Product lookup failed: ${productError.message}` },
+        { status: 500 }
+      );
+    }
+
+    if (!product) {
       return NextResponse.json(
         { error: 'Product not found' },
         { status: 404 }
@@ -47,45 +64,65 @@ export async function POST(request: NextRequest) {
 
     // Create or retrieve Stripe customer
     const emailLower = email.toLowerCase();
-    const customers = await stripe.customers.list({
-      email: emailLower,
-      limit: 1,
-    });
-
     let customer: Stripe.Customer;
-    if (customers.data.length > 0) {
-      customer = customers.data[0];
-      // Update name if provided and different
-      if (fullName && customer.name !== fullName) {
-        customer = await stripe.customers.update(customer.id, {
-          name: fullName,
+
+    try {
+      const customers = await stripe.customers.list({
+        email: emailLower,
+        limit: 1,
+      });
+
+      if (customers.data.length > 0) {
+        customer = customers.data[0];
+        // Update name if provided and different
+        if (fullName && customer.name !== fullName) {
+          customer = await stripe.customers.update(customer.id, {
+            name: fullName,
+          });
+        }
+      } else {
+        customer = await stripe.customers.create({
+          email: emailLower,
+          name: fullName || undefined,
         });
       }
-    } else {
-      customer = await stripe.customers.create({
-        email: emailLower,
-        name: fullName || undefined,
-      });
+    } catch (stripeCustomerError) {
+      console.error('Stripe customer error:', stripeCustomerError);
+      const message = stripeCustomerError instanceof Error ? stripeCustomerError.message : 'Unknown error';
+      return NextResponse.json(
+        { error: `Failed to create customer: ${message}` },
+        { status: 500 }
+      );
     }
 
     // Create PaymentIntent with portal-specific metadata
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: priceCents,
-      currency: 'usd',
-      customer: customer.id,
-      metadata: {
-        source: 'portal',
-        product_slug: product.slug,
-        product_name: product.name,
-        product_id: product.id,
-        customer_email: emailLower,
-      },
-      // Save payment method for future purchases
-      setup_future_usage: 'off_session',
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
+    let paymentIntent: Stripe.PaymentIntent;
+    try {
+      paymentIntent = await stripe.paymentIntents.create({
+        amount: priceCents,
+        currency: 'usd',
+        customer: customer.id,
+        metadata: {
+          source: 'portal',
+          product_slug: product.slug,
+          product_name: product.name,
+          product_id: product.id,
+          customer_email: emailLower,
+        },
+        // Save payment method for future purchases
+        setup_future_usage: 'off_session',
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+    } catch (stripePaymentError) {
+      console.error('Stripe PaymentIntent error:', stripePaymentError);
+      const message = stripePaymentError instanceof Error ? stripePaymentError.message : 'Unknown error';
+      return NextResponse.json(
+        { error: `Failed to create payment: ${message}` },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
@@ -96,8 +133,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Portal checkout error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to create checkout session' },
+      { error: `Checkout failed: ${errorMessage}` },
       { status: 500 }
     );
   }
