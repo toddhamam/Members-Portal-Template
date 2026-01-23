@@ -133,7 +133,7 @@ function ThankYouContent() {
 
             {/* Access Portal Button */}
             <Link
-              href="/login"
+              href={sessionId ? `/claim-account?session_id=${sessionId}` : "/login"}
               className="inline-flex items-center justify-center gap-2 bg-[#7c5cff] hover:bg-[#6b4ce6] text-white text-base md:text-lg font-medium px-6 py-3 md:px-8 md:py-4 rounded-md transition-colors"
             >
               Access Your Portal & Products
