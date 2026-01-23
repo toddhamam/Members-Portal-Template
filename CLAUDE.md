@@ -11,6 +11,50 @@ This is a sales funnel for digital products (courses/guides) with Stripe checkou
 
 ---
 
+## Multi-Domain Architecture
+
+This project serves different experiences based on the subdomain:
+
+| Domain | Experience |
+|--------|------------|
+| `innerwealthinitiate.com` | Marketing site with full navigation |
+| `offer.innerwealthinitiate.com` | Sales funnel (distraction-free, no navigation) |
+
+### Middleware Routing
+The `middleware.ts` file handles subdomain-based routing using `hostname.startsWith()`:
+- **Funnel subdomain (`offer.*`)** - Prioritized first, handles funnel-specific routing
+- **Portal subdomain** - Handled second for member portal access
+- **Main domain** - Falls through for marketing site
+
+### Conditional Rendering by Subdomain
+Pages that serve both marketing and funnel experiences (like the landing page `/`) use client-side hostname detection:
+
+```tsx
+"use client";
+import { useEffect, useState } from "react";
+import { MarketingHeader, MarketingFooter } from "@/components/marketing";
+
+export default function LandingPage() {
+  const [isFunnelSubdomain, setIsFunnelSubdomain] = useState(false);
+
+  useEffect(() => {
+    setIsFunnelSubdomain(window.location.hostname.startsWith("offer."));
+  }, []);
+
+  return (
+    <>
+      {!isFunnelSubdomain && <MarketingHeader />}
+      {/* Page content */}
+      {!isFunnelSubdomain && <MarketingFooter />}
+    </>
+  );
+}
+```
+
+**Why this pattern:** The same landing page content is served on both domains, but the funnel subdomain hides navigation to create a focused, distraction-free sales experience.
+
+---
+
 ## Marketing Site
 
 The root domain hosts a marketing website with product listings and content.
@@ -22,6 +66,9 @@ The root domain hosts a marketing website with product listings and content.
 | `/products` | Product catalog (fetches from Supabase) |
 | `/media` | Media/content page |
 | `/contact` | Contact page |
+| `/privacy` | Privacy Policy (required for Meta compliance) |
+| `/terms` | Terms of Service (required for Meta compliance) |
+| `/refund` | Refund Policy (required for Meta compliance) |
 
 ### Shared Components
 Located in `src/components/marketing/`:
@@ -207,6 +254,41 @@ All files in `/public` that you want deployed MUST be added to git. Untracked st
 git status  # Check for untracked files in public/
 git add public/images/new-image.png  # Explicitly add new assets
 ```
+
+### 6. Funnel Pages Must Be Distraction-Free
+Funnel pages accessed via the `offer.*` subdomain should have minimal navigation to maximize conversions:
+
+**DO:**
+- Show only the logo in the header (no navigation links)
+- Include a minimal footer with legal links only
+- Keep the user focused on the offer and CTA
+
+**DON'T:**
+- Include the full `MarketingHeader` or `MarketingFooter` on funnel pages
+- Add navigation links that lead away from the funnel
+- Display distracting elements that don't support the sale
+
+### 7. Legal Links Required on Funnel Pages (Meta Compliance)
+All funnel pages MUST include legal footer links for Meta (Facebook/Instagram) advertising policy compliance:
+
+```tsx
+<footer className="py-8 px-4 bg-black text-center">
+  <div className="flex justify-center gap-6 text-sm text-gray-400">
+    <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
+    <Link href="/terms" className="hover:text-white">Terms of Service</Link>
+    <Link href="/refund" className="hover:text-white">Refund Policy</Link>
+  </div>
+</footer>
+```
+
+**Pages that need legal links:**
+- `/product`
+- `/checkout`
+- `/upsell-1`, `/upsell-2`
+- `/downsell-1`
+- `/thank-you`
+
+**Legal pages location:** `/privacy`, `/terms`, `/refund` (simple static pages)
 
 ---
 
@@ -483,6 +565,19 @@ WHERE slug = 'pathless-path';
 ---
 
 ## Common Tasks
+
+### Creating a New Funnel
+Use the funnel blueprint skill at `.claude/skills/create-funnel.md` which contains:
+- Pre-flight checklist (products, prices, Stripe setup)
+- Step-by-step implementation guide
+- Files to create/modify for each funnel page
+- API route configuration
+- Analytics setup (GA4, Klaviyo, Meta)
+- Image requirements and directory structure
+- Page templates and code patterns
+- Testing checklist
+
+**Usage:** Say "create a funnel for [product name]" and follow the blueprint.
 
 ### Adding a New Product
 1. Add to Stripe (create Price)
