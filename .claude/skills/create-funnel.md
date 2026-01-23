@@ -170,6 +170,7 @@ VALUES ('[Product Name]', '[product-slug]', 9700, 9700, '[Description]');
 - [ ] "What You'll Receive" section
 - [ ] Testimonials
 - [ ] Product images
+- [ ] **CRITICAL:** Ensure `handleSubmit` calls `/api/update-payment-intent` with real customer email/name BEFORE `stripe.confirmPayment()`
 
 **Upsell 1 (`/upsell-1/page.tsx`):**
 - [ ] Product name
@@ -249,6 +250,15 @@ Update:
 - [ ] Shopify order tags
 - [ ] Klaviyo list assignments
 - [ ] Meta CAPI event URLs
+
+**CRITICAL:** The webhook must handle BOTH event types:
+- `checkout.session.completed` - For Stripe Checkout Session flows
+- `payment_intent.succeeded` - For PaymentIntent/Stripe Elements flows (like the current checkout)
+
+The `payment_intent.succeeded` handler should:
+1. Check `paymentIntent.metadata.product` to identify the purchase
+2. Get customer email from: metadata → customer object → charge billing_details (fallback chain)
+3. Process all integrations: Klaviyo, Meta CAPI, Shopify, Supabase access
 
 ### Step 6: Analytics Setup
 
@@ -423,6 +433,52 @@ export default function Page() {
   );
 }
 ```
+
+### Checkout Page PaymentIntent Pattern (CRITICAL)
+
+When using Stripe Elements (not Checkout Sessions), you MUST update the PaymentIntent with customer data before confirming payment:
+
+```tsx
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  // CRITICAL: Update PaymentIntent with real customer data BEFORE confirming
+  const updateResponse = await fetch("/api/update-payment-intent", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      paymentIntentId,
+      includeOrderBump,
+      email: formData.email,      // Real email from form
+      fullName: formData.fullName, // Real name from form
+    }),
+  });
+
+  if (!updateResponse.ok) {
+    throw new Error("Failed to update payment details");
+  }
+
+  // NOW confirm payment - Stripe has the real customer attached
+  const { error } = await stripe.confirmPayment({
+    elements,
+    confirmParams: {
+      return_url: `${window.location.origin}/upsell-1`,
+      payment_method_data: {
+        billing_details: {
+          name: formData.fullName,
+          email: formData.email,
+        },
+      },
+    },
+  });
+};
+```
+
+**Why this is critical:** The PaymentIntent is created when the page loads (before the user enters their email). If you don't update it with real customer data, the webhook will have no email to process and:
+- No Supabase profile will be created
+- No Meta CAPI Purchase event will fire
+- No Klaviyo/Shopify sync will occur
+- Customer can't access their purchase
 
 ### Standard CTA Button
 

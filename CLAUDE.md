@@ -290,6 +290,39 @@ All funnel pages MUST include legal footer links for Meta (Facebook/Instagram) a
 
 **Legal pages location:** `/privacy`, `/terms`, `/refund` (simple static pages)
 
+### 8. PaymentIntent Customer Data Must Be Updated Before Payment
+When using Stripe Elements with PaymentIntents (not Checkout Sessions), the customer email/name must be explicitly attached to the PaymentIntent **before** confirming payment.
+
+**The Problem:** PaymentIntents are created when the checkout page loads (to get a `clientSecret`), but the user hasn't entered their email yet. If you use placeholder data, Stripe will store that placeholder and the webhook won't have the real customer info.
+
+**The Solution:** Call `/api/update-payment-intent` with the real customer data right before `stripe.confirmPayment()`:
+
+```tsx
+const handleSubmit = async (e: React.FormEvent) => {
+  // Update PaymentIntent with real customer data BEFORE confirming
+  await fetch("/api/update-payment-intent", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      paymentIntentId,
+      email: formData.email,      // Real email from form
+      fullName: formData.fullName, // Real name from form
+      includeOrderBump,
+    }),
+  });
+
+  // Now confirm payment - customer data is attached
+  const { error } = await stripe.confirmPayment({ ... });
+};
+```
+
+**The update-payment-intent API must:**
+1. Create or find a Stripe customer with the real email
+2. Attach that customer to the PaymentIntent
+3. Store `customerEmail` and `customerName` in PaymentIntent metadata (backup for webhook)
+
+**Why this matters:** Without this, purchases will have no customer email, webhooks can't process them, and no Supabase profile/access will be created.
+
 ---
 
 ## API Endpoints
@@ -298,7 +331,7 @@ All funnel pages MUST include legal footer links for Meta (Facebook/Instagram) a
 |----------|---------|
 | `POST /api/checkout` | Creates Stripe checkout session |
 | `POST /api/upsell` | Processes one-click upsell payments |
-| `POST /api/webhook` | Handles Stripe webhooks (checkout.session.completed) |
+| `POST /api/webhook` | Handles Stripe webhooks (`checkout.session.completed`, `payment_intent.succeeded`) |
 | `GET /api/auth/session-email` | Gets customer email/purchases from session_id |
 | `POST /api/auth/claim-account` | Sets password for new customer |
 | `POST /api/portal/checkout` | Creates PaymentIntent for portal purchases |
