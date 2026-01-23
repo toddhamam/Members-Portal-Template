@@ -70,47 +70,47 @@ export function useProduct(slug: string) {
 
   const supabase = createClient();
 
-  useEffect(() => {
-    const fetchProduct = async () => {
-      setIsLoading(true);
-      setError(null);
+  const fetchProduct = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        // Fetch product by slug
-        const { data: productData, error: productError } = await supabase
-          .from("products")
-          .select("*")
-          .eq("slug", slug)
-          .eq("is_active", true)
+    try {
+      // Fetch product by slug
+      const { data: productData, error: productError } = await supabase
+        .from("products")
+        .select("*")
+        .eq("slug", slug)
+        .eq("is_active", true)
+        .single();
+
+      if (productError) throw productError;
+
+      // Check if user owns this product (using user from context)
+      let isOwned = false;
+      if (user && productData) {
+        const { data: purchase } = await supabase
+          .from("user_purchases")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("product_id", productData.id)
+          .eq("status", "active")
           .single();
-
-        if (productError) throw productError;
-
-        // Check if user owns this product (using user from context)
-        let isOwned = false;
-        if (user && productData) {
-          const { data: purchase } = await supabase
-            .from("user_purchases")
-            .select("id")
-            .eq("user_id", user.id)
-            .eq("product_id", productData.id)
-            .eq("status", "active")
-            .single();
-          isOwned = !!purchase;
-        }
-
-        setProduct(productData ? { ...productData, is_owned: isOwned } : null);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error("Failed to fetch product"));
-      } finally {
-        setIsLoading(false);
+        isOwned = !!purchase;
       }
-    };
 
-    if (slug) {
-      fetchProduct();
+      setProduct(productData ? { ...productData, is_owned: isOwned } : null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Failed to fetch product"));
+    } finally {
+      setIsLoading(false);
     }
   }, [slug, user, supabase]);
 
-  return { product, isLoading, error };
+  useEffect(() => {
+    if (slug) {
+      fetchProduct();
+    }
+  }, [slug, fetchProduct]);
+
+  return { product, isLoading, error, refetch: fetchProduct };
 }

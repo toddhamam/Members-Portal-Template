@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useProduct } from "@/lib/hooks/useProducts";
+import { PurchaseModal } from "@/components/portal/PurchaseModal";
 
 function ArrowLeftIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -50,16 +51,24 @@ interface ProgressSummary {
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = params.slug as string;
-  const { user } = useAuth(); // Get user from context
-  const { product, isLoading: productLoading, error: productError } = useProduct(slug);
+  const { user, profile } = useAuth(); // Get user and profile from context
+  const { product, isLoading: productLoading, error: productError, refetch } = useProduct(slug);
 
   const [stats, setStats] = useState({ modules: 0, lessons: 0, progress: 0 });
   const [firstLesson, setFirstLesson] = useState<LessonLink | null>(null);
   const [continueLesson, setContinueLesson] = useState<LessonLink | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
 
   const supabase = createClient();
+
+  // Handle successful purchase
+  const handlePurchaseSuccess = useCallback(() => {
+    // Refresh the product data to show the user now owns it
+    refetch();
+  }, [refetch]);
 
   // Fetch lightweight stats and continue point
   useEffect(() => {
@@ -256,13 +265,13 @@ export default function ProductDetailPage() {
               </div>
             )
           ) : (
-            <Link
-              href={`/?product=${product.slug}`}
+            <button
+              onClick={() => setIsPurchaseModalOpen(true)}
               className="inline-flex items-center gap-2 sm:gap-3 bg-[#ee5d0b] hover:bg-[#d54d00] text-white font-semibold px-5 sm:px-8 py-3 sm:py-4 rounded-xl transition-colors text-base sm:text-lg shadow-lg"
             >
               <LockIcon className="w-5 h-5" />
               Unlock for ${((product.portal_price_cents ?? product.price_cents) / 100).toFixed(2)}
-            </Link>
+            </button>
           )}
         </div>
       </div>
@@ -329,6 +338,18 @@ export default function ProductDetailPage() {
             Congratulations on completing this course. Feel free to revisit any lesson at any time.
           </p>
         </div>
+      )}
+
+      {/* Purchase Modal */}
+      {product && !product.is_owned && user && (
+        <PurchaseModal
+          product={product}
+          email={profile?.email || user.email || ""}
+          fullName={profile?.full_name || ""}
+          isOpen={isPurchaseModalOpen}
+          onClose={() => setIsPurchaseModalOpen(false)}
+          onSuccess={handlePurchaseSuccess}
+        />
       )}
     </div>
   );

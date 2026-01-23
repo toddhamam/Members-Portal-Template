@@ -105,6 +105,8 @@ export default function MyPage() {
 | `POST /api/webhook` | Handles Stripe webhooks (checkout.session.completed) |
 | `GET /api/auth/session-email` | Gets customer email/purchases from session_id |
 | `POST /api/auth/claim-account` | Sets password for new customer |
+| `POST /api/portal/checkout` | Creates PaymentIntent for portal purchases |
+| `POST /api/portal/confirm-purchase` | Grants product access after portal payment |
 
 ### Upsell API Usage
 ```typescript
@@ -323,6 +325,35 @@ Located at `/portal/*` routes. Users set password on thank-you page and access p
 - `/portal/products` - List of purchased products
 - `/portal/products/[slug]` - Product content
 - `/portal/products/[slug]/modules/[moduleSlug]/lessons/[lessonSlug]` - Individual lessons
+
+### Portal Product Purchases
+
+Users can purchase products they don't own directly from the portal. This uses different pricing than the funnel.
+
+**Portal Pricing:**
+- `portal_price_cents` column in `products` table (can differ from funnel `price_cents`)
+- `portal_stripe_price_id` column for Stripe integration (optional)
+- Falls back to `price_cents` if portal pricing not set
+
+**Key Components:**
+- `src/components/portal/PurchaseModal.tsx` - Modal with Stripe Elements for portal checkout
+- `src/app/api/portal/checkout/route.ts` - Creates PaymentIntent with portal pricing
+- `src/app/api/portal/confirm-purchase/route.ts` - Grants product access after payment
+
+**Portal Checkout Flow:**
+1. User clicks "Unlock for $X.XX" on product detail page
+2. `PurchaseModal` opens and calls `/api/portal/checkout`
+3. User enters payment details via Stripe Elements
+4. On success, `/api/portal/confirm-purchase` grants access via `grantProductAccess()`
+5. Modal shows success and page refreshes to show owned status
+
+**Setting Portal Pricing:**
+Update the `products` table in Supabase:
+```sql
+UPDATE products
+SET portal_price_cents = 9700  -- $97.00
+WHERE slug = 'pathless-path';
+```
 
 ---
 
