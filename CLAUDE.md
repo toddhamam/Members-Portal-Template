@@ -205,6 +205,7 @@ function MyFunnelPage() {
 - `src/app/upsell-2/page.tsx`
 - `src/app/downsell-1/page.tsx`
 - `src/app/thank-you/page.tsx`
+- `src/app/claim-account/page.tsx`
 
 ### 2. Email Case Sensitivity
 All email handling MUST normalize to lowercase and use case-insensitive queries:
@@ -553,9 +554,68 @@ In each page, find and update:
 
 ---
 
+## Post-Purchase Account Setup
+
+After completing a purchase, customers need to set up their account password to access the member portal.
+
+### Account Setup Flow
+
+```
+/thank-you → /claim-account?session_id=xxx → (set password) → /portal
+```
+
+### How It Works
+
+1. **Thank-you page** shows "Access Your Portal & Products" button
+2. Button links to `/claim-account?session_id=xxx` (passing the Stripe session ID)
+3. **Claim-account page** fetches customer email from session and pre-fills it (read-only)
+4. Customer creates and confirms their password
+5. Account is claimed via `/api/auth/claim-account`
+6. Customer is signed in and redirected to `/portal`
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/app/claim-account/page.tsx` | Account setup page |
+| `src/app/claim-account/layout.tsx` | Layout with AuthProvider |
+| `src/app/api/auth/claim-account/route.ts` | API to set password |
+| `src/app/api/auth/session-email/route.ts` | API to get email from session_id |
+
+### Fallback for Expired Sessions
+
+If a customer closes their browser during the upsell flow and returns later (session expired), they can still claim their account:
+
+1. Visit `/claim-account` (without session_id)
+2. Page shows a registration form where they can manually enter:
+   - Their purchase email
+   - Create password
+   - Confirm password
+3. The `/api/auth/claim-account` endpoint handles both cases:
+   - If profile exists → updates password
+   - If no profile → creates new user
+
+### Thank-You Page Link Logic
+
+```tsx
+<Link
+  href={sessionId ? `/claim-account?session_id=${sessionId}` : "/login"}
+>
+  Access Your Portal & Products
+</Link>
+```
+
+If no session_id is available (edge case), falls back to `/login` for returning users.
+
+### Important: Session ID Must Be Passed
+
+The claim-account page relies on the session_id to fetch the customer's email. Always pass it in the URL when navigating from the thank-you page.
+
+---
+
 ## Member Portal
 
-Located at `/portal/*` routes. Users set password on thank-you page and access purchased content.
+Located at `/portal/*` routes. Users set password on the claim-account page and access purchased content.
 
 ### Portal Structure
 - `/portal` - Dashboard
