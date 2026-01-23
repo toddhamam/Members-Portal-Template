@@ -332,7 +332,6 @@ Users can purchase products they don't own directly from the portal. This uses d
 
 **Portal Pricing:**
 - `portal_price_cents` column in `products` table (can differ from funnel `price_cents`)
-- `portal_stripe_price_id` column for Stripe integration (optional)
 - Falls back to `price_cents` if portal pricing not set
 
 **Key Components:**

@@ -26,7 +26,6 @@ export interface Product {
   price_cents: number;
   portal_price_cents: number | null;
   stripe_price_id: string | null;
-  portal_stripe_price_id: string | null;
   product_type: ProductType;
   thumbnail_url: string | null;
   is_active: boolean;
@@ -156,7 +155,6 @@ export interface Database {
           price_cents: number;
           portal_price_cents?: number | null;
           stripe_price_id?: string | null;
-          portal_stripe_price_id?: string | null;
           product_type: ProductType;
           thumbnail_url?: string | null;
           is_active?: boolean;
@@ -170,7 +168,6 @@ export interface Database {
           price_cents?: number;
           portal_price_cents?: number | null;
           stripe_price_id?: string | null;
-          portal_stripe_price_id?: string | null;
           product_type?: ProductType;
           thumbnail_url?: string | null;
           is_active?: boolean;

@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     // Get product with portal pricing
     const { data: product, error: productError } = await supabase
       .from('products')
-      .select('id, slug, name, price_cents, portal_price_cents, portal_stripe_price_id')
+      .select('id, slug, name, price_cents, portal_price_cents')
       .eq('slug', productSlug)
       .eq('is_active', true)
       .single();
@@ -79,7 +79,6 @@ export async function POST(request: NextRequest) {
         product_name: product.name,
         product_id: product.id,
         customer_email: emailLower,
-        portal_stripe_price_id: product.portal_stripe_price_id || '',
       },
       // Save payment method for future purchases
       setup_future_usage: 'off_session',
