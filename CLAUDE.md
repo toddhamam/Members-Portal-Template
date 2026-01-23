@@ -3,7 +3,102 @@
 ## Overview
 This is a sales funnel for digital products (courses/guides) with Stripe checkout, one-click upsells, and a member portal for content delivery.
 
-**Live URL:** `offer.innerwealthinitiate.com`
+**Live URLs:**
+- Marketing site: `innerwealthinitiate.com`
+- Sales funnel: `offer.innerwealthinitiate.com`
+
+**Project Structure:** All functionality (marketing, funnel, portal) is consolidated in a single Next.js/Vercel project for easier management and deployment. Multiple domains can be configured in Vercel pointing to the same project.
+
+---
+
+## Marketing Site
+
+The root domain hosts a marketing website with product listings and content.
+
+### Routes
+| Route | Purpose |
+|-------|---------|
+| `/` | Marketing landing page |
+| `/products` | Product catalog (fetches from Supabase) |
+| `/media` | Media/content page |
+| `/contact` | Contact page |
+
+### Shared Components
+Located in `src/components/marketing/`:
+- `MarketingHeader` - Site navigation with mobile menu
+- `MarketingFooter` - Site footer
+- `MarketingProductCard` - Product cards for grid display
+- `MediaCard` - Cards for media content
+
+```tsx
+import { MarketingHeader, MarketingFooter, MarketingProductCard } from "@/components/marketing";
+```
+
+### Client-Side Data Fetching Pattern
+For pages that fetch dynamic data from Supabase:
+
+```tsx
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+
+export default function MyPage() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      const supabase = createClient();
+      const { data, error } = await supabase.from("table").select("*");
+      if (!error) setData(data || []);
+      setLoading(false);
+    }
+    fetchData();
+  }, []);
+}
+```
+
+### Skeleton Loading Pattern
+Use `animate-pulse` for loading states while data fetches:
+
+```tsx
+{loading ? (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="bg-[#252525] rounded-lg animate-pulse">
+        <div className="aspect-[4/3] bg-gray-700" />
+        <div className="p-6 space-y-3">
+          <div className="h-4 bg-gray-700 rounded w-1/4" />
+          <div className="h-6 bg-gray-700 rounded w-3/4" />
+        </div>
+      </div>
+    ))}
+  </div>
+) : (
+  /* Render actual content */
+)}
+```
+
+### Responsive Design
+Use Tailwind's responsive prefixes with mobile-first approach:
+- Default styles apply to mobile
+- `sm:` for tablets (640px+)
+- `lg:` for desktop (1024px+)
+
+Example: `className="text-sm sm:text-base lg:text-lg px-4 sm:px-6"`
+
+### Accessibility
+Use proper ARIA attributes for interactive elements:
+```tsx
+<button
+  aria-label="Open menu"
+  aria-expanded={isOpen}
+  onClick={() => setIsOpen(!isOpen)}
+>
+  <MenuIcon />
+</button>
+```
 
 ---
 
@@ -252,6 +347,14 @@ Session recording and heatmaps via Hotjar.
 ## Style Guide
 
 **Full style guide:** `src/styles/style-guide.ts` - Contains all colors, typography, spacing, component patterns, and helper functions.
+
+### Utility Functions
+The `cn()` helper combines Tailwind classes safely:
+```tsx
+import { cn } from "@/styles/style-guide";
+
+<div className={cn("base-class", isActive && "active-class", className)} />
+```
 
 ### Quick Reference
 
