@@ -57,12 +57,14 @@ function CheckoutForm({
   formData,
   includeOrderBump,
   total,
+  paymentIntentId,
   onFormDataChange,
   onOrderBumpChange,
 }: {
   formData: { fullName: string; email: string };
   includeOrderBump: boolean;
   total: number;
+  paymentIntentId: string | null;
   onFormDataChange: (data: { fullName: string; email: string }) => void;
   onOrderBumpChange: (include: boolean) => void;
 }) {
@@ -80,13 +82,35 @@ function CheckoutForm({
     e.preventDefault();
     setErrorMessage(null);
 
-    if (!stripe || !elements) {
+    if (!stripe || !elements || !paymentIntentId) {
+      return;
+    }
+
+    // Validate form fields
+    if (!formData.email || !formData.fullName) {
+      setErrorMessage("Please fill in all required fields.");
       return;
     }
 
     setIsProcessing(true);
 
     try {
+      // Update PaymentIntent with real customer data before confirming
+      const updateResponse = await fetch("/api/update-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentIntentId,
+          includeOrderBump,
+          email: formData.email,
+          fullName: formData.fullName,
+        }),
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error("Failed to update payment details");
+      }
+
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -424,6 +448,7 @@ export default function CheckoutPage() {
                   formData={formData}
                   includeOrderBump={includeOrderBump}
                   total={total}
+                  paymentIntentId={paymentIntentId}
                   onFormDataChange={setFormData}
                   onOrderBumpChange={handleOrderBumpChange}
                 />

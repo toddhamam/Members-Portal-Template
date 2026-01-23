@@ -145,8 +145,153 @@ export async function POST(request: NextRequest) {
       }
 
       case 'payment_intent.succeeded': {
-        // Handle upsell payments if needed
-        console.log('Payment succeeded:', event.data.object);
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+
+        // Only process front-end checkout payments (resistance_map product)
+        // Skip upsell payments which are handled separately
+        if (paymentIntent.metadata?.product !== 'resistance_map') {
+          console.log('Skipping non-checkout payment_intent:', paymentIntent.id);
+          break;
+        }
+
+        // Get customer details from metadata (set during checkout) or from customer object
+        let customerEmail = paymentIntent.metadata?.customerEmail || '';
+        let customerName = paymentIntent.metadata?.customerName || '';
+
+        // If no email in metadata, try to get from customer
+        if (!customerEmail && paymentIntent.customer) {
+          const customer = await stripe.customers.retrieve(paymentIntent.customer as string);
+          if (customer && !customer.deleted) {
+            customerEmail = customer.email || '';
+            customerName = customer.name || customerName;
+          }
+        }
+
+        // If still no email, try to get from charges
+        if (!customerEmail && paymentIntent.latest_charge) {
+          const charge = await stripe.charges.retrieve(paymentIntent.latest_charge as string);
+          if (charge.billing_details?.email) {
+            customerEmail = charge.billing_details.email;
+            customerName = charge.billing_details.name || customerName;
+          }
+        }
+
+        // Skip if we still don't have an email (shouldn't happen with the fix)
+        if (!customerEmail || customerEmail === 'customer@example.com') {
+          console.error('PaymentIntent missing valid customer email:', paymentIntent.id);
+          break;
+        }
+
+        const [firstName, ...lastNameParts] = customerName.split(' ');
+        const lastName = lastNameParts.join(' ');
+        const includeOrderBump = paymentIntent.metadata?.includeOrderBump === 'true';
+
+        console.log('Processing payment_intent.succeeded for:', customerEmail);
+
+        // 1. Create/update profile in Klaviyo
+        await upsertProfile({
+          email: customerEmail,
+          firstName,
+          lastName,
+          properties: {
+            purchased_resistance_map: true,
+            purchase_date: new Date().toISOString(),
+          },
+        });
+
+        // 2. Add to Klaviyo lists
+        if (FunnelLists.CUSTOMERS) {
+          await addProfileToList(FunnelLists.CUSTOMERS, customerEmail);
+        }
+        if (FunnelLists.RESISTANCE_MAP_BUYERS) {
+          await addProfileToList(FunnelLists.RESISTANCE_MAP_BUYERS, customerEmail);
+        }
+
+        // 3. Track purchase event in Klaviyo
+        await trackEvent({
+          email: customerEmail,
+          eventName: FunnelEvents.ORDER_COMPLETED,
+          properties: {
+            product: 'Resistance Mapping Guide™',
+            order_id: paymentIntent.id,
+            include_order_bump: includeOrderBump,
+          },
+          value: paymentIntent.amount / 100,
+        });
+
+        // 4. Track purchase event in Meta Conversions API (server-side)
+        const orderValue = paymentIntent.amount / 100;
+        const contentIds = ['resistance-mapping-guide'];
+        if (includeOrderBump) {
+          contentIds.push('golden-thread-technique');
+        }
+
+        await trackServerPurchase({
+          email: customerEmail,
+          value: orderValue,
+          currency: 'USD',
+          orderId: paymentIntent.id,
+          contentIds,
+          contentName: 'Resistance Mapping Guide' + (includeOrderBump ? ' + Golden Thread' : ''),
+          contentCategory: 'checkout',
+          numItems: contentIds.length,
+          firstName,
+          lastName,
+          eventSourceUrl: 'https://offer.innerwealthinitiate.com/thank-you',
+        });
+
+        // 5. Create order in Shopify
+        await findOrCreateCustomer({
+          email: customerEmail,
+          firstName,
+          lastName,
+          tags: ['resistance-map-buyer', 'funnel-customer'],
+        });
+
+        await createShopifyOrder({
+          email: customerEmail,
+          firstName,
+          lastName,
+          lineItems: [
+            {
+              title: 'Resistance Mapping Guide™ - Expanded 2nd Edition',
+              quantity: 1,
+              price: '7.00',
+            },
+            ...(includeOrderBump
+              ? [{ title: 'Golden Thread Technique (Advanced)', quantity: 1, price: '27.00' }]
+              : []),
+          ],
+          totalPrice: (paymentIntent.amount / 100).toFixed(2),
+          tags: ['resistance-map', 'funnel-order'],
+        });
+
+        // 6. Create Supabase user and grant product access
+        try {
+          await grantProductAccess({
+            email: customerEmail,
+            fullName: customerName,
+            stripeCustomerId: paymentIntent.customer as string | undefined,
+            productSlug: 'resistance-mapping-guide',
+            stripeSessionId: paymentIntent.id,
+            stripePaymentIntentId: paymentIntent.id,
+          });
+
+          // Grant order bump access if purchased
+          if (includeOrderBump) {
+            await grantProductAccess({
+              email: customerEmail,
+              fullName: customerName,
+              stripeCustomerId: paymentIntent.customer as string | undefined,
+              productSlug: 'golden-thread-technique',
+              stripeSessionId: paymentIntent.id,
+              stripePaymentIntentId: paymentIntent.id,
+            });
+          }
+        } catch (supabaseError) {
+          console.error('Failed to grant Supabase access:', supabaseError);
+        }
+
         break;
       }
     }

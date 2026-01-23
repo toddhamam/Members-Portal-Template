@@ -29,6 +29,12 @@ export const stripe = {
   get webhooks() {
     return getStripe().webhooks;
   },
+  get customers() {
+    return getStripe().customers;
+  },
+  get charges() {
+    return getStripe().charges;
+  },
 };
 
 // Create a checkout session for the main product
