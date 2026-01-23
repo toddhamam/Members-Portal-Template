@@ -718,8 +718,19 @@ function Downsell1Content() {
 
       {/* Footer */}
       <footer className="py-8 px-4 bg-black">
-        <div className="max-w-4xl mx-auto text-center text-sm text-gray-500">
-          <p>All rights reserved {new Date().getFullYear()}.</p>
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-center gap-6 mb-4 text-sm">
+            <Link href="/privacy" className="text-gray-400 hover:text-white underline">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="text-gray-400 hover:text-white underline">
+              Terms of Service
+            </Link>
+            <Link href="/refund" className="text-gray-400 hover:text-white underline">
+              Refund Policy
+            </Link>
+          </div>
+          <p className="text-center text-sm text-gray-500">All rights reserved {new Date().getFullYear()}.</p>
         </div>
       </footer>
     </main>

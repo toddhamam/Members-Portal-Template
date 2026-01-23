@@ -111,6 +111,15 @@ function FAQItem({ question, answer, isOpen, onClick }: { question: string; answ
 
 export default function SalesPage() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
+  const [isFunnelSubdomain, setIsFunnelSubdomain] = useState(false);
+
+  // Detect funnel subdomain on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      setIsFunnelSubdomain(hostname.startsWith('offer.'));
+    }
+  }, []);
 
   // Track ViewContent for Meta Pixel and GA4
   useEffect(() => {
@@ -140,7 +149,7 @@ export default function SalesPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      <MarketingHeader />
+      {!isFunnelSubdomain && <MarketingHeader />}
 
       {/* Hero Section */}
       <section className="relative">
@@ -674,7 +683,26 @@ export default function SalesPage() {
         </div>
       </section>
 
-      <MarketingFooter />
+      {isFunnelSubdomain ? (
+        <footer className="py-8 px-4 bg-[#1a1a1a]">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex justify-center gap-6 mb-4 text-sm">
+              <Link href="/privacy" className="text-gray-400 hover:text-white underline">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="text-gray-400 hover:text-white underline">
+                Terms of Service
+              </Link>
+              <Link href="/refund" className="text-gray-400 hover:text-white underline">
+                Refund Policy
+              </Link>
+            </div>
+            <p className="text-center text-sm text-gray-500">All rights reserved {new Date().getFullYear()}.</p>
+          </div>
+        </footer>
+      ) : (
+        <MarketingFooter />
+      )}
     </main>
   );
 }

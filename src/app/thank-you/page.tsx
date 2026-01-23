@@ -258,6 +258,17 @@ function ThankYouContent() {
             height={38}
             className="mx-auto mb-4"
           />
+          <div className="flex justify-center gap-6 mb-4 text-sm">
+            <Link href="/privacy" className="text-gray-400 hover:text-white underline">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="text-gray-400 hover:text-white underline">
+              Terms of Service
+            </Link>
+            <Link href="/refund" className="text-gray-400 hover:text-white underline">
+              Refund Policy
+            </Link>
+          </div>
           <p className="text-gray-500 text-sm">
             Inner Wealth Initiate | Copyright &copy;{new Date().getFullYear()} | All Rights Reserved
           </p>

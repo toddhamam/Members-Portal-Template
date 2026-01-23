@@ -11,9 +11,10 @@ export async function middleware(request: NextRequest) {
   const isFunnelSubdomain = hostname.startsWith('offer.');
 
   // Funnel subdomain handling (offer.domain.com)
-  // Funnel pages pass through - landing, product, checkout, upsells, downsells, thank-you
+  // All funnel pages pass through - landing, product, checkout, upsells, downsells, thank-you
   // API routes pass through for payment processing
   // No session management needed for public funnel pages
+  // Note: Landing page (/) detects funnel subdomain and hides navigation
   if (isFunnelSubdomain) {
     return NextResponse.next();
   }
