@@ -337,6 +337,9 @@ const handleSubmit = async (e: React.FormEvent) => {
 | `POST /api/auth/claim-account` | Sets password for new customer |
 | `POST /api/portal/checkout` | Creates PaymentIntent for portal purchases |
 | `POST /api/portal/confirm-purchase` | Grants product access after portal payment |
+| `POST /api/track` | Tracks funnel events (page views, purchases, upsell decisions) |
+| `GET /api/dashboard/metrics` | Returns aggregated funnel metrics with date filtering |
+| `GET /api/dashboard/active-sessions` | Returns count of active visitors (last 5 min) |
 
 ### Upsell API Usage
 ```typescript
@@ -359,6 +362,7 @@ const response = await fetch("/api/upsell", {
 - `profiles` - User accounts (linked to Supabase Auth)
 - `products` - Product catalog with slugs, prices
 - `user_purchases` - Grants product access to users
+- `funnel_events` - Tracks page views, purchases, and upsell decisions for dashboard metrics
 
 ### Granting Access
 Use `grantProductAccess()` from `src/lib/supabase/purchases.ts`:
@@ -654,6 +658,55 @@ UPDATE products
 SET portal_price_cents = 9700  -- $97.00
 WHERE slug = 'pathless-path';
 ```
+
+---
+
+## Funnel Metrics Dashboard
+
+An internal dashboard at `/dashboard` for tracking funnel performance in real-time.
+
+### Features
+- **Live visitor counter** - Pulsing indicator showing active sessions (5-min window)
+- **Date range filtering** - 7/30/90 days or all time
+- **Funnel breakdown table** - Sessions, purchases, conversion %, revenue per step
+- **Ad spend tracking** - Manual input with ROAS/CAC calculations (persisted in localStorage)
+- **A/B test comparison** - Click step rows to expand variant performance
+- **Summary metrics** - Unique customers, AOV per customer
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/app/dashboard/page.tsx` | Dashboard UI |
+| `src/app/api/dashboard/metrics/route.ts` | Aggregated metrics API |
+| `src/app/api/dashboard/active-sessions/route.ts` | Real-time visitor count |
+| `src/app/api/track/route.ts` | Event ingestion endpoint |
+| `src/hooks/useFunnelTracking.ts` | Client-side tracking hook |
+
+### Tracking Events in Funnel Pages
+
+```tsx
+import { useFunnelTracking } from '@/hooks/useFunnelTracking';
+
+function CheckoutPage() {
+  const { track } = useFunnelTracking('checkout');
+  // Page view tracked automatically on mount
+
+  const handlePurchase = async () => {
+    await track('purchase', {
+      revenueCents: 2400,
+      productSlug: 'resistance-mapping-guide',
+      sessionId,
+    });
+  };
+}
+```
+
+**Event types:** `page_view`, `purchase`, `upsell_accept`, `upsell_decline`, `downsell_accept`, `downsell_decline`
+
+**Local testing:** Set `NEXT_PUBLIC_TRACK_LOCALHOST=true` to enable tracking on localhost.
+
+**Full implementation guide:** See `.claude/skills/funnel-dashboard.md`
 
 ---
 
