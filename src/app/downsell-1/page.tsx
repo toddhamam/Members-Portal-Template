@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSessionId } from "@/hooks/useSessionId";
 import { ga4 } from "@/lib/ga4";
+import { useFunnelTracking } from "@/hooks/useFunnelTracking";
 
 function Downsell1Content() {
   const sessionId = useSessionId();
@@ -12,6 +13,7 @@ function Downsell1Content() {
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const { track } = useFunnelTracking('downsell-1');
 
   const testimonials = [
     {
@@ -82,6 +84,8 @@ function Downsell1Content() {
       if (data.success) {
         // Track for GA4 with transaction ID after successful payment
         ga4.downsellAccepted(1, 'Nervous System Reset Kit', 27, data.paymentIntentId);
+        // Track for funnel dashboard
+        await track('downsell_accept', { revenueCents: 2700, productSlug: 'nervous-system-reset', sessionId: sessionId || undefined });
         window.location.href = "/upsell-2?session_id=" + sessionId;
       } else {
         alert("There was an issue processing your order. Please try again.");
@@ -114,6 +118,7 @@ function Downsell1Content() {
       className={`block text-center text-white hover:text-gray-300 text-sm mt-3 underline ${className}`}
       onClick={() => {
         ga4.downsellDeclined(1, 'Nervous System Reset Kit', 27);
+        track('downsell_decline');
       }}
     >
       No thanks, I don&apos;t want the nervous system reset kit

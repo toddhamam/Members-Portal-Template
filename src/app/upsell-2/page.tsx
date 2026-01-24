@@ -6,9 +6,11 @@ import Image from "next/image";
 import Script from "next/script";
 import { useSessionId } from "@/hooks/useSessionId";
 import { ga4 } from "@/lib/ga4";
+import { useFunnelTracking } from "@/hooks/useFunnelTracking";
 
 function Upsell2Content() {
   const sessionId = useSessionId();
+  const { track } = useFunnelTracking('upsell-2');
 
   // Track upsell viewed on mount
   useEffect(() => {
@@ -22,6 +24,7 @@ function Upsell2Content() {
       rel="noopener noreferrer"
       onClick={() => {
         ga4.upsellAccepted(2, 'Bridge to Mastery', 0);
+        track('upsell_accept', { revenueCents: 0, productSlug: 'bridge-to-mastery', sessionId: sessionId || undefined });
       }}
       className={`w-full bg-white hover:bg-gray-200 text-black font-bold py-4 px-5 md:py-5 md:px-8 text-base md:text-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg rounded-md ${className}`}
     >
@@ -38,6 +41,7 @@ function Upsell2Content() {
       className={`block text-center text-white hover:text-gray-300 text-sm mt-3 underline ${className}`}
       onClick={() => {
         ga4.upsellDeclined(2, 'Bridge to Mastery', 0);
+        track('upsell_decline');
       }}
     >
       No thanks, I don&apos;t want personal guidance

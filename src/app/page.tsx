@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { trackViewContent } from "@/lib/meta-pixel";
 import { ga4 } from "@/lib/ga4";
 import { MarketingHeader, MarketingFooter } from "@/components/marketing";
+import { useFunnelTracking } from "@/hooks/useFunnelTracking";
 
 // Download icon component
 function DownloadIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -112,6 +113,9 @@ function FAQItem({ question, answer, isOpen, onClick }: { question: string; answ
 export default function SalesPage() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
   const [isFunnelSubdomain, setIsFunnelSubdomain] = useState(false);
+
+  // Track funnel page view (auto-tracks on mount)
+  useFunnelTracking('landing');
 
   // Detect funnel subdomain on mount
   useEffect(() => {

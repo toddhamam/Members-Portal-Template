@@ -42,8 +42,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Main domain: update session for portal routes and login page
-  if (pathname.startsWith('/portal') || pathname === '/login') {
+  // Main domain: update session for portal routes, dashboard, and login page
+  if (pathname.startsWith('/portal') || pathname.startsWith('/dashboard') || pathname === '/login') {
     return await updateSession(request);
   }
 

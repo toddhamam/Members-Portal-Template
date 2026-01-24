@@ -48,15 +48,16 @@ export async function updateSession(
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect portal routes
+  // Protect portal and dashboard routes
   const isPortalRoute = pathname.startsWith('/portal');
+  const isDashboardRoute = pathname.startsWith('/dashboard');
   const isAuthRoute =
     pathname === '/login' ||
     pathname === '/portal/signup' ||
     pathname === '/portal/reset-password';
 
-  // If trying to access protected portal route without auth, redirect to login
-  if (isPortalRoute && !isAuthRoute && !user) {
+  // If trying to access protected route without auth, redirect to login
+  if ((isPortalRoute || isDashboardRoute) && !isAuthRoute && !user) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     // Use original pathname for redirect param so user returns to correct place

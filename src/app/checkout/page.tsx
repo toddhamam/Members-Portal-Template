@@ -13,6 +13,7 @@ import {
 import { cn } from "@/styles/style-guide";
 import { trackInitiateCheckout, trackAddToCart } from "@/lib/meta-pixel";
 import { ga4 } from "@/lib/ga4";
+import { useFunnelTracking } from "@/hooks/useFunnelTracking";
 
 // Initialize Stripe
 const stripePromise = loadStripe(
@@ -319,6 +320,9 @@ export default function CheckoutPage() {
   const mainProductPrice = 7.0;
   const orderBumpPrice = 27.0;
   const total = includeOrderBump ? mainProductPrice + orderBumpPrice : mainProductPrice;
+
+  // Track funnel page view (auto-tracks on mount)
+  useFunnelTracking('checkout');
 
   // Track InitiateCheckout for Meta Pixel and GA4
   useEffect(() => {

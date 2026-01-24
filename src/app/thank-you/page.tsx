@@ -6,6 +6,7 @@ import Link from "next/link";
 import { trackCompleteRegistration } from "@/lib/meta-pixel";
 import { useSessionId, clearSessionId } from "@/hooks/useSessionId";
 import { ga4 } from "@/lib/ga4";
+import { useFunnelTracking } from "@/hooks/useFunnelTracking";
 
 function CheckCircleIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -39,6 +40,7 @@ interface SessionData {
 
 function ThankYouContent() {
   const sessionId = useSessionId();
+  useFunnelTracking('thank-you');
 
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
