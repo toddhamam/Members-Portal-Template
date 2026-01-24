@@ -111,6 +111,13 @@ function CheckoutForm({
         throw new Error("Failed to update payment details");
       }
 
+      // Store checkout details for GA4 tracking on upsell page
+      sessionStorage.setItem('checkout_ga4_pending', JSON.stringify({
+        value: total,
+        includeOrderBump,
+        paymentIntentId,
+      }));
+
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {

@@ -66,8 +66,6 @@ function Downsell1Content() {
   }, []);
 
   const handleAccept = async () => {
-    // Track for GA4
-    ga4.downsellAccepted(1, 'Nervous System Reset Kit', 27);
     setIsProcessing(true);
     try {
       const response = await fetch("/api/upsell", {
@@ -82,6 +80,8 @@ function Downsell1Content() {
 
       const data = await response.json();
       if (data.success) {
+        // Track for GA4 with transaction ID after successful payment
+        ga4.downsellAccepted(1, 'Nervous System Reset Kit', 27, data.paymentIntentId);
         window.location.href = "/upsell-2?session_id=" + sessionId;
       } else {
         alert("There was an issue processing your order. Please try again.");

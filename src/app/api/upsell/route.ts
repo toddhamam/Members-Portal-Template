@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
         tags: [upsellType, 'funnel-upsell'],
       });
 
-      return NextResponse.json({ success: true, accepted: true });
+      return NextResponse.json({ success: true, accepted: true, paymentIntentId: upsellPayment.id });
     } else {
       // Track decline in Klaviyo
       await trackEvent({

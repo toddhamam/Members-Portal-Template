@@ -10,14 +10,26 @@ function Upsell1Content() {
   const sessionId = useSessionId();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Track upsell viewed on mount
+  // Track checkout completion (initial purchase) and upsell view on mount
   useEffect(() => {
+    // Track GA4 checkout completion for initial purchase (only once)
+    const pendingCheckout = sessionStorage.getItem('checkout_ga4_pending');
+    if (pendingCheckout) {
+      try {
+        const { value, includeOrderBump, paymentIntentId } = JSON.parse(pendingCheckout);
+        ga4.checkoutCompleted(paymentIntentId, value, includeOrderBump);
+        sessionStorage.removeItem('checkout_ga4_pending');
+      } catch (e) {
+        console.error('Failed to parse checkout GA4 data:', e);
+        sessionStorage.removeItem('checkout_ga4_pending');
+      }
+    }
+
+    // Track upsell page view
     ga4.upsellView(1, 'The Pathless Path', 97);
   }, []);
 
   const handleAccept = async () => {
-    // Track for GA4
-    ga4.upsellAccepted(1, 'The Pathless Path', 97);
     setIsProcessing(true);
     try {
       const response = await fetch("/api/upsell", {
@@ -32,6 +44,8 @@ function Upsell1Content() {
 
       const data = await response.json();
       if (data.success) {
+        // Track for GA4 with transaction ID after successful payment
+        ga4.upsellAccepted(1, 'The Pathless Path', 97, data.paymentIntentId);
         window.location.href = "/upsell-2?session_id=" + sessionId;
       } else {
         alert("There was an issue processing your order. Please try again.");
