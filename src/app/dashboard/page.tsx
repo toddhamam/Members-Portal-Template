@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthProvider';
 import type { DashboardMetrics, FunnelStep, ABTestMetrics } from '@/lib/supabase/types';
@@ -132,49 +131,67 @@ export default function DashboardPage() {
     : { sessions: 0, purchases: 0, conversionRate: 0, revenue: 0 };
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="bg-black py-4 px-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Image
-            src="/logo.png"
-            alt="Inner Wealth Initiate"
-            width={150}
-            height={38}
-          />
-          <div className="flex items-center gap-4">
-            <span className="text-gray-400 text-sm hidden sm:inline">{user?.email}</span>
-            <button
-              onClick={() => signOut()}
-              className="text-gray-400 hover:text-white text-sm"
-            >
-              Logout
-            </button>
+    <div className="min-h-screen bg-[#f8fafc]">
+      {/* Floating Header */}
+      <header className="pt-4 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-[#1a1f2e] rounded-full px-4 py-2.5 flex items-center justify-between shadow-lg shadow-slate-900/10">
+            {/* Left: Dashboard Branding */}
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <span className="text-white font-semibold text-sm">Funnel Analytics</span>
+            </div>
+
+            {/* Right: User Menu */}
+            <div className="flex items-center gap-2">
+              {/* User Email */}
+              <span className="hidden sm:inline text-slate-400 text-sm max-w-[160px] truncate">{user?.email}</span>
+              {/* Logout Button */}
+              <button
+                onClick={() => signOut()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white transition-all text-sm"
+              >
+                <span>Logout</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Live Sessions Counter */}
-        <div className="flex items-center gap-2 mb-6">
-          <span className="relative flex h-3 w-3">
-            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeSessions > 0 ? 'bg-green-400' : 'bg-gray-400'}`}></span>
-            <span className={`relative inline-flex rounded-full h-3 w-3 ${activeSessions > 0 ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-          </span>
-          <span className="text-sm text-gray-600">
-            <span className="font-semibold text-gray-900">{activeSessions}</span>
-            {' '}{activeSessions === 1 ? 'visitor' : 'visitors'} online now
-          </span>
-        </div>
-
-        {/* Title and Date Range */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Funnel Dashboard</h1>
+      <main className="max-w-7xl mx-auto px-6 py-6">
+        {/* Top Bar: Live Sessions + Date Range */}
+        <div className="flex items-center justify-between mb-6">
+          {/* Live Sessions - 3D Floating Card */}
+          <div className="relative">
+            {/* Shadow layer for 3D depth */}
+            <div className="absolute inset-0 bg-slate-900/10 rounded-xl translate-y-1 translate-x-0.5 blur-[2px]"></div>
+            {/* Main card */}
+            <div className={`relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl border ${
+              activeSessions > 0
+                ? 'bg-gradient-to-br from-emerald-50 to-white border-emerald-200/60 shadow-[0_4px_12px_-2px_rgba(16,185,129,0.25)]'
+                : 'bg-gradient-to-br from-slate-50 to-white border-slate-200 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08)]'
+            }`}>
+              {/* Pulsing dot */}
+              <span className="relative flex h-2.5 w-2.5">
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeSessions > 0 ? 'bg-emerald-400' : 'bg-gray-400'}`}></span>
+                <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${activeSessions > 0 ? 'bg-emerald-500' : 'bg-gray-400'}`}></span>
+              </span>
+              {/* Text */}
+              <span className="text-sm">
+                <span className={`font-semibold ${activeSessions > 0 ? 'text-emerald-700' : 'text-slate-700'}`}>{activeSessions}</span>
+                <span className={activeSessions > 0 ? 'text-emerald-600/80' : 'text-slate-500'}> {activeSessions === 1 ? 'visitor' : 'visitors'} online</span>
+              </span>
+            </div>
+          </div>
           <select
             value={selectedRange}
             onChange={(e) => setSelectedRange(Number(e.target.value))}
-            className="px-4 py-2 border border-gray-300 rounded-md bg-white text-sm"
+            className="px-4 py-2 border border-slate-200 rounded-xl bg-white text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer"
           >
             {DATE_RANGES.map((range) => (
               <option key={range.days} value={range.days}>
@@ -187,114 +204,139 @@ export default function DashboardPage() {
         {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-emerald-500"></div>
           </div>
         )}
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
-            <p className="text-red-700">{error}</p>
+          <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-6">
+            <p className="text-red-600 text-sm">{error}</p>
           </div>
         )}
 
         {/* Metrics Content */}
         {!isLoading && !error && metrics && (
           <>
-            {/* Top Metric Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {/* Revenue */}
-              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                <p className="text-sm text-gray-500 mb-1">Revenue</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {formatCurrency(metrics.summary.totalRevenue)}
-                </p>
-              </div>
-
-              {/* Ad Spend */}
-              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                <p className="text-sm text-gray-500 mb-1">Ad Spend</p>
-                <div className="flex items-center gap-1">
-                  <span className="text-gray-400">$</span>
-                  <input
-                    type="number"
-                    value={adSpend || ''}
-                    onChange={(e) => handleAdSpendChange(Number(e.target.value))}
-                    placeholder="0"
-                    className="w-full text-2xl font-semibold text-gray-900 border-none focus:outline-none focus:ring-0 p-0 bg-transparent"
-                  />
+            {/* Hero Revenue Card + Secondary Metrics */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+              {/* Revenue - Hero Card */}
+              <div className="bg-[#1a1f2e] rounded-2xl p-5 shadow-lg">
+                <p className="text-sm text-slate-400 mb-1">Total Revenue</p>
+                <div className="flex items-baseline gap-3">
+                  <p className="text-3xl font-semibold text-white tracking-tight">
+                    {formatCurrency(metrics.summary.totalRevenue)}
+                  </p>
+                  {metrics.summary.purchases > 0 && (
+                    <span className="text-emerald-400 text-sm font-medium flex items-center gap-0.5">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
+                      </svg>
+                      {metrics.summary.purchases} sales
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {/* ROAS */}
-              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                <p className="text-sm text-gray-500 mb-1">ROAS</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {roas > 0 ? `${roas.toFixed(2)}x` : '—'}
-                </p>
+              {/* Ad Spend + ROAS */}
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">Ad Spend</p>
+                    <div className="flex items-center">
+                      <span className="text-slate-400 text-2xl font-semibold">$</span>
+                      <input
+                        type="number"
+                        value={adSpend || ''}
+                        onChange={(e) => handleAdSpendChange(Number(e.target.value))}
+                        placeholder="0"
+                        className="w-24 text-2xl font-semibold text-slate-800 border-none focus:outline-none focus:ring-0 p-0 bg-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-slate-500 mb-1">ROAS</p>
+                    <p className={`text-2xl font-semibold ${roas >= 2 ? 'text-emerald-600' : roas > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                      {roas > 0 ? `${roas.toFixed(2)}x` : '—'}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* CAC */}
-              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                <p className="text-sm text-gray-500 mb-1">CAC</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {cac > 0 ? formatCurrency(cac) : '—'}
-                </p>
+              {/* CAC + Customers */}
+              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-slate-500 mb-1">CAC</p>
+                    <p className="text-2xl font-semibold text-slate-800">
+                      {cac > 0 ? formatCurrency(cac) : '—'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-slate-500 mb-1">Customers</p>
+                    <p className="text-2xl font-semibold text-slate-800">
+                      {metrics.summary.uniqueCustomers}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Funnel Breakdown Table */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-              <div className="px-4 py-3 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Funnel Breakdown</h2>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h2 className="text-base font-semibold text-slate-800">Funnel Breakdown</h2>
+                <span className="text-sm text-slate-500">
+                  AOV: <span className="font-medium text-slate-700">{formatCurrency(metrics.summary.aovPerCustomer)}</span>
+                </span>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50">
-                      <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Page</th>
-                      <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Sessions</th>
-                      <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Purchases</th>
-                      <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Conv %</th>
-                      <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Revenue</th>
+                    <tr className="bg-slate-50/50">
+                      <th className="text-left px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Step</th>
+                      <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Sessions</th>
+                      <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Purchases</th>
+                      <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Conv %</th>
+                      <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Revenue</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {metrics.stepMetrics.map((step) => {
                       const hasABTest = metrics.abTests.some((ab) => ab.step === step.step);
                       return (
                         <tr
                           key={step.step}
-                          className={`border-b border-gray-100 hover:bg-gray-50 ${
-                            selectedStep === step.step ? 'bg-blue-50' : ''
+                          className={`transition-colors ${
+                            selectedStep === step.step ? 'bg-emerald-50/50' : 'hover:bg-slate-50/50'
                           } ${hasABTest ? 'cursor-pointer' : ''}`}
                           onClick={() => hasABTest && setSelectedStep(step.step === selectedStep ? null : step.step)}
                         >
-                          <td className="px-4 py-3 text-sm text-gray-900">
+                          <td className="px-5 py-3.5 text-sm text-slate-700 font-medium">
                             {STEP_NAMES[step.step]}
                             {hasABTest && (
-                              <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
+                              <span className="ml-2 text-xs bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded-full font-medium">
                                 A/B
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                          <td className="px-5 py-3.5 text-sm text-slate-600 text-right tabular-nums">
                             {step.sessions.toLocaleString()}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                          <td className="px-5 py-3.5 text-sm text-slate-600 text-right tabular-nums">
                             {step.step === 'landing' || step.step === 'thank-you'
-                              ? '—'
+                              ? <span className="text-slate-300">—</span>
                               : step.purchases.toLocaleString()}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                          <td className="px-5 py-3.5 text-sm text-right tabular-nums">
                             {step.step === 'landing' || step.step === 'thank-you'
-                              ? '—'
-                              : formatPercent(step.conversionRate)}
+                              ? <span className="text-slate-300">—</span>
+                              : <span className={step.conversionRate >= 5 ? 'text-emerald-600 font-medium' : 'text-slate-600'}>{formatPercent(step.conversionRate)}</span>}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                          <td className="px-5 py-3.5 text-sm text-slate-700 text-right tabular-nums font-medium">
                             {step.step === 'landing' || step.step === 'thank-you'
-                              ? '—'
+                              ? <span className="text-slate-300 font-normal">—</span>
                               : formatCurrency(step.revenue)}
                           </td>
                         </tr>
@@ -302,47 +344,36 @@ export default function DashboardPage() {
                     })}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-gray-50 font-semibold">
-                      <td className="px-4 py-3 text-sm text-gray-900">Funnel Total</td>
-                      <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                    <tr className="bg-slate-50/80">
+                      <td className="px-5 py-3.5 text-sm text-slate-800 font-semibold">Total</td>
+                      <td className="px-5 py-3.5 text-sm text-slate-800 text-right tabular-nums font-semibold">
                         {funnelTotals.sessions.toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                      <td className="px-5 py-3.5 text-sm text-slate-800 text-right tabular-nums font-semibold">
                         {funnelTotals.purchases.toLocaleString()}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                      <td className="px-5 py-3.5 text-sm text-emerald-600 text-right tabular-nums font-semibold">
                         {formatPercent(funnelTotals.conversionRate)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                      <td className="px-5 py-3.5 text-sm text-slate-800 text-right tabular-nums font-semibold">
                         {formatCurrency(funnelTotals.revenue)}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
-
-              {/* Summary row below table */}
-              <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 flex flex-wrap gap-4 text-sm">
-                <span className="text-gray-600">
-                  Unique Customers: <span className="font-medium text-gray-900">{metrics.summary.uniqueCustomers}</span>
-                </span>
-                <span className="text-gray-300">|</span>
-                <span className="text-gray-600">
-                  AOV per Customer: <span className="font-medium text-gray-900">{formatCurrency(metrics.summary.aovPerCustomer)}</span>
-                </span>
-              </div>
             </div>
 
             {/* A/B Test Comparison */}
             {selectedStep && stepABTests.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                  <h2 className="text-base font-semibold text-slate-800">
                     A/B Test: {STEP_NAMES[selectedStep]}
                   </h2>
                   <button
                     onClick={() => setSelectedStep(null)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-100"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -350,7 +381,7 @@ export default function DashboardPage() {
                   </button>
                 </div>
 
-                <div className="p-4">
+                <div className="p-5">
                   {/* Winner indicator */}
                   {stepABTests.length >= 2 && (
                     <ABTestWinner variants={stepABTests} />
@@ -360,30 +391,30 @@ export default function DashboardPage() {
                   <div className="overflow-x-auto mt-4">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-gray-200 bg-gray-50">
-                          <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Variant</th>
-                          <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Sessions</th>
-                          <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Purchases</th>
-                          <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Conv %</th>
-                          <th className="text-right px-4 py-3 text-sm font-medium text-gray-500">Revenue</th>
+                        <tr className="bg-slate-50/50">
+                          <th className="text-left px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Variant</th>
+                          <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Sessions</th>
+                          <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Purchases</th>
+                          <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Conv %</th>
+                          <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Revenue</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-slate-100">
                         {stepABTests.map((variant) => (
-                          <tr key={variant.variant} className="border-b border-gray-100">
-                            <td className="px-4 py-3 text-sm text-gray-900 capitalize">
+                          <tr key={variant.variant} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-5 py-3.5 text-sm text-slate-700 font-medium capitalize">
                               {variant.variant}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                            <td className="px-5 py-3.5 text-sm text-slate-600 text-right tabular-nums">
                               {variant.sessions.toLocaleString()}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                            <td className="px-5 py-3.5 text-sm text-slate-600 text-right tabular-nums">
                               {variant.purchases.toLocaleString()}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                            <td className="px-5 py-3.5 text-sm text-slate-600 text-right tabular-nums">
                               {formatPercent(variant.conversionRate)}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                            <td className="px-5 py-3.5 text-sm text-slate-700 text-right tabular-nums font-medium">
                               {formatCurrency(variant.revenue)}
                             </td>
                           </tr>
@@ -397,8 +428,8 @@ export default function DashboardPage() {
 
             {/* Step Detail Tabs */}
             {metrics.abTests.length > 0 && !selectedStep && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Step Details</h2>
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                <h2 className="text-base font-semibold text-slate-800 mb-4">A/B Tests Available</h2>
                 <div className="flex flex-wrap gap-2">
                   {metrics.stepMetrics
                     .filter((step) => metrics.abTests.some((ab) => ab.step === step.step))
@@ -406,10 +437,10 @@ export default function DashboardPage() {
                       <button
                         key={step.step}
                         onClick={() => setSelectedStep(step.step)}
-                        className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-md text-gray-700"
+                        className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 transition-colors font-medium"
                       >
                         {STEP_NAMES[step.step]}
-                        <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
+                        <span className="ml-2 text-xs bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded-full">
                           A/B
                         </span>
                       </button>
@@ -422,9 +453,14 @@ export default function DashboardPage() {
 
         {/* Empty State */}
         {!isLoading && !error && metrics && metrics.summary.sessions === 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-            <p className="text-gray-500 mb-4">No funnel data yet.</p>
-            <p className="text-sm text-gray-400">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-10 text-center">
+            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <p className="text-slate-600 mb-2 font-medium">No funnel data yet</p>
+            <p className="text-sm text-slate-400">
               Events will appear here as visitors move through your funnel.
             </p>
           </div>
@@ -432,14 +468,14 @@ export default function DashboardPage() {
       </main>
 
       {/* Footer */}
-      <footer className="py-8 px-4 border-t border-gray-200">
+      <footer className="py-6 px-6">
         <div className="max-w-7xl mx-auto text-center">
-          <p className="text-sm text-gray-500">
-            <Link href="/portal" className="hover:text-gray-700">
+          <p className="text-sm text-slate-400">
+            <Link href="/portal" className="hover:text-slate-600 transition-colors">
               Member Portal
             </Link>
-            {' · '}
-            <Link href="/" className="hover:text-gray-700">
+            <span className="mx-2">·</span>
+            <Link href="/" className="hover:text-slate-600 transition-colors">
               Funnel
             </Link>
           </p>
@@ -460,9 +496,14 @@ function ABTestWinner({ variants }: { variants: ABTestMetrics[] }) {
 
   if (winner.sessions < 100 || loser.sessions < 100) {
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <p className="text-sm text-yellow-700">
-          Not enough data yet. Need at least 100 sessions per variant for statistical significance.
+      <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 flex items-center gap-3">
+        <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+          <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <p className="text-sm text-amber-700">
+          Need at least 100 sessions per variant for statistical significance.
         </p>
       </div>
     );
@@ -477,16 +518,27 @@ function ABTestWinner({ variants }: { variants: ABTestMetrics[] }) {
   const confidence = totalSessions > 500 ? 95 : totalSessions > 200 ? 85 : 70;
 
   return (
-    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-lg">🏆</span>
-        <span className="font-semibold text-green-800 uppercase">
-          {winner.variant} Winning
+    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+          <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <span className="font-semibold text-emerald-800 uppercase text-sm">
+            {winner.variant} Winning
+          </span>
+          <p className="text-sm text-emerald-600">
+            +{lift.toFixed(1)}% lift
+          </p>
+        </div>
+      </div>
+      <div className="text-right">
+        <span className="text-xs text-emerald-600 font-medium bg-emerald-100 px-2 py-1 rounded-full">
+          {confidence}% confidence
         </span>
       </div>
-      <p className="text-sm text-green-700">
-        +{lift.toFixed(1)}% lift · {confidence}% confidence
-      </p>
     </div>
   );
 }
