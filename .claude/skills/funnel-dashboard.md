@@ -399,19 +399,46 @@ The dashboard has its own distinct visual identity, separate from the funnel pag
 ### Design Principles
 
 - **Isolated styling**: Dashboard UI is distinct from funnel/marketing pages, with its own theme
+- **Light theme dominance**: Bright, airy UI with white/light gray backgrounds for optimal data readability
 - **Data-first**: All UI decisions prioritize data accuracy and readability over decoration
-- **Clean aesthetic**: Light backgrounds, subtle shadows, minimal visual noise
-- **Prominent live elements**: Real-time indicators (like visitor count) should "pop" visually
+- **Pastel accents**: Use soft pastel colors (lime green, violet) for visual interest without overwhelming the light theme
+- **Subtle gradients**: Add depth to cards and tables with gentle gradients rather than flat solid colors
+- **Clear visual hierarchy**: Hero elements (like total revenue) should be prominently styled
+- **Interactive affordances**: Clickable elements (like table rows) should have clear hover states
 
 ### Color Scheme
 
 ```tsx
-// Dashboard-specific colors
-<div className="bg-[#f8fafc]" />     // Page background (light gray)
-<div className="bg-white" />          // Card backgrounds
-<div className="bg-[#1a1f2e]" />      // Dark accents (live counter backdrop)
-<span className="text-emerald-500" /> // Success/positive metrics
-<span className="text-red-500" />     // Negative metrics
+// Dashboard-specific colors (light theme with pastel accents)
+<div className="bg-[#f8fafc]" />              // Page background (light gray)
+<div className="bg-white" />                   // Card backgrounds
+<div className="bg-[#1a1f2e]" />               // Dark accents (live counter backdrop)
+
+// Pastel accent colors
+<span className="text-lime-500" />             // Success/positive metrics
+<span className="text-violet-500" />           // Secondary accent
+<span className="text-red-500" />              // Negative metrics
+
+// Gradient backgrounds for depth
+<div className="bg-gradient-to-br from-white to-gray-50" />  // Subtle card gradient
+<div className="bg-gradient-to-r from-lime-50 to-violet-50" /> // Accent gradient
+```
+
+### Gradient Patterns
+
+Use subtle gradients to add visual depth without overwhelming the clean aesthetic:
+
+```tsx
+// Hero revenue card with gradient
+<div className="bg-gradient-to-br from-lime-50 via-white to-violet-50 rounded-2xl shadow-lg p-8">
+  <span className="text-4xl font-bold text-gray-900">{formatCurrency(revenue)}</span>
+</div>
+
+// Table rows with hover gradient
+<tr className="hover:bg-gradient-to-r hover:from-gray-50 hover:to-white transition-colors cursor-pointer">
+
+// Metric card with directional gradient
+<div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-sm p-6">
 ```
 
 ### Layout Patterns
@@ -523,6 +550,36 @@ const formatPercent = (value: number): string => {
 };
 ```
 
+### Conditional Styling Based on Data
+
+Apply dynamic styles based on metric values to provide visual feedback:
+
+```tsx
+// ROAS indicator (green when profitable)
+<span className={roas >= 2 ? 'text-lime-600' : roas >= 1 ? 'text-yellow-600' : 'text-red-500'}>
+  {roas.toFixed(2)}x
+</span>
+
+// Active visitors indicator (pulse when active)
+<div className={`flex items-center gap-2 ${activeSessions > 0 ? 'animate-pulse' : ''}`}>
+  <span className={activeSessions > 0 ? 'text-lime-500' : 'text-gray-400'}>
+    {activeSessions} live
+  </span>
+</div>
+
+// Conversion rate styling (highlight high performers)
+<span className={conversionRate >= 10 ? 'text-lime-600 font-semibold' : 'text-gray-600'}>
+  {formatPercent(conversionRate)}
+</span>
+
+// A/B test winner badge
+{isWinner && (
+  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-lime-100 text-lime-800">
+    Winner +{lift.toFixed(1)}%
+  </span>
+)}
+```
+
 ### localStorage Persistence (SSR-safe)
 
 ```tsx
@@ -557,8 +614,41 @@ useEffect(() => {
 )}
 ```
 
+### Interactive Table Rows
+
+Make funnel step rows clickable to reveal A/B test details:
+
+```tsx
+// Expandable row pattern
+<tr
+  onClick={() => setSelectedStep(selectedStep === step ? null : step)}
+  className="cursor-pointer hover:bg-gradient-to-r hover:from-gray-50 hover:to-white transition-colors"
+>
+  <td className="py-4 px-6 flex items-center gap-2">
+    {STEP_NAMES[step]}
+    {hasABTest && (
+      <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">
+        A/B
+      </span>
+    )}
+    <ChevronIcon className={`transform transition-transform ${selectedStep === step ? 'rotate-180' : ''}`} />
+  </td>
+</tr>
+
+{/* Expanded A/B test details */}
+{selectedStep === step && (
+  <tr className="bg-violet-50/50">
+    <td colSpan={5} className="px-6 py-4">
+      <ABTestComparison step={step} variants={abTestData} />
+    </td>
+  </tr>
+)}
+```
+
 ### Common Mistakes to Avoid
 
 - **Image path casing**: Ensure paths match exactly (Linux is case-sensitive)
 - **Unused imports**: Remove imports like `Image` if the component no longer uses them
-- **Missing SSR guards**: Always check `typeof window !== 'undefined'` before accessing browser APIs
+- **Missing SSR guards**: Always check `typeof window !== 'undefined'` before accessing browser APIs like localStorage, window.location
+- **localStorage during SSR**: Initialize state with a function that checks for window, not a direct localStorage call
+- **Inconsistent theme**: Dashboard uses light theme with pastel accents - don't mix in dark theme elements from funnel pages
