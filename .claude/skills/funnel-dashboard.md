@@ -389,3 +389,176 @@ const ACTIVE_AB_TESTS = {
 | `src/hooks/useFunnelTracking.ts` | Client-side tracking hook |
 | `src/lib/supabase/types.ts` | TypeScript types |
 | `supabase/migrations/007_funnel_dashboard.sql` | Database schema |
+
+---
+
+## Dashboard UI Design Patterns
+
+The dashboard has its own distinct visual identity, separate from the funnel pages (which use dark themes). The dashboard uses a clean, light aesthetic optimized for data readability.
+
+### Design Principles
+
+- **Isolated styling**: Dashboard UI is distinct from funnel/marketing pages, with its own theme
+- **Data-first**: All UI decisions prioritize data accuracy and readability over decoration
+- **Clean aesthetic**: Light backgrounds, subtle shadows, minimal visual noise
+- **Prominent live elements**: Real-time indicators (like visitor count) should "pop" visually
+
+### Color Scheme
+
+```tsx
+// Dashboard-specific colors
+<div className="bg-[#f8fafc]" />     // Page background (light gray)
+<div className="bg-white" />          // Card backgrounds
+<div className="bg-[#1a1f2e]" />      // Dark accents (live counter backdrop)
+<span className="text-emerald-500" /> // Success/positive metrics
+<span className="text-red-500" />     // Negative metrics
+```
+
+### Layout Patterns
+
+```tsx
+// Centered content container
+<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+// Responsive grid for metric cards
+<div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+// Card styling with subtle elevation
+<div className="bg-white rounded-lg shadow-sm border p-6">
+```
+
+### Component Patterns
+
+**Pill-shaped header (contained, not full-width):**
+```tsx
+<header className="bg-white/80 backdrop-blur-sm rounded-full shadow-sm px-6 py-3 inline-flex items-center gap-4">
+  <span className="font-semibold">Dashboard</span>
+</header>
+```
+
+**Live visitor indicator with "pop out" effect:**
+```tsx
+<div className="bg-[#1a1f2e] rounded-2xl shadow-lg px-6 py-4 inline-flex items-center gap-3">
+  {/* Pulsing dot */}
+  <span className="relative flex h-3 w-3">
+    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+  </span>
+  <span className="text-white font-medium">{count} live visitors</span>
+</div>
+```
+
+**Date range selector (floating pill buttons):**
+```tsx
+<div className="inline-flex bg-white rounded-full shadow-sm p-1">
+  {DATE_RANGES.map((range) => (
+    <button
+      key={range.value}
+      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+        selected === range.value
+          ? 'bg-emerald-500 text-white'
+          : 'text-gray-600 hover:bg-gray-100'
+      }`}
+    >
+      {range.label}
+    </button>
+  ))}
+</div>
+```
+
+**Interactive focus states:**
+```tsx
+<input
+  className="focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+/>
+```
+
+### State Management
+
+```tsx
+// Standard dashboard state pattern
+const [selectedRange, setSelectedRange] = useState('7d');
+const [selectedStep, setSelectedStep] = useState<string | null>(null);
+const [adSpend, setAdSpend] = useState('');
+const [isLoading, setIsLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+```
+
+### Data Fetching Pattern
+
+```tsx
+useEffect(() => {
+  async function fetchMetrics() {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/dashboard/metrics?range=${selectedRange}`);
+      if (!response.ok) throw new Error('Failed to fetch');
+      const data = await response.json();
+      setMetrics(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  fetchMetrics();
+}, [selectedRange]);
+```
+
+### Formatting Helpers
+
+```tsx
+// Currency formatting
+const formatCurrency = (cents: number): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(cents / 100);
+};
+
+// Percentage formatting
+const formatPercent = (value: number): string => {
+  return `${value.toFixed(1)}%`;
+};
+```
+
+### localStorage Persistence (SSR-safe)
+
+```tsx
+// Initial value from localStorage
+const [adSpend, setAdSpend] = useState(() => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('dashboardAdSpend') || '';
+  }
+  return '';
+});
+
+// Persist changes
+useEffect(() => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('dashboardAdSpend', adSpend);
+  }
+}, [adSpend]);
+```
+
+### Loading States
+
+```tsx
+{isLoading ? (
+  <div className="animate-pulse space-y-4">
+    <div className="h-8 bg-gray-200 rounded w-1/4" />
+    <div className="h-32 bg-gray-200 rounded" />
+  </div>
+) : error ? (
+  <div className="text-red-500 p-4 bg-red-50 rounded-lg">{error}</div>
+) : (
+  /* Render actual data */
+)}
+```
+
+### Common Mistakes to Avoid
+
+- **Image path casing**: Ensure paths match exactly (Linux is case-sensitive)
+- **Unused imports**: Remove imports like `Image` if the component no longer uses them
+- **Missing SSR guards**: Always check `typeof window !== 'undefined'` before accessing browser APIs
