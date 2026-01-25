@@ -135,25 +135,25 @@ export default function DashboardPage() {
       {/* Floating Header */}
       <header className="pt-4 px-6">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-[#1a1f2e] rounded-full px-4 py-2.5 flex items-center justify-between shadow-lg shadow-slate-900/10">
+          <div className="bg-white/80 backdrop-blur-sm rounded-full px-4 py-2.5 flex items-center justify-between shadow-sm border border-slate-200/60">
             {/* Left: Dashboard Branding */}
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lime-400 to-lime-500 flex items-center justify-center shadow-sm">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
-              <span className="text-white font-semibold text-sm">Funnel Analytics</span>
+              <span className="text-slate-700 font-semibold text-sm">Funnel Analytics</span>
             </div>
 
             {/* Right: User Menu */}
             <div className="flex items-center gap-2">
               {/* User Email */}
-              <span className="hidden sm:inline text-slate-400 text-sm max-w-[160px] truncate">{user?.email}</span>
+              <span className="hidden sm:inline text-slate-500 text-sm max-w-[160px] truncate">{user?.email}</span>
               {/* Logout Button */}
               <button
                 onClick={() => signOut()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white transition-all text-sm"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-700 transition-all text-sm"
               >
                 <span>Logout</span>
               </button>
@@ -166,32 +166,27 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-6 py-6">
         {/* Top Bar: Live Sessions + Date Range */}
         <div className="flex items-center justify-between mb-6">
-          {/* Live Sessions - 3D Floating Card */}
-          <div className="relative">
-            {/* Shadow layer for 3D depth */}
-            <div className="absolute inset-0 bg-slate-900/10 rounded-xl translate-y-1 translate-x-0.5 blur-[2px]"></div>
-            {/* Main card */}
-            <div className={`relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl border ${
-              activeSessions > 0
-                ? 'bg-gradient-to-br from-emerald-50 to-white border-emerald-200/60 shadow-[0_4px_12px_-2px_rgba(16,185,129,0.25)]'
-                : 'bg-gradient-to-br from-slate-50 to-white border-slate-200 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08)]'
-            }`}>
-              {/* Pulsing dot */}
-              <span className="relative flex h-2.5 w-2.5">
-                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeSessions > 0 ? 'bg-emerald-400' : 'bg-gray-400'}`}></span>
-                <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${activeSessions > 0 ? 'bg-emerald-500' : 'bg-gray-400'}`}></span>
-              </span>
-              {/* Text */}
-              <span className="text-sm">
-                <span className={`font-semibold ${activeSessions > 0 ? 'text-emerald-700' : 'text-slate-700'}`}>{activeSessions}</span>
-                <span className={activeSessions > 0 ? 'text-emerald-600/80' : 'text-slate-500'}> {activeSessions === 1 ? 'visitor' : 'visitors'} online</span>
-              </span>
-            </div>
+          {/* Live Sessions - Soft Card */}
+          <div className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border ${
+            activeSessions > 0
+              ? 'bg-gradient-to-br from-lime-50 to-white border-lime-200/60 shadow-sm'
+              : 'bg-gradient-to-br from-slate-50 to-white border-slate-200/60 shadow-sm'
+          }`}>
+            {/* Pulsing dot */}
+            <span className="relative flex h-2.5 w-2.5">
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${activeSessions > 0 ? 'bg-lime-400' : 'bg-gray-400'}`}></span>
+              <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${activeSessions > 0 ? 'bg-lime-500' : 'bg-gray-400'}`}></span>
+            </span>
+            {/* Text */}
+            <span className="text-sm">
+              <span className={`font-semibold ${activeSessions > 0 ? 'text-lime-700' : 'text-slate-700'}`}>{activeSessions}</span>
+              <span className={activeSessions > 0 ? 'text-lime-600/80' : 'text-slate-500'}> {activeSessions === 1 ? 'visitor' : 'visitors'} online</span>
+            </span>
           </div>
           <select
             value={selectedRange}
             onChange={(e) => setSelectedRange(Number(e.target.value))}
-            className="px-4 py-2 border border-slate-200 rounded-xl bg-white text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer"
+            className="px-4 py-2 border border-violet-200/60 rounded-xl bg-gradient-to-br from-violet-50 to-white text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all cursor-pointer"
           >
             {DATE_RANGES.map((range) => (
               <option key={range.days} value={range.days}>
@@ -204,14 +199,14 @@ export default function DashboardPage() {
         {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-emerald-500"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-lime-100 border-t-lime-500"></div>
           </div>
         )}
 
         {/* Error State */}
         {error && (
-          <div className="bg-red-50 border border-red-100 rounded-2xl p-4 mb-6">
-            <p className="text-red-600 text-sm">{error}</p>
+          <div className="bg-gradient-to-br from-rose-50 to-white border border-rose-200/60 rounded-2xl p-4 mb-6">
+            <p className="text-rose-500 text-sm">{error}</p>
           </div>
         )}
 
@@ -221,14 +216,14 @@ export default function DashboardPage() {
             {/* Hero Revenue Card + Secondary Metrics */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
               {/* Revenue - Hero Card */}
-              <div className="bg-[#1a1f2e] rounded-2xl p-5 shadow-lg">
-                <p className="text-sm text-slate-400 mb-1">Total Revenue</p>
+              <div className="bg-gradient-to-br from-lime-50 to-white rounded-2xl p-5 shadow-sm border border-lime-100/60">
+                <p className="text-sm text-lime-600/80 mb-1">Total Revenue</p>
                 <div className="flex items-baseline gap-3">
-                  <p className="text-3xl font-semibold text-white tracking-tight">
+                  <p className="text-3xl font-semibold text-slate-800 tracking-tight">
                     {formatCurrency(metrics.summary.totalRevenue)}
                   </p>
                   {metrics.summary.purchases > 0 && (
-                    <span className="text-emerald-400 text-sm font-medium flex items-center gap-0.5">
+                    <span className="text-lime-600 text-sm font-medium flex items-center gap-0.5">
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17V7H7" />
                       </svg>
@@ -239,12 +234,12 @@ export default function DashboardPage() {
               </div>
 
               {/* Ad Spend + ROAS */}
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+              <div className="bg-gradient-to-br from-violet-50 to-white rounded-2xl p-5 shadow-sm border border-violet-100/60">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-slate-500 mb-1">Ad Spend</p>
+                    <p className="text-sm text-violet-600/80 mb-1">Ad Spend</p>
                     <div className="flex items-center">
-                      <span className="text-slate-400 text-2xl font-semibold">$</span>
+                      <span className="text-violet-400 text-2xl font-semibold">$</span>
                       <input
                         type="number"
                         value={adSpend || ''}
@@ -255,8 +250,8 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-slate-500 mb-1">ROAS</p>
-                    <p className={`text-2xl font-semibold ${roas >= 2 ? 'text-emerald-600' : roas > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                    <p className="text-sm text-violet-600/80 mb-1">ROAS</p>
+                    <p className={`text-2xl font-semibold ${roas >= 2 ? 'text-lime-600' : roas > 0 ? 'text-amber-500' : 'text-slate-400'}`}>
                       {roas > 0 ? `${roas.toFixed(2)}x` : '—'}
                     </p>
                   </div>
@@ -264,7 +259,7 @@ export default function DashboardPage() {
               </div>
 
               {/* CAC + Customers */}
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+              <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 shadow-sm border border-slate-200/60">
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm text-slate-500 mb-1">CAC</p>
@@ -274,7 +269,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-slate-500 mb-1">Customers</p>
-                    <p className="text-2xl font-semibold text-slate-800">
+                    <p className="text-2xl font-semibold text-violet-600">
                       {metrics.summary.uniqueCustomers}
                     </p>
                   </div>
@@ -283,18 +278,18 @@ export default function DashboardPage() {
             </div>
 
             {/* Funnel Breakdown Table */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="bg-gradient-to-br from-white to-slate-50/50 rounded-2xl shadow-sm border border-slate-200/60 mb-6 overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100/80 flex items-center justify-between bg-white/60">
                 <h2 className="text-base font-semibold text-slate-800">Funnel Breakdown</h2>
                 <span className="text-sm text-slate-500">
-                  AOV: <span className="font-medium text-slate-700">{formatCurrency(metrics.summary.aovPerCustomer)}</span>
+                  AOV: <span className="font-medium text-lime-600">{formatCurrency(metrics.summary.aovPerCustomer)}</span>
                 </span>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-50/50">
+                    <tr className="bg-gradient-to-r from-slate-50/80 to-violet-50/30">
                       <th className="text-left px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Step</th>
                       <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Sessions</th>
                       <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Purchases</th>
@@ -302,14 +297,14 @@ export default function DashboardPage() {
                       <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Revenue</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100/60">
                     {metrics.stepMetrics.map((step) => {
                       const hasABTest = metrics.abTests.some((ab) => ab.step === step.step);
                       return (
                         <tr
                           key={step.step}
                           className={`transition-colors ${
-                            selectedStep === step.step ? 'bg-emerald-50/50' : 'hover:bg-slate-50/50'
+                            selectedStep === step.step ? 'bg-lime-50/50' : 'hover:bg-slate-50/30'
                           } ${hasABTest ? 'cursor-pointer' : ''}`}
                           onClick={() => hasABTest && setSelectedStep(step.step === selectedStep ? null : step.step)}
                         >
@@ -332,7 +327,7 @@ export default function DashboardPage() {
                           <td className="px-5 py-3.5 text-sm text-right tabular-nums">
                             {step.step === 'landing' || step.step === 'thank-you'
                               ? <span className="text-slate-300">—</span>
-                              : <span className={step.conversionRate >= 5 ? 'text-emerald-600 font-medium' : 'text-slate-600'}>{formatPercent(step.conversionRate)}</span>}
+                              : <span className={step.conversionRate >= 5 ? 'text-lime-600 font-medium' : 'text-slate-600'}>{formatPercent(step.conversionRate)}</span>}
                           </td>
                           <td className="px-5 py-3.5 text-sm text-slate-700 text-right tabular-nums font-medium">
                             {step.step === 'landing' || step.step === 'thank-you'
@@ -344,7 +339,7 @@ export default function DashboardPage() {
                     })}
                   </tbody>
                   <tfoot>
-                    <tr className="bg-slate-50/80">
+                    <tr className="bg-gradient-to-r from-lime-50/60 to-white">
                       <td className="px-5 py-3.5 text-sm text-slate-800 font-semibold">Total</td>
                       <td className="px-5 py-3.5 text-sm text-slate-800 text-right tabular-nums font-semibold">
                         {funnelTotals.sessions.toLocaleString()}
@@ -352,7 +347,7 @@ export default function DashboardPage() {
                       <td className="px-5 py-3.5 text-sm text-slate-800 text-right tabular-nums font-semibold">
                         {funnelTotals.purchases.toLocaleString()}
                       </td>
-                      <td className="px-5 py-3.5 text-sm text-emerald-600 text-right tabular-nums font-semibold">
+                      <td className="px-5 py-3.5 text-sm text-lime-600 text-right tabular-nums font-semibold">
                         {formatPercent(funnelTotals.conversionRate)}
                       </td>
                       <td className="px-5 py-3.5 text-sm text-slate-800 text-right tabular-nums font-semibold">
@@ -366,14 +361,14 @@ export default function DashboardPage() {
 
             {/* A/B Test Comparison */}
             {selectedStep && stepABTests.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="bg-gradient-to-br from-violet-50/50 to-white rounded-2xl shadow-sm border border-violet-200/60 overflow-hidden">
+                <div className="px-5 py-4 border-b border-violet-100/60 flex items-center justify-between bg-white/60">
                   <h2 className="text-base font-semibold text-slate-800">
                     A/B Test: {STEP_NAMES[selectedStep]}
                   </h2>
                   <button
                     onClick={() => setSelectedStep(null)}
-                    className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-100"
+                    className="text-violet-400 hover:text-violet-600 transition-colors p-1 rounded-lg hover:bg-violet-50"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -391,7 +386,7 @@ export default function DashboardPage() {
                   <div className="overflow-x-auto mt-4">
                     <table className="w-full">
                       <thead>
-                        <tr className="bg-slate-50/50">
+                        <tr className="bg-gradient-to-r from-violet-50/50 to-slate-50/30">
                           <th className="text-left px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Variant</th>
                           <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Sessions</th>
                           <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Purchases</th>
@@ -399,9 +394,9 @@ export default function DashboardPage() {
                           <th className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">Revenue</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-violet-100/40">
                         {stepABTests.map((variant) => (
-                          <tr key={variant.variant} className="hover:bg-slate-50/50 transition-colors">
+                          <tr key={variant.variant} className="hover:bg-violet-50/30 transition-colors">
                             <td className="px-5 py-3.5 text-sm text-slate-700 font-medium capitalize">
                               {variant.variant}
                             </td>
@@ -428,7 +423,7 @@ export default function DashboardPage() {
 
             {/* Step Detail Tabs */}
             {metrics.abTests.length > 0 && !selectedStep && (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+              <div className="bg-gradient-to-br from-violet-50/30 to-white rounded-2xl shadow-sm border border-violet-100/60 p-5">
                 <h2 className="text-base font-semibold text-slate-800 mb-4">A/B Tests Available</h2>
                 <div className="flex flex-wrap gap-2">
                   {metrics.stepMetrics
@@ -437,7 +432,7 @@ export default function DashboardPage() {
                       <button
                         key={step.step}
                         onClick={() => setSelectedStep(step.step)}
-                        className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-700 transition-colors font-medium"
+                        className="px-4 py-2 text-sm bg-white hover:bg-violet-50 border border-violet-200/60 rounded-xl text-slate-700 transition-colors font-medium shadow-sm"
                       >
                         {STEP_NAMES[step.step]}
                         <span className="ml-2 text-xs bg-violet-100 text-violet-600 px-1.5 py-0.5 rounded-full">
@@ -453,9 +448,9 @@ export default function DashboardPage() {
 
         {/* Empty State */}
         {!isLoading && !error && metrics && metrics.summary.sessions === 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-10 text-center">
-            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-gradient-to-br from-lime-50/30 to-white rounded-2xl shadow-sm border border-lime-100/60 p-10 text-center">
+            <div className="w-12 h-12 bg-lime-100/60 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-lime-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
@@ -471,11 +466,11 @@ export default function DashboardPage() {
       <footer className="py-6 px-6">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-sm text-slate-400">
-            <Link href="/portal" className="hover:text-slate-600 transition-colors">
+            <Link href="/portal" className="hover:text-violet-500 transition-colors">
               Member Portal
             </Link>
             <span className="mx-2">·</span>
-            <Link href="/" className="hover:text-slate-600 transition-colors">
+            <Link href="/" className="hover:text-lime-600 transition-colors">
               Funnel
             </Link>
           </p>
@@ -496,13 +491,13 @@ function ABTestWinner({ variants }: { variants: ABTestMetrics[] }) {
 
   if (winner.sessions < 100 || loser.sessions < 100) {
     return (
-      <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 flex items-center gap-3">
-        <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-          <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="bg-gradient-to-br from-amber-50/80 to-white border border-amber-200/60 rounded-xl p-4 flex items-center gap-3">
+        <div className="w-8 h-8 bg-amber-100/80 rounded-full flex items-center justify-center flex-shrink-0">
+          <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <p className="text-sm text-amber-700">
+        <p className="text-sm text-amber-600">
           Need at least 100 sessions per variant for statistical significance.
         </p>
       </div>
@@ -518,24 +513,24 @@ function ABTestWinner({ variants }: { variants: ABTestMetrics[] }) {
   const confidence = totalSessions > 500 ? 95 : totalSessions > 200 ? 85 : 70;
 
   return (
-    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-center justify-between">
+    <div className="bg-gradient-to-br from-lime-50/80 to-white border border-lime-200/60 rounded-xl p-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-          <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-8 h-8 bg-lime-100/80 rounded-full flex items-center justify-center">
+          <svg className="w-4 h-4 text-lime-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <div>
-          <span className="font-semibold text-emerald-800 uppercase text-sm">
+          <span className="font-semibold text-lime-700 uppercase text-sm">
             {winner.variant} Winning
           </span>
-          <p className="text-sm text-emerald-600">
+          <p className="text-sm text-lime-600">
             +{lift.toFixed(1)}% lift
           </p>
         </div>
       </div>
       <div className="text-right">
-        <span className="text-xs text-emerald-600 font-medium bg-emerald-100 px-2 py-1 rounded-full">
+        <span className="text-xs text-lime-600 font-medium bg-lime-100/80 px-2 py-1 rounded-full">
           {confidence}% confidence
         </span>
       </div>
