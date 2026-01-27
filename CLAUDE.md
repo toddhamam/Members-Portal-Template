@@ -291,7 +291,43 @@ All funnel pages MUST include legal footer links for Meta (Facebook/Instagram) a
 
 **Legal pages location:** `/privacy`, `/terms`, `/refund` (simple static pages)
 
-### 8. PaymentIntent Customer Data Must Be Updated Before Payment
+### 8. Browser Storage Must Handle Private Browsing Mode
+All `sessionStorage` and `localStorage` access in client-side code MUST be wrapped in try-catch blocks. Private browsing modes (Safari, Chrome Incognito, etc.) can throw errors when accessing these APIs, which will break checkout flows.
+
+**The Problem:** In private browsing mode, `sessionStorage.setItem()` and `sessionStorage.getItem()` can throw exceptions. If unhandled, this breaks the entire checkout process—even when the storage operation isn't critical to the payment.
+
+**The Solution:** Always wrap storage operations in try-catch:
+
+```tsx
+// Safe sessionStorage access pattern
+const safeGetItem = (key: string): string | null => {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const safeSetItem = (key: string, value: string): void => {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // Silently fail - storage is a backup mechanism
+  }
+};
+```
+
+**Critical files that use storage:**
+- `src/hooks/useSessionId.ts` - Session ID backup (uses URL param as fallback)
+- `src/lib/ga4.ts` - GA4 checkout data caching
+- `src/hooks/useFunnelTracking.ts` - Visitor ID generation
+- Checkout pages - GA4 pending data storage
+
+**Key principle:** Analytics and caching failures should NEVER break core checkout functionality. If storage is unavailable, gracefully degrade—use URL parameters as backup for session IDs, skip analytics caching, etc.
+
+**Related:** Stripe `requires_payment_method` errors with no specific error message often indicate client-side JavaScript failures (like unhandled storage exceptions) rather than backend payment issues.
+
+### 9. PaymentIntent Customer Data Must Be Updated Before Payment
 When using Stripe Elements with PaymentIntents (not Checkout Sessions), the customer email/name must be explicitly attached to the PaymentIntent **before** confirming payment.
 
 **The Problem:** PaymentIntents are created when the checkout page loads (to get a `clientSecret`), but the user hasn't entered their email yet. If you use placeholder data, Stripe will store that placeholder and the webhook won't have the real customer info.
@@ -442,6 +478,15 @@ function MyPageContent() {
 }
 ```
 
+### Analytics Reliability Principle
+
+**Critical:** Analytics tracking failures must NEVER break the checkout flow. All client-side tracking code should:
+- Wrap browser API calls (storage, cookies) in try-catch
+- Fail silently without interrupting the purchase process
+- Use server-side tracking (webhooks) as the authoritative source for conversion data
+
+Server-side tracking via Stripe webhooks is more reliable than client-side tracking because it doesn't depend on browser APIs, ad blockers, or JavaScript execution.
+
 ### Meta Pixel (Facebook)
 
 Meta Pixel is implemented for Facebook/Instagram ad tracking.
@@ -454,7 +499,7 @@ Meta Pixel is implemented for Facebook/Instagram ad tracking.
 - `InitiateCheckout` - Checkout page
 - `AddToCart` - Order bump added
 - `CompleteRegistration` - Thank you page
-- `Purchase` - Tracked server-side via Stripe webhook (Conversions API for accuracy)
+- `Purchase` - Tracked server-side via Stripe webhook (Conversions API for accuracy, bypasses ad blockers)
 
 ### Hotjar
 
