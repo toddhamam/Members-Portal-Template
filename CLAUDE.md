@@ -459,7 +459,30 @@ All forms (checkout, claim-account, etc.) should follow these UX patterns:
 - Mark required fields with asterisks: `Full Name *`
 - Or use "(required)" suffix for accessibility
 
-### 12. Performance Patterns
+### 12. Dynamic Pricing - Never Hardcode
+Product prices can change. Always query Supabase or Stripe for the authoritative price rather than hardcoding values.
+
+**The Problem:** Hardcoded prices lead to incorrect calculations when prices change in Supabase/Stripe but the code still uses old values.
+
+**The Solution:** Query the `products` table or Stripe API for current pricing:
+
+```typescript
+// Good - query the source of truth
+const { data: product } = await supabase
+  .from('products')
+  .select('price_cents, portal_price_cents')
+  .eq('slug', productSlug)
+  .single();
+
+const priceAmount = product?.price_cents || 0;
+
+// Bad - hardcoded price that can become stale
+const priceAmount = 9700; // Don't do this!
+```
+
+**When `const` is acceptable:** For prices within a specific API route's logic where the price is explicitly defined for that funnel step and won't change (e.g., a promotional price for a specific upsell). Even then, prefer querying when possible.
+
+### 13. Performance Patterns
 
 **Parallel Data Fetching:**
 Use `Promise.all` to fetch related data concurrently instead of sequentially:
@@ -633,6 +656,30 @@ function MyPageContent() {
 - Use server-side tracking (webhooks) as the authoritative source for conversion data
 
 Server-side tracking via Stripe webhooks is more reliable than client-side tracking because it doesn't depend on browser APIs, ad blockers, or JavaScript execution.
+
+### Server-Side Funnel Tracking
+
+For critical events (purchases, upsell decisions), use server-side tracking in addition to client-side tracking. The `funnel_events` table is the source of truth for dashboard metrics.
+
+**Key Files:**
+- `src/lib/funnel-tracking.ts` - Server-side tracking utility (if exists)
+- `src/app/api/webhook/route.ts` - Tracks purchases on `payment_intent.succeeded`
+- `src/app/api/upsell/route.ts` - Tracks upsell accepts/declines
+
+**Tracking Pattern for API Routes:**
+```typescript
+// In webhook or API route, track the event server-side
+await trackFunnelEvent({
+  eventType: 'purchase',
+  funnelStep: 'checkout',
+  revenueCents: amountPaid,
+  productSlug: 'product-slug',
+  sessionId: stripeSessionId,
+  visitorId: existingVisitorId, // Try to link to client session
+});
+```
+
+**Session Linking:** When possible, pass the visitor/session ID from client to server (e.g., in PaymentIntent metadata) so server-side events can be linked to client sessions. If unavailable, the tracking system should attempt to find recent page views from the same checkout session.
 
 ### Meta Pixel (Facebook)
 
@@ -864,6 +911,9 @@ An internal dashboard at `/dashboard` for tracking funnel performance in real-ti
 - **Ad spend tracking** - Manual input with ROAS/CAC calculations (persisted in localStorage)
 - **A/B test comparison** - Click step rows to expand variant performance
 - **Summary metrics** - Unique customers, AOV per customer
+
+### Metrics Definitions
+- **Total Conversion Rate:** The *checkout* conversion rate (purchases / checkout sessions), NOT an average across all steps. This represents the percentage of checkout visitors who complete a purchase.
 
 ### Key Files
 

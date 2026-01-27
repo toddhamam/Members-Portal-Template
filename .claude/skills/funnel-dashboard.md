@@ -276,6 +276,113 @@ Create `src/app/dashboard/page.tsx` and `layout.tsx`:
 
 ---
 
+## Server-Side Tracking (Critical)
+
+Client-side tracking via `useFunnelTracking` is good for page views and user interactions, but server-side tracking is essential for critical events like purchases. Server-side tracking:
+- Is not affected by ad blockers or browser issues
+- Provides authoritative data for the dashboard
+- Can link events to Stripe session/payment data
+
+### Centralized Server-Side Tracking Utility
+
+Create a reusable utility for server-side event tracking:
+
+```typescript
+// src/lib/funnel-tracking.ts
+import { createClient } from '@/lib/supabase/server';
+import type { FunnelEventType, FunnelStep } from '@/lib/supabase/types';
+
+interface TrackEventParams {
+  eventType: FunnelEventType;
+  funnelStep: FunnelStep;
+  revenueCents?: number;
+  productSlug?: string;
+  sessionId?: string;        // Stripe session/payment ID
+  visitorId?: string;        // From client cookie if available
+  funnelSessionId?: string;  // From client cookie if available
+}
+
+export async function trackFunnelEvent(params: TrackEventParams) {
+  const supabase = createClient();
+
+  // Try to link to existing client session if visitorId not provided
+  let visitorId = params.visitorId;
+  let funnelSessionId = params.funnelSessionId;
+
+  if (!visitorId && params.sessionId) {
+    // Attempt to find recent page view with same Stripe session
+    const { data: recentEvent } = await supabase
+      .from('funnel_events')
+      .select('visitor_id, funnel_session_id')
+      .eq('session_id', params.sessionId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (recentEvent) {
+      visitorId = recentEvent.visitor_id;
+      funnelSessionId = recentEvent.funnel_session_id;
+    }
+  }
+
+  // Generate new IDs if still missing
+  visitorId = visitorId || crypto.randomUUID();
+  funnelSessionId = funnelSessionId || crypto.randomUUID();
+
+  await supabase.from('funnel_events').insert({
+    visitor_id: visitorId,
+    funnel_session_id: funnelSessionId,
+    session_id: params.sessionId,
+    event_type: params.eventType,
+    funnel_step: params.funnelStep,
+    revenue_cents: params.revenueCents || 0,
+    product_slug: params.productSlug,
+  });
+}
+```
+
+### Using Server-Side Tracking in Webhooks
+
+```typescript
+// In webhook handler for payment_intent.succeeded
+import { trackFunnelEvent } from '@/lib/funnel-tracking';
+
+// Track the checkout purchase
+await trackFunnelEvent({
+  eventType: 'purchase',
+  funnelStep: 'checkout',
+  revenueCents: paymentIntent.amount,
+  productSlug: 'resistance-mapping-guide',
+  sessionId: paymentIntent.id,
+  visitorId: paymentIntent.metadata?.visitorId, // If passed from client
+});
+```
+
+### Using Server-Side Tracking in Upsell API
+
+```typescript
+// In /api/upsell route
+import { trackFunnelEvent } from '@/lib/funnel-tracking';
+
+if (action === 'accept') {
+  await trackFunnelEvent({
+    eventType: 'upsell_accept',
+    funnelStep: 'upsell-1',
+    revenueCents: priceAmount,
+    productSlug: productSlug,
+    sessionId,
+  });
+} else {
+  await trackFunnelEvent({
+    eventType: 'upsell_decline',
+    funnelStep: 'upsell-1',
+    sessionId,
+  });
+}
+```
+
+---
+
 ## Adding Tracking to Funnel Pages
 
 ### Page View (Automatic)
@@ -652,3 +759,81 @@ Make funnel step rows clickable to reveal A/B test details:
 - **Missing SSR guards**: Always check `typeof window !== 'undefined'` before accessing browser APIs like localStorage, window.location
 - **localStorage during SSR**: Initialize state with a function that checks for window, not a direct localStorage call
 - **Inconsistent theme**: Dashboard uses light theme with pastel accents - don't mix in dark theme elements from funnel pages
+- **Hardcoded prices**: NEVER hardcode product prices. Always query Supabase `products` table or Stripe for current pricing. Prices can change, and hardcoded values become stale.
+- **Incomplete event tracking**: Ensure ALL critical events (purchases, upsell accepts/declines) are tracked to `funnel_events`, not just external analytics platforms.
+
+---
+
+## Metrics Definitions
+
+Understanding what each metric represents is critical for accurate dashboard interpretation.
+
+### Summary Metrics
+
+| Metric | Definition |
+|--------|------------|
+| **Total Conversion Rate** | Checkout conversion rate = purchases / checkout sessions. This is NOT an average across all steps. It represents the percentage of visitors who reach checkout and complete a purchase. |
+| **Unique Customers** | Distinct email addresses from successful purchases |
+| **AOV per Customer** | Total revenue / unique customers |
+
+### Step Metrics
+
+| Metric | Definition |
+|--------|------------|
+| **Sessions** | Unique `funnel_session_id` values with `page_view` events for that step |
+| **Purchases** | Count of `purchase`, `upsell_accept`, or `downsell_accept` events for that step |
+| **Conversion Rate** | Purchases / sessions for that specific step |
+| **Revenue** | Sum of `revenue_cents` from purchase events for that step |
+
+### Why Total Conversion = Checkout Conversion
+
+The "total" conversion rate specifically measures checkout performance because:
+1. It's the most actionable metric for funnel optimization
+2. It represents the critical moment when visitors become customers
+3. It's what the user cares about most when evaluating funnel performance
+
+---
+
+## Pricing Best Practices
+
+### Always Query for Prices
+
+```typescript
+// Good - query the source of truth
+const { data: product } = await supabase
+  .from('products')
+  .select('price_cents')
+  .eq('slug', productSlug)
+  .single();
+
+const revenueCents = product?.price_cents || 0;
+
+// Bad - hardcoded price
+const revenueCents = 9700; // This can become stale!
+```
+
+### Order Bump Handling
+
+Track order bumps as separate items in revenue calculations:
+
+```typescript
+// Track main product
+await trackFunnelEvent({
+  eventType: 'purchase',
+  funnelStep: 'checkout',
+  revenueCents: mainProductPrice,
+  productSlug: 'resistance-mapping-guide',
+  sessionId,
+});
+
+// Track order bump separately if included
+if (includesOrderBump) {
+  await trackFunnelEvent({
+    eventType: 'purchase',
+    funnelStep: 'checkout',
+    revenueCents: orderBumpPrice,
+    productSlug: 'golden-thread-technique',
+    sessionId,
+  });
+}
+```
