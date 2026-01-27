@@ -147,7 +147,10 @@ function CheckoutForm({
       });
 
       if (!updateResponse.ok) {
-        throw new Error("Failed to update payment details");
+        const errorData = await updateResponse.json().catch(() => ({}));
+        setErrorMessage(errorData.error || "Failed to update payment details. Please check your information and try again.");
+        setIsProcessing(false);
+        return;
       }
 
       // Store checkout details for GA4 tracking on upsell page
@@ -180,8 +183,9 @@ function CheckoutForm({
         setIsProcessing(false);
       }
       // If successful, the user will be redirected to the return_url
-    } catch {
-      setErrorMessage("An unexpected error occurred. Please try again.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "An unexpected error occurred";
+      setErrorMessage(`${message}. Please check your details and try again.`);
       setIsProcessing(false);
     }
   };
@@ -200,11 +204,14 @@ function CheckoutForm({
       {/* Contact Info Fields */}
       <div className="space-y-4 mb-6">
         <div>
+          <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+            Full Name <span className="text-red-500">*</span>
+          </label>
           <input
             type="text"
             id="fullName"
             name="fullName"
-            placeholder="Full Name..."
+            placeholder="Enter your full name"
             required
             value={formData.fullName}
             onChange={handleInputChange}
@@ -220,11 +227,14 @@ function CheckoutForm({
           )}
         </div>
         <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            Email Address <span className="text-red-500">*</span>
+          </label>
           <input
             type="email"
             id="email"
             name="email"
-            placeholder="Email Address..."
+            placeholder="Enter your email address"
             required
             value={formData.email}
             onChange={handleInputChange}

@@ -77,8 +77,21 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Update payment intent error:', error);
+
+    // Extract meaningful error message for the user
+    let errorMessage = 'Failed to process your information';
+    if (error instanceof Stripe.errors.StripeError) {
+      if (error.code === 'resource_missing') {
+        errorMessage = 'Payment session expired. Please refresh the page and try again.';
+      } else if (error.code === 'email_invalid') {
+        errorMessage = 'Please enter a valid email address.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+    }
+
     return NextResponse.json(
-      { error: 'Failed to update payment intent' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
