@@ -50,7 +50,10 @@ function ClaimAccountContent() {
       }
 
       try {
-        const response = await fetch(`/api/auth/session-email?session_id=${sessionId}`);
+        // Determine if this is a PaymentIntent ID (pi_xxx) or Checkout Session ID (cs_xxx)
+        const isPaymentIntent = sessionId.startsWith('pi_');
+        const paramName = isPaymentIntent ? 'payment_intent' : 'session_id';
+        const response = await fetch(`/api/auth/session-email?${paramName}=${sessionId}`);
         const data = await response.json();
 
         if (data.email) {

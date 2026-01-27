@@ -55,7 +55,7 @@ function Upsell1Content() {
         ga4.upsellAccepted(1, 'The Pathless Path', 97, data.paymentIntentId);
         // Track for funnel dashboard
         await track('upsell_accept', { revenueCents: 9700, productSlug: 'pathless-path', sessionId: sessionId || undefined });
-        window.location.href = "/upsell-2?session_id=" + sessionId;
+        window.location.href = "/upsell-2?payment_intent=" + sessionId;
       } else {
         alert("There was an issue processing your order. Please try again.");
         setIsProcessing(false);
@@ -83,7 +83,7 @@ function Upsell1Content() {
 
   const DeclineLink = ({ className = "" }: { className?: string }) => (
     <Link
-      href={`/downsell-1?session_id=${sessionId}`}
+      href={`/downsell-1?payment_intent=${sessionId}`}
       className={`block text-center text-white hover:text-gray-300 text-sm mt-3 underline ${className}`}
       onClick={() => {
         ga4.upsellDeclined(1, 'The Pathless Path', 97);

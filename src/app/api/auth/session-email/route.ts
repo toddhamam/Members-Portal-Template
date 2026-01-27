@@ -21,24 +21,77 @@ interface PurchaseWithProduct {
   products: ProductData;
 }
 
+/**
+ * Helper to get customer details from a PaymentIntent ID
+ * Used when the funnel uses Stripe Elements (PaymentIntents) instead of Checkout Sessions
+ */
+async function getCustomerFromPaymentIntent(paymentIntentId: string): Promise<{ email: string; name: string } | null> {
+  try {
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
+      expand: ['customer'],
+    });
+
+    // First try to get from attached customer
+    if (paymentIntent.customer && typeof paymentIntent.customer === 'object') {
+      const customer = paymentIntent.customer;
+      // Check if customer is not deleted and has email
+      if (!('deleted' in customer) && customer.email) {
+        return {
+          email: customer.email,
+          name: customer.name || '',
+        };
+      }
+    }
+
+    // Fallback to metadata (set by update-payment-intent API)
+    const metadata = paymentIntent.metadata;
+    if (metadata?.customerEmail) {
+      return {
+        email: metadata.customerEmail,
+        name: metadata.customerName || '',
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('[session-email] Failed to retrieve PaymentIntent:', error);
+    return null;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const sessionId = request.nextUrl.searchParams.get("session_id");
+  const paymentIntentId = request.nextUrl.searchParams.get("payment_intent");
 
-  if (!sessionId) {
-    return NextResponse.json({ error: "Session ID required" }, { status: 400 });
+  if (!sessionId && !paymentIntentId) {
+    return NextResponse.json({ error: "Session ID or Payment Intent ID required" }, { status: 400 });
   }
 
   try {
-    // Get session from Stripe
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    let email: string;
+    let name: string;
 
-    if (!session.customer_details?.email) {
-      return NextResponse.json({ error: "No email found" }, { status: 404 });
+    // Handle PaymentIntent ID (from Stripe Elements flow)
+    if (paymentIntentId) {
+      const customerData = await getCustomerFromPaymentIntent(paymentIntentId);
+      if (!customerData?.email) {
+        return NextResponse.json({ error: "No email found for payment" }, { status: 404 });
+      }
+      email = customerData.email;
+      name = customerData.name;
+    } else if (sessionId) {
+      // Handle Checkout Session ID (legacy flow)
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      if (!session.customer_details?.email) {
+        return NextResponse.json({ error: "No email found" }, { status: 404 });
+      }
+      email = session.customer_details.email;
+      name = session.customer_details.name || "";
+    } else {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    const email = session.customer_details.email;
     const emailLower = email.toLowerCase();
-    const name = session.customer_details.name || "";
 
     // Query Supabase for user's purchases
     const supabase = createAdminClientInstance();

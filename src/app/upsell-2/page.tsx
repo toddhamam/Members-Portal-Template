@@ -37,7 +37,7 @@ function Upsell2Content() {
 
   const DeclineLink = ({ className = "" }: { className?: string }) => (
     <Link
-      href={`/thank-you?session_id=${sessionId}`}
+      href={`/thank-you?payment_intent=${sessionId}`}
       className={`block text-center text-white hover:text-gray-300 text-sm mt-3 underline ${className}`}
       onClick={() => {
         ga4.upsellDeclined(2, 'Bridge to Mastery', 0);

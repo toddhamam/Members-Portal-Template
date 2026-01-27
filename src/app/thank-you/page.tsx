@@ -56,7 +56,10 @@ function ThankYouContent() {
       }
 
       try {
-        const response = await fetch(`/api/auth/session-email?session_id=${sessionId}`);
+        // Determine if this is a PaymentIntent ID (pi_xxx) or Checkout Session ID (cs_xxx)
+        const isPaymentIntent = sessionId.startsWith('pi_');
+        const paramName = isPaymentIntent ? 'payment_intent' : 'session_id';
+        const response = await fetch(`/api/auth/session-email?${paramName}=${sessionId}`);
         const data = await response.json();
 
         if (data.email) {
@@ -135,7 +138,7 @@ function ThankYouContent() {
 
             {/* Access Portal Button */}
             <Link
-              href={sessionId ? `/claim-account?session_id=${sessionId}` : "/login"}
+              href={sessionId ? `/claim-account?${sessionId.startsWith('pi_') ? 'payment_intent' : 'session_id'}=${sessionId}` : "/login"}
               className="inline-flex items-center justify-center gap-2 bg-[#7c5cff] hover:bg-[#6b4ce6] text-white text-base md:text-lg font-medium px-6 py-3 md:px-8 md:py-4 rounded-md transition-colors"
             >
               Access Your Portal & Products
