@@ -583,6 +583,77 @@ await grantProductAccess({
 });
 ```
 
+### Supabase Client Patterns
+
+Use separate Supabase clients based on the operation's privilege requirements:
+
+**User-Facing Requests (regular client):**
+```typescript
+import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
+const { data } = await supabase.from("posts").select("*");
+```
+
+**Elevated Privilege Operations (admin client):**
+Use for operations that need to bypass RLS policies during creation, or for server-side operations:
+```typescript
+import { createAdminClientInstance } from "@/lib/supabase/server";
+
+const adminClient = createAdminClientInstance();
+// Insert that bypasses RLS for initial creation
+await adminClient.from("posts").insert({ ... });
+```
+
+**When to use admin client:**
+- Creating records where RLS policies might interfere with the insert
+- Server-side operations in API routes that need elevated access
+- Operations that need to see all records regardless of RLS visibility
+
+### Row Level Security (RLS) Patterns
+
+Use RLS to control data visibility at the database level:
+
+**Example: Post visibility with admin override:**
+- Regular users see: non-hidden posts + their own posts
+- Admin users see: all posts including hidden ones
+
+```sql
+-- Example RLS policy for posts
+CREATE POLICY "Users can view visible posts"
+ON discussion_posts FOR SELECT
+USING (
+  is_hidden = false
+  OR author_id = auth.uid()
+  OR EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
+);
+```
+
+### Denormalization with Triggers
+
+For frequently displayed counts (reactions, comments), use database triggers to maintain denormalized counts:
+
+```sql
+-- Trigger to update reaction_count on posts
+CREATE OR REPLACE FUNCTION update_post_reaction_count()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    UPDATE discussion_posts
+    SET reaction_count = reaction_count + 1
+    WHERE id = NEW.post_id;
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE discussion_posts
+    SET reaction_count = reaction_count - 1
+    WHERE id = OLD.post_id;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Benefits:** Avoids expensive JOINs or subqueries when displaying lists with counts.
+
 ---
 
 ## Integrations
@@ -775,6 +846,121 @@ import { cn } from "@/styles/style-guide";
 
 ---
 
+## React Component Patterns
+
+### Component Memoization
+
+Use `React.memo` for components that might re-render unnecessarily when parent state changes:
+
+```tsx
+import React from "react";
+
+interface PostCardProps {
+  post: Post;
+  onReact: (postId: string, emoji: string) => void;
+}
+
+export const PostCard = React.memo(function PostCard({ post, onReact }: PostCardProps) {
+  // Component only re-renders when post or onReact changes
+  return (
+    <div className="p-4 border rounded-lg">
+      <h3>{post.title}</h3>
+      {/* ... */}
+    </div>
+  );
+});
+```
+
+### Memoizing Callback Props
+
+Use `useCallback` for functions passed as props to memoized child components:
+
+```tsx
+function PostFeed() {
+  const [posts, setPosts] = useState<Post[]>([]);
+
+  // Memoized callback prevents PostCard re-renders
+  const handleReact = useCallback((postId: string, emoji: string) => {
+    setPosts(prev => prev.map(post =>
+      post.id === postId ? { ...post, reactions: [...post.reactions, emoji] } : post
+    ));
+  }, []);
+
+  return (
+    <div>
+      {posts.map(post => (
+        <PostCard key={post.id} post={post} onReact={handleReact} />
+      ))}
+    </div>
+  );
+}
+```
+
+### Optimistic UI Updates
+
+For interactions like reactions/likes, update the UI immediately and revert on error:
+
+```tsx
+const handleReact = async (postId: string, emoji: string) => {
+  // 1. Optimistically update UI
+  setPosts(prev => prev.map(post =>
+    post.id === postId
+      ? { ...post, reactionCount: post.reactionCount + 1, userReacted: true }
+      : post
+  ));
+
+  try {
+    // 2. Make API call
+    const response = await fetch(`/api/posts/${postId}/react`, {
+      method: "POST",
+      body: JSON.stringify({ emoji }),
+    });
+
+    if (!response.ok) throw new Error("Failed to react");
+  } catch (error) {
+    // 3. Revert on failure
+    setPosts(prev => prev.map(post =>
+      post.id === postId
+        ? { ...post, reactionCount: post.reactionCount - 1, userReacted: false }
+        : post
+    ));
+    console.error("Reaction failed:", error);
+  }
+};
+```
+
+### Type Safety for API Responses
+
+Define clear TypeScript interfaces for API responses:
+
+```typescript
+// Types for API responses
+interface PostsResponse {
+  posts: Post[];
+  total: number;
+  hasMore: boolean;
+}
+
+interface PostResponse {
+  post: Post;
+  comments: Comment[];
+}
+
+// Usage in component
+const [response, setResponse] = useState<PostsResponse | null>(null);
+
+useEffect(() => {
+  async function fetchPosts() {
+    const res = await fetch("/api/posts");
+    const data: PostsResponse = await res.json();
+    setResponse(data);
+  }
+  fetchPosts();
+}, []);
+```
+
+---
+
 ## Creating A/B Test Variants
 
 ### Duplicating a Funnel Page
@@ -949,6 +1135,173 @@ function CheckoutPage() {
 **Local testing:** Set `NEXT_PUBLIC_TRACK_LOCALHOST=true` to enable tracking on localhost.
 
 **Full implementation guide:** See `.claude/skills/funnel-dashboard.md`
+
+---
+
+## Code Quality Principles
+
+### Avoid Over-Engineering
+
+Keep implementations simple and focused on current requirements:
+
+**DO:**
+- Build the minimum viable solution first
+- Add complexity only when the use case demands it
+- Refactor when patterns emerge naturally
+
+**DON'T:**
+- Create abstractions before they're needed
+- Design for hypothetical future requirements
+- Add "nice-to-have" features that weren't requested
+
+**Example - Three similar lines vs premature abstraction:**
+```typescript
+// Good - explicit and clear
+const userName = user.firstName + " " + user.lastName[0] + ".";
+const authorName = author.firstName + " " + author.lastName[0] + ".";
+const reviewerName = reviewer.firstName + " " + reviewer.lastName[0] + ".";
+
+// Avoid - premature abstraction for 3 uses
+function formatDisplayName(person: Person): string { ... }
+```
+
+Only extract to a utility function when used more than 3-4 times or when the logic is complex.
+
+### Database Migrations Must Be Applied
+
+Creating a migration file is not enough—it must also be applied to the database:
+
+```bash
+# After creating migration SQL files
+# Ensure they are applied via Supabase dashboard or CLI:
+supabase db push
+
+# Or verify tables exist:
+supabase db diff
+```
+
+**Symptom of unapplied migrations:** "Table does not exist" errors even though the SQL file exists in your codebase.
+
+### Iterative Refinement Process
+
+When building new features:
+
+1. **Plan first** - Understand requirements before writing code
+2. **Get feedback early** - Share the plan with the user before implementing
+3. **Simplify based on feedback** - Reduce scope if the initial approach is too complex
+4. **Refactor after confirmation** - Clean up only once the feature works correctly
+
+This prevents wasted effort on approaches that don't match user expectations.
+
+---
+
+## Community & Discussion UI Patterns
+
+### Privacy-Focused Display Names
+
+Show names in a privacy-conscious format:
+
+```typescript
+function formatDisplayName(firstName: string, lastName: string): string {
+  if (!lastName) return firstName;
+  return `${firstName} ${lastName[0]}.`; // "John D." instead of "John Doe"
+}
+```
+
+### Tabbed Interface for Related Content
+
+Use a single container with toggleable tabs instead of stacked sections:
+
+```tsx
+type TabType = "pinned" | "trending" | "topics";
+
+function CommunitySidebar() {
+  const [activeTab, setActiveTab] = useState<TabType>("pinned");
+
+  return (
+    <div className="bg-[#1a1a1a] rounded-lg p-4">
+      {/* Tab buttons */}
+      <div className="flex border-b border-gray-700 mb-4">
+        {["pinned", "trending", "topics"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab as TabType)}
+            className={cn(
+              "px-4 py-2 text-sm font-medium",
+              activeTab === tab
+                ? "border-b-2 border-[#d4a574] text-white"
+                : "text-gray-400 hover:text-white"
+            )}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      {activeTab === "pinned" && <PinnedContent />}
+      {activeTab === "trending" && <TrendingContent />}
+      {activeTab === "topics" && <TopicsContent />}
+    </div>
+  );
+}
+```
+
+### Mobile-Specific Previews
+
+Show condensed, horizontally scrollable previews on mobile:
+
+```tsx
+function HighlightsFeed({ posts }: { posts: Post[] }) {
+  return (
+    <>
+      {/* Mobile: horizontal scroll preview */}
+      <div className="lg:hidden overflow-x-auto flex gap-4 pb-4">
+        {posts.slice(0, 5).map(post => (
+          <div key={post.id} className="min-w-[280px] flex-shrink-0">
+            <PostCard post={post} compact />
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: full grid */}
+      <div className="hidden lg:grid lg:grid-cols-3 gap-6">
+        {posts.map(post => (
+          <PostCard key={post.id} post={post} />
+        ))}
+      </div>
+    </>
+  );
+}
+```
+
+### Utility Functions for Common Tasks
+
+Create focused utility functions for reusable logic:
+
+```typescript
+// src/lib/utils/format.ts
+
+export function formatRelativeTime(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
+
+export function extractYouTubeId(url: string): string | null {
+  const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+}
+```
 
 ---
 
