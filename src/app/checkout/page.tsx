@@ -73,10 +73,49 @@ function CheckoutForm({
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ fullName?: string; email?: string }>({});
+
+  // Email validation regex
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     onFormDataChange({ ...formData, [name]: value });
+    // Clear field error when user starts typing
+    if (fieldErrors[name as keyof typeof fieldErrors]) {
+      setFieldErrors(prev => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: { fullName?: string; email?: string } = {};
+
+    // Validate name
+    if (!formData.fullName.trim()) {
+      errors.fullName = "Please enter your full name";
+    } else if (formData.fullName.trim().length < 2) {
+      errors.fullName = "Please enter a valid name (at least 2 characters)";
+    }
+
+    // Validate email
+    if (!formData.email.trim()) {
+      errors.email = "Please enter your email address";
+    } else if (!isValidEmail(formData.email.trim())) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    setFieldErrors(errors);
+
+    // Focus on first field with error
+    if (errors.fullName) {
+      document.getElementById('fullName')?.focus();
+    } else if (errors.email) {
+      document.getElementById('email')?.focus();
+    }
+
+    return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -88,8 +127,7 @@ function CheckoutForm({
     }
 
     // Validate form fields
-    if (!formData.email || !formData.fullName) {
-      setErrorMessage("Please fill in all required fields.");
+    if (!validateForm()) {
       return;
     }
 
@@ -170,8 +208,16 @@ function CheckoutForm({
             required
             value={formData.fullName}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+            className={cn(
+              "w-full px-4 py-3 border rounded outline-none transition",
+              fieldErrors.fullName
+                ? "border-red-500 focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                : "border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            )}
           />
+          {fieldErrors.fullName && (
+            <p className="mt-1 text-sm text-red-600">{fieldErrors.fullName}</p>
+          )}
         </div>
         <div>
           <input
@@ -182,8 +228,16 @@ function CheckoutForm({
             required
             value={formData.email}
             onChange={handleInputChange}
-            className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+            className={cn(
+              "w-full px-4 py-3 border rounded outline-none transition",
+              fieldErrors.email
+                ? "border-red-500 focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                : "border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            )}
           />
+          {fieldErrors.email && (
+            <p className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
+          )}
         </div>
       </div>
 
@@ -371,8 +425,6 @@ export default function CheckoutPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            email: "customer@example.com",
-            fullName: "Customer",
             includeOrderBump: false, // Always start without order bump
           }),
         });

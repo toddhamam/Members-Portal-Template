@@ -12,7 +12,7 @@ const ORDER_BUMP_PRICE = 2700; // $27.00
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, fullName, includeOrderBump } = body;
+    const { includeOrderBump } = body;
 
     // Calculate total amount
     let amount = RESISTANCE_MAP_PRICE;
@@ -20,33 +20,13 @@ export async function POST(request: NextRequest) {
       amount += ORDER_BUMP_PRICE;
     }
 
-    // Create or retrieve customer
-    const customers = await stripe.customers.list({
-      email,
-      limit: 1,
-    });
-
-    let customer: Stripe.Customer;
-    if (customers.data.length > 0) {
-      customer = customers.data[0];
-      // Update name if provided
-      if (fullName) {
-        customer = await stripe.customers.update(customer.id, {
-          name: fullName,
-        });
-      }
-    } else {
-      customer = await stripe.customers.create({
-        email,
-        name: fullName,
-      });
-    }
-
-    // Create PaymentIntent
+    // Create PaymentIntent WITHOUT a customer attached
+    // The customer will be attached later in update-payment-intent
+    // when the user enters their real email address
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: 'usd',
-      customer: customer.id,
+      // Don't attach customer here - will be attached during update
       metadata: {
         product: 'resistance_map',
         includeOrderBump: includeOrderBump ? 'true' : 'false',
@@ -63,7 +43,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
-      customerId: customer.id,
       amount,
     });
   } catch (error) {
