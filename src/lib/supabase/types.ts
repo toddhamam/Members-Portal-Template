@@ -14,6 +14,7 @@ export interface Profile {
   last_name: string | null;
   avatar_url: string | null;
   stripe_customer_id: string | null;
+  is_admin: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -183,6 +184,91 @@ export interface DashboardMetrics {
   abTests: ABTestMetrics[];
 }
 
+// ============================================
+// DISCUSSION TYPES
+// ============================================
+
+export type ReactionType = 'like' | 'heart' | 'celebrate';
+export type NotificationType = 'mention' | 'reply_to_post' | 'reply_to_comment' | 'reaction';
+
+export interface EmbeddedMedia {
+  type: 'youtube' | 'vimeo' | 'loom';
+  url: string;
+  videoId: string;
+  title?: string;
+}
+
+export interface DiscussionPost {
+  id: string;
+  author_id: string;
+  body: string;
+  image_urls: string[];
+  embedded_media: EmbeddedMedia[];
+  is_pinned: boolean;
+  is_hidden: boolean;
+  hidden_reason: string | null;
+  hidden_by: string | null;
+  comment_count: number;
+  reaction_count: number;
+  created_at: string;
+  updated_at: string;
+  edited_at: string | null;
+}
+
+export interface DiscussionComment {
+  id: string;
+  post_id: string;
+  author_id: string;
+  parent_id: string | null;
+  body: string;
+  image_urls: string[];
+  is_hidden: boolean;
+  hidden_reason: string | null;
+  hidden_by: string | null;
+  reply_count: number;
+  reaction_count: number;
+  created_at: string;
+  updated_at: string;
+  edited_at: string | null;
+}
+
+export interface DiscussionReaction {
+  id: string;
+  user_id: string;
+  post_id: string | null;
+  comment_id: string | null;
+  reaction_type: ReactionType;
+  created_at: string;
+}
+
+export interface DiscussionNotification {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  actor_id: string;
+  post_id: string | null;
+  comment_id: string | null;
+  is_read: boolean;
+  preview_text: string | null;
+  created_at: string;
+}
+
+// Discussion types with author joined (for display)
+export interface PostWithAuthor extends DiscussionPost {
+  author: { id: string; full_name: string | null; avatar_url: string | null };
+  user_reaction?: ReactionType | null;
+}
+
+export interface CommentWithAuthor extends DiscussionComment {
+  author: { id: string; full_name: string | null; avatar_url: string | null };
+  user_reaction?: ReactionType | null;
+  replies?: CommentWithAuthor[];
+}
+
+export interface NotificationWithActor extends DiscussionNotification {
+  actor: { id: string; full_name: string | null; avatar_url: string | null };
+}
+
 // Database type for Supabase client
 // Using a simplified type that works better with Supabase client
 export interface Database {
@@ -198,6 +284,7 @@ export interface Database {
           last_name?: string | null;
           avatar_url?: string | null;
           stripe_customer_id?: string | null;
+          is_admin?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -209,6 +296,7 @@ export interface Database {
           last_name?: string | null;
           avatar_url?: string | null;
           stripe_customer_id?: string | null;
+          is_admin?: boolean;
           updated_at?: string;
         };
         Relationships: [];

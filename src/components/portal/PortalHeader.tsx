@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { NotificationBell } from "@/components/discussion/NotificationBell";
 
 function UserAvatar({ name, className = "w-8 h-8" }: { name?: string; className?: string }) {
   const initials = name
@@ -64,8 +65,12 @@ export function PortalHeader() {
         <h1 className="text-lg font-semibold text-[#222222] font-serif">Member Portal</h1>
       </div>
 
-      {/* User Menu */}
-      <div className="relative" ref={menuRef}>
+      {/* Right side: Notifications + User Menu */}
+      <div className="flex items-center gap-2">
+        <NotificationBell />
+
+        {/* User Menu */}
+        <div className="relative" ref={menuRef}>
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 transition-colors"
@@ -111,6 +116,7 @@ export function PortalHeader() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </header>
   );
