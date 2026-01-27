@@ -4,6 +4,7 @@ import { trackEvent, upsertProfile, addProfileToList, FunnelEvents, FunnelLists 
 import { createShopifyOrder, findOrCreateCustomer } from '@/lib/shopify';
 import { grantProductAccess } from '@/lib/supabase/purchases';
 import { trackServerPurchase } from '@/lib/meta-capi';
+import { trackCheckoutPurchase } from '@/lib/funnel-tracking';
 import Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
@@ -56,21 +57,29 @@ export async function POST(request: NextRequest) {
         }
 
         // 3. Track purchase event in Klaviyo
+        const includeOrderBump = session.metadata?.includeOrderBump === 'true';
         await trackEvent({
           email: customerEmail,
           eventName: FunnelEvents.ORDER_COMPLETED,
           properties: {
             product: 'Resistance Mapping Guide™',
             order_id: session.id,
-            include_order_bump: session.metadata?.includeOrderBump === 'true',
+            include_order_bump: includeOrderBump,
           },
           value: (session.amount_total || 0) / 100,
         });
 
-        // 3.5. Track purchase event in Meta Conversions API (server-side)
+        // 3.5. Track purchase to funnel dashboard
+        await trackCheckoutPurchase(
+          session.id,
+          session.amount_total || 0,
+          includeOrderBump
+        );
+
+        // 3.6. Track purchase event in Meta Conversions API (server-side)
         const orderValue = (session.amount_total || 0) / 100;
         const contentIds = ['resistance-mapping-guide'];
-        if (session.metadata?.includeOrderBump === 'true') {
+        if (includeOrderBump) {
           contentIds.push('golden-thread-technique');
         }
 
@@ -80,7 +89,7 @@ export async function POST(request: NextRequest) {
           currency: 'USD',
           orderId: session.id,
           contentIds,
-          contentName: 'Resistance Mapping Guide' + (session.metadata?.includeOrderBump === 'true' ? ' + Golden Thread' : ''),
+          contentName: 'Resistance Mapping Guide' + (includeOrderBump ? ' + Golden Thread' : ''),
           contentCategory: 'checkout',
           numItems: contentIds.length,
           firstName,
@@ -106,7 +115,7 @@ export async function POST(request: NextRequest) {
               quantity: 1,
               price: '7.00',
             },
-            ...(session.metadata?.includeOrderBump === 'true'
+            ...(includeOrderBump
               ? [{ title: 'Golden Thread Technique (Advanced)', quantity: 1, price: '17.00' }]
               : []),
           ],
@@ -126,7 +135,7 @@ export async function POST(request: NextRequest) {
           });
 
           // Grant order bump access if purchased
-          if (session.metadata?.includeOrderBump === 'true') {
+          if (includeOrderBump) {
             await grantProductAccess({
               email: customerEmail,
               fullName: customerName,
@@ -219,7 +228,14 @@ export async function POST(request: NextRequest) {
           value: paymentIntent.amount / 100,
         });
 
-        // 4. Track purchase event in Meta Conversions API (server-side)
+        // 4. Track purchase to funnel dashboard
+        await trackCheckoutPurchase(
+          paymentIntent.id,
+          paymentIntent.amount,
+          includeOrderBump
+        );
+
+        // 4.5. Track purchase event in Meta Conversions API (server-side)
         const orderValue = paymentIntent.amount / 100;
         const contentIds = ['resistance-mapping-guide'];
         if (includeOrderBump) {

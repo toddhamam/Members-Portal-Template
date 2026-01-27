@@ -167,20 +167,20 @@ When you need to see what's appearing in the browser console (e.g., to verify tr
 | Route | Purpose | Price |
 |-------|---------|-------|
 | `/product` | Sales page for front-end offer | - |
-| `/checkout` | Stripe checkout with order bump | $7 + $17 bump |
+| `/checkout` | Stripe checkout with order bump | $7 + $27 bump |
 | `/upsell-1` | The Pathless Path™ Program | $97 |
-| `/downsell-1` | Nervous System Reset Kit™ (shown if upsell-1 declined) | $27 |
-| `/upsell-2` | Bridge to Mastery™ | $14.95 |
+| `/downsell-1` | Nervous System Reset Kit™ (shown if upsell-1 declined) | $29 |
+| `/upsell-2` | Bridge to Mastery™ | $0 (call booking, $1,495 charged after) |
 | `/thank-you` | Order confirmation + account creation | - |
 
 ### Products & Slugs
 | Product | Slug | Price |
 |---------|------|-------|
 | Resistance Mapping Guide™ | `resistance-mapping-guide` | $7 |
-| Golden Thread Technique | `golden-thread-technique` | $17 (order bump) |
+| Golden Thread Technique | `golden-thread-technique` | $27 (order bump) |
 | The Pathless Path™ | `pathless-path` | $97 |
-| Nervous System Reset Kit™ | `nervous-system-reset` | $27 |
-| Bridge to Mastery™ | `bridge-to-mastery` | $14.95 |
+| Nervous System Reset Kit™ | `nervous-system-reset` | $29 |
+| Bridge to Mastery™ | `bridge-to-mastery` | $0 funnel / $1,495 after call |
 
 ---
 

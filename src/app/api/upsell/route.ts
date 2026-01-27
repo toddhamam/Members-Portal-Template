@@ -4,6 +4,12 @@ import { trackEvent, FunnelEvents } from '@/lib/klaviyo';
 import { createShopifyOrder } from '@/lib/shopify';
 import { grantProductAccess } from '@/lib/supabase/purchases';
 import { trackServerPurchase } from '@/lib/meta-capi';
+import {
+  trackUpsellPurchase,
+  trackUpsellDecline,
+  trackDownsellPurchase,
+  trackDownsellDecline,
+} from '@/lib/funnel-tracking';
 import Stripe from 'stripe';
 
 interface CustomerData {
@@ -149,14 +155,14 @@ export async function POST(request: NextRequest) {
         declinedEvent = FunnelEvents.UPSELL_1_DECLINED;
         break;
       case 'downsell-1':
-        priceAmount = 2700; // $27 in cents (discounted from $47)
+        priceAmount = 2900; // $29 in cents
         productName = 'Nervous System Reset Kit™';
         productSlug = 'nervous-system-reset';
         acceptedEvent = FunnelEvents.DOWNSELL_1_ACCEPTED;
         declinedEvent = FunnelEvents.DOWNSELL_1_DECLINED;
         break;
       case 'upsell-2':
-        priceAmount = 1495; // $14.95 in cents
+        priceAmount = 0; // $0 - call booking only, $1,495 charged after call
         productName = 'Bridge to Mastery™';
         productSlug = 'bridge-to-mastery';
         acceptedEvent = FunnelEvents.UPSELL_2_ACCEPTED;
@@ -233,6 +239,18 @@ export async function POST(request: NextRequest) {
         tags: [upsellType, 'funnel-upsell'],
       });
 
+      // Track in funnel dashboard
+      if (upsellType.startsWith('downsell')) {
+        await trackDownsellPurchase(sessionId, priceAmount, productSlug);
+      } else {
+        await trackUpsellPurchase(
+          sessionId,
+          upsellType as 'upsell-1' | 'upsell-2',
+          priceAmount,
+          productSlug
+        );
+      }
+
       return NextResponse.json({ success: true, accepted: true, paymentIntentId: upsellPayment.id });
     } else {
       // Track decline in Klaviyo
@@ -243,6 +261,13 @@ export async function POST(request: NextRequest) {
           product: productName,
         },
       });
+
+      // Track decline in funnel dashboard
+      if (upsellType.startsWith('downsell')) {
+        await trackDownsellDecline(sessionId);
+      } else {
+        await trackUpsellDecline(sessionId, upsellType as 'upsell-1' | 'upsell-2');
+      }
 
       return NextResponse.json({ success: true, accepted: false });
     }

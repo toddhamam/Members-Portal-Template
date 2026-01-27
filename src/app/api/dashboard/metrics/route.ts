@@ -160,15 +160,31 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Get checkout metrics for summary conversion rate
+    const checkoutData = stepDataMap.get('checkout')!;
+    const checkoutConversionRate = checkoutData.sessions > 0
+      ? (checkoutData.purchases / checkoutData.sessions) * 100
+      : 0;
+
+    // Calculate total purchases across all funnel steps
+    let totalPurchaseCount = 0;
+    for (const step of FUNNEL_STEPS) {
+      totalPurchaseCount += stepDataMap.get(step)!.purchases;
+    }
+
     // Build summary
+    // - sessions: unique visitors who reached landing page
+    // - purchases: total purchase count across all steps (checkout + upsells + downsells)
+    // - conversionRate: checkout conversion rate (front-end conversion)
+    // - uniqueCustomers: unique customers who completed checkout
+    // - aovPerCustomer: total revenue / unique customers
     const totalSessions = uniqueSessions.size;
-    const totalPurchases = purchaseSessions.size;
     const uniqueCustomers = purchaseSessions.size;
 
     const summary: FunnelSummary = {
       sessions: totalSessions,
-      purchases: totalPurchases,
-      conversionRate: totalSessions > 0 ? (totalPurchases / totalSessions) * 100 : 0,
+      purchases: totalPurchaseCount,
+      conversionRate: checkoutConversionRate,
       totalRevenue: totalRevenue / 100, // Convert cents to dollars
       uniqueCustomers,
       aovPerCustomer: uniqueCustomers > 0 ? (totalRevenue / 100) / uniqueCustomers : 0,
