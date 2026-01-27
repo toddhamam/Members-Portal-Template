@@ -186,8 +186,8 @@ When you need to see what's appearing in the browser console (e.g., to verify tr
 
 ## Critical Conventions
 
-### 1. Session ID Persistence
-The Stripe `session_id` can be lost during funnel navigation. All funnel pages MUST use the `useSessionId` hook:
+### 1. Session ID Persistence (Supports Both PaymentIntent and Checkout Session)
+The funnel identifier can be lost during navigation. All funnel pages MUST use the `useSessionId` hook:
 
 ```tsx
 import { useSessionId } from "@/hooks/useSessionId";
@@ -198,7 +198,13 @@ function MyFunnelPage() {
 }
 ```
 
-**Why:** The hook stores `session_id` in sessionStorage. If it's lost from the URL (e.g., `?session_id=null`), it recovers from sessionStorage.
+**Why:** The hook stores the identifier in sessionStorage. If it's lost from the URL (e.g., `?session_id=null`), it recovers from sessionStorage.
+
+**Important: PaymentIntent vs Checkout Session:**
+- The checkout page uses **Stripe Elements with PaymentIntents** (not Checkout Sessions)
+- After `stripe.confirmPayment()`, Stripe redirects with `?payment_intent=pi_xxx` parameters
+- The `useSessionId` hook handles BOTH identifier types (`session_id` or `payment_intent`)
+- APIs like `/api/auth/session-email` and `/api/upsell` must also handle both identifier types
 
 **Files using this:**
 - `src/app/upsell-1/page.tsx`
@@ -359,6 +365,147 @@ const handleSubmit = async (e: React.FormEvent) => {
 3. Store `customerEmail` and `customerName` in PaymentIntent metadata (backup for webhook)
 
 **Why this matters:** Without this, purchases will have no customer email, webhooks can't process them, and no Supabase profile/access will be created.
+
+### 10. Handling Both PaymentIntent and Checkout Session Identifiers
+APIs that retrieve customer data or process upsells must handle BOTH identifier types since the funnel may use either:
+
+```typescript
+// In API routes, check for both identifier types
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const sessionId = searchParams.get("session_id");
+  const paymentIntentId = searchParams.get("payment_intent");
+
+  if (paymentIntentId) {
+    // Handle PaymentIntent flow (pi_xxx)
+    const customerData = await getCustomerDataFromPaymentIntent(paymentIntentId);
+    // ...
+  } else if (sessionId) {
+    // Handle Checkout Session flow (cs_xxx)
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    // ...
+  }
+}
+```
+
+**Helper function pattern for PaymentIntent customer retrieval:**
+```typescript
+async function getCustomerDataFromPaymentIntent(paymentIntentId: string) {
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+  // 1. Check metadata first (most reliable - set during checkout)
+  if (paymentIntent.metadata?.customerEmail) {
+    return {
+      email: paymentIntent.metadata.customerEmail,
+      name: paymentIntent.metadata.customerName,
+    };
+  }
+
+  // 2. Check attached customer
+  if (paymentIntent.customer) {
+    const customer = await stripe.customers.retrieve(paymentIntent.customer as string);
+    if (customer && !customer.deleted) {
+      return { email: customer.email, name: customer.name };
+    }
+  }
+
+  // 3. Check latest charge
+  const charges = await stripe.charges.list({ payment_intent: paymentIntentId, limit: 1 });
+  if (charges.data[0]?.billing_details?.email) {
+    return {
+      email: charges.data[0].billing_details.email,
+      name: charges.data[0].billing_details.name,
+    };
+  }
+
+  return null;
+}
+```
+
+**TypeScript Note:** When retrieving Stripe customers, always check for `DeletedCustomer` type:
+```typescript
+const customer = await stripe.customers.retrieve(customerId);
+if (customer.deleted) {
+  // Handle deleted customer case
+}
+// Now TypeScript knows customer is not deleted
+```
+
+### 11. Form Validation UX
+All forms (checkout, claim-account, etc.) should follow these UX patterns:
+
+**Clear, Specific Error Messages:**
+- Show error messages directly below the input field
+- Use specific language: "Please enter your full name" not "Invalid input"
+- For email: "Please enter a valid email address"
+- For password: "Password must be at least 8 characters"
+
+**Visual Feedback:**
+```tsx
+<input
+  className={cn(
+    "w-full px-4 py-3 border rounded-lg",
+    errors.email
+      ? "border-red-500 focus:ring-red-500"
+      : "border-gray-300 focus:ring-[#d4a574]"
+  )}
+/>
+{errors.email && (
+  <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+)}
+```
+
+**Required Field Indicators:**
+- Mark required fields with asterisks: `Full Name *`
+- Or use "(required)" suffix for accessibility
+
+### 12. Performance Patterns
+
+**Parallel Data Fetching:**
+Use `Promise.all` to fetch related data concurrently instead of sequentially:
+
+```typescript
+// Good - parallel fetching
+const [product, purchases, modules, progress] = await Promise.all([
+  supabase.from('products').select('*').eq('slug', slug).single(),
+  supabase.from('user_purchases').select('*').eq('user_id', userId),
+  supabase.from('modules').select('*').eq('product_id', productId),
+  supabase.from('lesson_progress').select('*').eq('user_id', userId),
+]);
+
+// Bad - sequential fetching (slower)
+const product = await supabase.from('products').select('*').eq('slug', slug).single();
+const purchases = await supabase.from('user_purchases').select('*').eq('user_id', userId);
+// ... each waits for the previous to complete
+```
+
+**Debouncing Frequent Updates:**
+For UI updates that happen frequently (e.g., video progress), use debouncing to avoid performance issues:
+
+```typescript
+const progressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+const handleProgress = (currentTime: number) => {
+  // Clear any pending update
+  if (progressTimeoutRef.current) {
+    clearTimeout(progressTimeoutRef.current);
+  }
+
+  // Debounce: only save after 1 second of no updates
+  progressTimeoutRef.current = setTimeout(async () => {
+    await saveProgress(currentTime);
+  }, 1000);
+};
+
+// Clean up on unmount
+useEffect(() => {
+  return () => {
+    if (progressTimeoutRef.current) {
+      clearTimeout(progressTimeoutRef.current);
+    }
+  };
+}, []);
+```
 
 ---
 
