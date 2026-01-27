@@ -23,6 +23,31 @@ interface ContentData {
 // Cache TTL: 50 minutes (signed URLs expire in 60 minutes)
 const CACHE_TTL_MS = 50 * 60 * 1000;
 
+// Safe sessionStorage helpers (handle private browsing mode)
+function safeGetItem(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // Ignore - caching is optional
+  }
+}
+
+function safeRemoveItem(key: string): void {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Ignore
+  }
+}
+
 export const VideoPlayer = memo(function VideoPlayer({
   productSlug,
   moduleSlug,
@@ -42,9 +67,9 @@ export const VideoPlayer = memo(function VideoPlayer({
     setIsLoading(true);
     setError(null);
 
-    // Check sessionStorage cache first
+    // Check sessionStorage cache first (safe for private browsing)
     const cacheKey = `video-url:${productSlug}:${moduleSlug}:${lessonSlug}`;
-    const cached = sessionStorage.getItem(cacheKey);
+    const cached = safeGetItem(cacheKey);
 
     if (cached) {
       try {
@@ -76,9 +101,9 @@ export const VideoPlayer = memo(function VideoPlayer({
           throw new Error(data.error || 'Failed to load video');
         }
 
-        // Cache the response
+        // Cache the response (safe for private browsing)
         const dataWithTimestamp = { ...data, cachedAt: Date.now() };
-        sessionStorage.setItem(cacheKey, JSON.stringify(dataWithTimestamp));
+        safeSetItem(cacheKey, JSON.stringify(dataWithTimestamp));
 
         setContent(dataWithTimestamp);
       } catch (err) {
@@ -92,9 +117,9 @@ export const VideoPlayer = memo(function VideoPlayer({
   }, [productSlug, moduleSlug, lessonSlug]);
 
   const retryFetch = () => {
-    // Clear cache and refetch
+    // Clear cache and refetch (safe for private browsing)
     const cacheKey = `video-url:${productSlug}:${moduleSlug}:${lessonSlug}`;
-    sessionStorage.removeItem(cacheKey);
+    safeRemoveItem(cacheKey);
     setContent(null);
     setIsLoading(true);
     setError(null);
@@ -113,7 +138,7 @@ export const VideoPlayer = memo(function VideoPlayer({
           throw new Error(data.error);
         }
         const dataWithTimestamp = { ...data, cachedAt: Date.now() };
-        sessionStorage.setItem(cacheKey, JSON.stringify(dataWithTimestamp));
+        safeSetItem(cacheKey, JSON.stringify(dataWithTimestamp));
         setContent(dataWithTimestamp);
       })
       .catch(err => {

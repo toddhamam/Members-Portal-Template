@@ -46,8 +46,13 @@ export default function DashboardPage() {
   const [activeSessions, setActiveSessions] = useState(0);
   const [adSpend, setAdSpend] = useState<number>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('dashboard_ad_spend');
-      return saved ? parseFloat(saved) : 0;
+      try {
+        const saved = localStorage.getItem('dashboard_ad_spend');
+        return saved ? parseFloat(saved) : 0;
+      } catch {
+        // localStorage not available (private browsing) - use default
+        return 0;
+      }
     }
     return 0;
   });
@@ -101,11 +106,15 @@ export default function DashboardPage() {
     fetchMetrics();
   }, [selectedRange]);
 
-  // Save ad spend to localStorage
+  // Save ad spend to localStorage (safe for private browsing)
   const handleAdSpendChange = (value: number) => {
     setAdSpend(value);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('dashboard_ad_spend', value.toString());
+      try {
+        localStorage.setItem('dashboard_ad_spend', value.toString());
+      } catch {
+        // localStorage not available (private browsing) - ignore
+      }
     }
   };
 

@@ -15,16 +15,21 @@ function Upsell1Content() {
   // Track checkout completion (initial purchase) and upsell view on mount
   useEffect(() => {
     // Track GA4 checkout completion for initial purchase (only once)
-    const pendingCheckout = sessionStorage.getItem('checkout_ga4_pending');
-    if (pendingCheckout) {
-      try {
-        const { value, includeOrderBump, paymentIntentId } = JSON.parse(pendingCheckout);
-        ga4.checkoutCompleted(paymentIntentId, value, includeOrderBump);
-        sessionStorage.removeItem('checkout_ga4_pending');
-      } catch (e) {
-        console.error('Failed to parse checkout GA4 data:', e);
-        sessionStorage.removeItem('checkout_ga4_pending');
+    // Wrapped in try-catch because sessionStorage can throw in private browsing mode
+    try {
+      const pendingCheckout = sessionStorage.getItem('checkout_ga4_pending');
+      if (pendingCheckout) {
+        try {
+          const { value, includeOrderBump, paymentIntentId } = JSON.parse(pendingCheckout);
+          ga4.checkoutCompleted(paymentIntentId, value, includeOrderBump);
+          sessionStorage.removeItem('checkout_ga4_pending');
+        } catch (e) {
+          console.error('Failed to parse checkout GA4 data:', e);
+          sessionStorage.removeItem('checkout_ga4_pending');
+        }
       }
+    } catch {
+      // sessionStorage not available (private browsing) - skip GA4 tracking
     }
 
     // Track upsell page view

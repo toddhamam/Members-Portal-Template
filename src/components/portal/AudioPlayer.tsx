@@ -20,6 +20,31 @@ interface CachedUrl {
 // Cache TTL: 50 minutes (signed URLs expire in 60 minutes)
 const CACHE_TTL_MS = 50 * 60 * 1000;
 
+// Safe sessionStorage helpers (handle private browsing mode)
+function safeGetItem(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // Ignore - caching is optional
+  }
+}
+
+function safeRemoveItem(key: string): void {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Ignore
+  }
+}
+
 export const AudioPlayer = memo(function AudioPlayer({
   productSlug,
   moduleSlug,
@@ -39,9 +64,9 @@ export const AudioPlayer = memo(function AudioPlayer({
     setIsLoading(true);
     setError(null);
 
-    // Check sessionStorage cache first
+    // Check sessionStorage cache first (safe for private browsing)
     const cacheKey = `audio-url:${productSlug}:${moduleSlug}:${lessonSlug}`;
-    const cached = sessionStorage.getItem(cacheKey);
+    const cached = safeGetItem(cacheKey);
 
     if (cached) {
       try {
@@ -73,8 +98,8 @@ export const AudioPlayer = memo(function AudioPlayer({
           throw new Error(data.error || 'Failed to load audio');
         }
 
-        // Cache the response
-        sessionStorage.setItem(cacheKey, JSON.stringify({
+        // Cache the response (safe for private browsing)
+        safeSetItem(cacheKey, JSON.stringify({
           url: data.url,
           cachedAt: Date.now()
         }));
@@ -91,9 +116,9 @@ export const AudioPlayer = memo(function AudioPlayer({
   }, [productSlug, moduleSlug, lessonSlug]);
 
   const retryFetch = () => {
-    // Clear cache and refetch
+    // Clear cache and refetch (safe for private browsing)
     const cacheKey = `audio-url:${productSlug}:${moduleSlug}:${lessonSlug}`;
-    sessionStorage.removeItem(cacheKey);
+    safeRemoveItem(cacheKey);
     setUrl(null);
     setIsLoading(true);
     setError(null);
@@ -110,7 +135,7 @@ export const AudioPlayer = memo(function AudioPlayer({
         if (data.error) {
           throw new Error(data.error);
         }
-        sessionStorage.setItem(cacheKey, JSON.stringify({
+        safeSetItem(cacheKey, JSON.stringify({
           url: data.url,
           cachedAt: Date.now()
         }));

@@ -17,6 +17,23 @@ interface CachedUrl {
 // Cache TTL: 50 minutes (signed URLs expire in 60 minutes)
 const CACHE_TTL_MS = 50 * 60 * 1000;
 
+// Safe sessionStorage helpers (handle private browsing mode)
+function safeGetItem(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // Ignore - caching is optional
+  }
+}
+
 function DownloadIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -41,9 +58,9 @@ export const DownloadButton = memo(function DownloadButton({
     setIsLoading(true);
     setError(null);
 
-    // Check sessionStorage cache first
+    // Check sessionStorage cache first (safe for private browsing)
     const cacheKey = `download-url:${productSlug}:${moduleSlug}:${lessonSlug}`;
-    const cached = sessionStorage.getItem(cacheKey);
+    const cached = safeGetItem(cacheKey);
 
     if (cached) {
       try {
@@ -74,8 +91,8 @@ export const DownloadButton = memo(function DownloadButton({
           throw new Error(data.error || 'Failed to get download link');
         }
 
-        // Cache the response
-        sessionStorage.setItem(cacheKey, JSON.stringify({
+        // Cache the response (safe for private browsing)
+        safeSetItem(cacheKey, JSON.stringify({
           url: data.url,
           cachedAt: Date.now()
         }));

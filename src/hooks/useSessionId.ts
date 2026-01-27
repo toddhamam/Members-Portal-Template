@@ -16,15 +16,25 @@ export function useSessionId(): string | null {
 
   useEffect(() => {
     // Priority: URL param > sessionStorage
-    if (urlSessionId && urlSessionId !== 'null' && urlSessionId !== 'undefined') {
-      // Valid session_id in URL - store it and use it
-      sessionStorage.setItem(SESSION_ID_KEY, urlSessionId);
-      setSessionId(urlSessionId);
-    } else {
-      // No valid URL param - try sessionStorage
-      const storedSessionId = sessionStorage.getItem(SESSION_ID_KEY);
-      if (storedSessionId && storedSessionId !== 'null' && storedSessionId !== 'undefined') {
-        setSessionId(storedSessionId);
+    // Wrapped in try-catch because sessionStorage can throw in private browsing mode
+    try {
+      if (urlSessionId && urlSessionId !== 'null' && urlSessionId !== 'undefined') {
+        // Valid session_id in URL - store it and use it
+        sessionStorage.setItem(SESSION_ID_KEY, urlSessionId);
+        setSessionId(urlSessionId);
+      } else {
+        // No valid URL param - try sessionStorage
+        const storedSessionId = sessionStorage.getItem(SESSION_ID_KEY);
+        if (storedSessionId && storedSessionId !== 'null' && storedSessionId !== 'undefined') {
+          setSessionId(storedSessionId);
+        } else {
+          setSessionId(null);
+        }
+      }
+    } catch {
+      // sessionStorage not available (private browsing) - use URL param only
+      if (urlSessionId && urlSessionId !== 'null' && urlSessionId !== 'undefined') {
+        setSessionId(urlSessionId);
       } else {
         setSessionId(null);
       }
@@ -38,5 +48,9 @@ export function useSessionId(): string | null {
  * Clear the stored session_id (call this after order is complete or on logout)
  */
 export function clearSessionId(): void {
-  sessionStorage.removeItem(SESSION_ID_KEY);
+  try {
+    sessionStorage.removeItem(SESSION_ID_KEY);
+  } catch {
+    // sessionStorage not available (private browsing) - ignore
+  }
 }

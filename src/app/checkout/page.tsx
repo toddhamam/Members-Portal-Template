@@ -113,11 +113,16 @@ function CheckoutForm({
       }
 
       // Store checkout details for GA4 tracking on upsell page
-      sessionStorage.setItem('checkout_ga4_pending', JSON.stringify({
-        value: total,
-        includeOrderBump,
-        paymentIntentId,
-      }));
+      // Wrapped in try-catch because sessionStorage can throw in private browsing mode
+      try {
+        sessionStorage.setItem('checkout_ga4_pending', JSON.stringify({
+          value: total,
+          includeOrderBump,
+          paymentIntentId,
+        }));
+      } catch {
+        // Silently ignore - GA4 tracking is not critical for checkout
+      }
 
       const { error } = await stripe.confirmPayment({
         elements,
