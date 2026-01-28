@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "./SidebarContext";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 // Icons
 function HomeIcon({ className = "w-5 h-5" }: { className?: string }) {
@@ -53,6 +54,14 @@ function ChevronRightIcon({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+function ChartBarIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+  );
+}
+
 function BrandLogo({ className = "w-10 h-10" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 100 100" fill="none">
@@ -83,6 +92,12 @@ const navItems = [
 export function PortalSidebar() {
   const pathname = usePathname();
   const { isCollapsed, toggleSidebar } = useSidebar();
+  const { profile } = useAuth();
+
+  // Admin nav item - only shown to admins
+  const adminNavItem = profile?.is_admin
+    ? { href: "/portal/admin", label: "Analytics", icon: ChartBarIcon }
+    : null;
 
   return (
     <aside
@@ -129,6 +144,31 @@ export function PortalSidebar() {
               </li>
             );
           })}
+
+          {/* Admin link - only visible to admins */}
+          {adminNavItem && (
+            <li>
+              <Link
+                href={adminNavItem.href}
+                className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${
+                  pathname.startsWith("/portal/admin")
+                    ? "bg-violet-500/20 text-violet-400"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                } ${isCollapsed ? "justify-center" : ""}`}
+                title={isCollapsed ? adminNavItem.label : undefined}
+              >
+                <adminNavItem.icon className="w-5 h-5 flex-shrink-0" />
+                {!isCollapsed && (
+                  <span className="font-medium flex items-center gap-2">
+                    {adminNavItem.label}
+                    <span className="text-[10px] bg-violet-500/30 text-violet-400 px-1.5 py-0.5 rounded">
+                      Admin
+                    </span>
+                  </span>
+                )}
+              </Link>
+            </li>
+          )}
         </ul>
       </nav>
 

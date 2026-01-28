@@ -7,6 +7,7 @@ interface GrantProductAccessParams {
   productSlug: string;
   stripeSessionId?: string;
   stripePaymentIntentId?: string;
+  purchaseSource?: 'funnel' | 'portal';
 }
 
 // Helper to find or create a Supabase user and grant product access
@@ -17,6 +18,7 @@ export async function grantProductAccess({
   productSlug,
   stripeSessionId,
   stripePaymentIntentId,
+  purchaseSource = 'funnel',
 }: GrantProductAccessParams) {
   console.log('[grantProductAccess] Starting for:', { email, productSlug, stripePaymentIntentId });
 
@@ -150,6 +152,7 @@ export async function grantProductAccess({
       stripe_checkout_session_id: stripeSessionId,
       stripe_payment_intent_id: stripePaymentIntentId,
       status: 'active',
+      purchase_source: purchaseSource,
     }, { onConflict: 'user_id,product_id' });
 
   if (purchaseError) {

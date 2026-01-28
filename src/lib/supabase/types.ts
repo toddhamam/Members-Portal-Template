@@ -4,6 +4,7 @@
 export type ProductType = 'main' | 'order_bump' | 'upsell' | 'downsell';
 export type ContentType = 'video' | 'audio' | 'pdf' | 'text' | 'download';
 export type PurchaseStatus = 'active' | 'refunded' | 'expired';
+export type PurchaseSource = 'funnel' | 'portal';
 export type ResourceType = 'pdf' | 'worksheet' | 'checklist' | 'audio' | 'video' | 'link' | 'other';
 
 export interface Profile {
@@ -70,6 +71,7 @@ export interface UserPurchase {
   purchased_at: string;
   expires_at: string | null;
   status: PurchaseStatus;
+  purchase_source: PurchaseSource;
 }
 
 export interface LessonProgress {
@@ -410,12 +412,14 @@ export interface Database {
           purchased_at?: string;
           expires_at?: string | null;
           status?: PurchaseStatus;
+          purchase_source?: PurchaseSource;
         };
         Update: {
           stripe_payment_intent_id?: string | null;
           stripe_checkout_session_id?: string | null;
           expires_at?: string | null;
           status?: PurchaseStatus;
+          purchase_source?: PurchaseSource;
         };
         Relationships: [
           {

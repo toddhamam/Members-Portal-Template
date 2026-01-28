@@ -47,13 +47,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Grant product access
+    // Grant product access (mark as portal purchase for analytics)
     const result = await grantProductAccess({
       email: customer_email,
       fullName,
       stripeCustomerId: paymentIntent.customer as string,
       productSlug: product_slug,
       stripePaymentIntentId: paymentIntentId,
+      purchaseSource: 'portal',
     });
 
     if (!result.granted) {
