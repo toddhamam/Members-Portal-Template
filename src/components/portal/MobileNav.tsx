@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useChat } from "@/components/chat";
 
 // Icons
 function HomeIcon({ className = "w-6 h-6" }: { className?: string }) {
@@ -43,6 +44,19 @@ function ChatBubbleIcon({ className = "w-6 h-6" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+    </svg>
+  );
+}
+
+function MessageIcon({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+      />
     </svg>
   );
 }
@@ -108,6 +122,9 @@ export function MobileNav() {
   const displayName = profile?.full_name || profile?.first_name || user?.email || "User";
   const isAccountActive = pathname === "/portal/account" || pathname.startsWith("/portal/account");
 
+  // Chat state
+  const { toggleList, isListOpen, totalUnreadCount } = useChat();
+
   return (
     <nav className="fixed top-0 left-0 right-0 h-16 bg-[#1a1a1a] border-b border-gray-800 z-50 md:hidden">
       <div className="h-full flex items-center justify-between px-2">
@@ -151,6 +168,25 @@ export function MobileNav() {
           <UserIcon className="w-6 h-6" />
           <span className="text-[10px] mt-0.5 font-medium">Account</span>
         </Link>
+
+        {/* Messages */}
+        <button
+          onClick={toggleList}
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors relative ${
+            isListOpen ? "text-[#d4a574]" : "text-gray-400"
+          }`}
+          aria-label={`Messages${totalUnreadCount > 0 ? ` (${totalUnreadCount} unread)` : ""}`}
+        >
+          <div className="relative">
+            <MessageIcon className="w-6 h-6" />
+            {totalUnreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 flex items-center justify-center bg-[#ee5d0b] text-white text-[9px] font-bold rounded-full">
+                {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] mt-0.5 font-medium">Messages</span>
+        </button>
 
         {/* Settings menu */}
         <div className="flex flex-col items-center justify-center flex-1 relative" ref={menuRef}>

@@ -271,6 +271,59 @@ export interface NotificationWithActor extends DiscussionNotification {
   actor: { id: string; full_name: string | null; avatar_url: string | null };
 }
 
+// ============================================
+// DIRECT MESSAGING TYPES
+// ============================================
+
+export interface Conversation {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  last_message_at: string | null;
+  last_message_preview: string | null;
+}
+
+export interface ConversationParticipant {
+  id: string;
+  conversation_id: string;
+  user_id: string;
+  is_admin: boolean;
+  unread_count: number;
+  last_read_at: string | null;
+  created_at: string;
+}
+
+export interface DirectMessage {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  is_edited: boolean;
+  is_deleted: boolean;
+}
+
+// Direct messaging types with joins (for display)
+export interface ConversationWithParticipant extends Conversation {
+  otherParticipant: {
+    id: string;
+    name: string | null;
+    avatarUrl: string | null;
+    isAdmin: boolean;
+  };
+  unreadCount: number;
+}
+
+export interface MessageWithSender extends DirectMessage {
+  sender: {
+    id: string;
+    name: string | null;
+    avatarUrl: string | null;
+    isAdmin: boolean;
+  };
+}
+
 // Database type for Supabase client
 // Using a simplified type that works better with Supabase client
 export interface Database {

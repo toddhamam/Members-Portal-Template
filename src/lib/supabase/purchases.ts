@@ -1,4 +1,5 @@
 import { createAdminClientInstance } from './server';
+import { triggerWelcome, triggerPurchase } from '@/lib/dm-automation';
 
 interface GrantProductAccessParams {
   email: string;
@@ -161,5 +162,31 @@ export async function grantProductAccess({
   }
 
   console.log(`[grantProductAccess] SUCCESS: Granted access to ${productSlug} for user ${emailLower} (userId: ${userId})`);
+
+  // Trigger DM automations (non-blocking)
+  try {
+    // Check if this is a new user (no existing profile before this call)
+    if (!existingProfile) {
+      // Trigger welcome message for new members
+      triggerWelcome(userId).catch(err =>
+        console.error('[grantProductAccess] Welcome automation failed (non-critical):', err)
+      );
+    }
+
+    // Get product name for the purchase automation
+    const { data: productData } = await supabase
+      .from('products')
+      .select('name')
+      .eq('id', product.id)
+      .single();
+
+    // Trigger purchase automation
+    triggerPurchase(userId, product.id, productData?.name || productSlug).catch(err =>
+      console.error('[grantProductAccess] Purchase automation failed (non-critical):', err)
+    );
+  } catch (automationError) {
+    console.error('[grantProductAccess] Automation trigger error (non-critical):', automationError);
+  }
+
   return { userId, granted: true };
 }

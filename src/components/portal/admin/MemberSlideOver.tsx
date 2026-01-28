@@ -4,11 +4,25 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { MemberDetailResponse } from "@/lib/admin/types";
 import { ProductProgressList } from "./ProductProgressList";
+import { useChatOptional } from "@/components/chat";
 
 interface MemberSlideOverProps {
   memberId: string | null;
   isOpen: boolean;
   onClose: () => void;
+}
+
+function MessageIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+      />
+    </svg>
+  );
 }
 
 function formatCurrency(amount: number): string {
@@ -32,6 +46,30 @@ export function MemberSlideOver({ memberId, isOpen, onClose }: MemberSlideOverPr
   const [member, setMember] = useState<MemberDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const chat = useChatOptional();
+
+  const handleSendMessage = async () => {
+    if (!memberId || !chat) return;
+
+    try {
+      const response = await fetch("/api/messages/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId }),
+      });
+
+      if (!response.ok) {
+        console.error("[MemberSlideOver] Failed to create conversation");
+        return;
+      }
+
+      const data = await response.json();
+      onClose(); // Close the slide-over
+      chat.openConversation(data.conversation.id);
+    } catch (error) {
+      console.error("[MemberSlideOver] Error creating conversation:", error);
+    }
+  };
 
   useEffect(() => {
     if (!memberId || !isOpen) {
@@ -126,6 +164,14 @@ export function MemberSlideOver({ memberId, isOpen, onClose }: MemberSlideOverPr
                   <p className="text-xs text-slate-400 mt-1">
                     Joined {formatDate(member.profile.joinedAt)}
                   </p>
+                  {/* Send Message Button */}
+                  <button
+                    onClick={handleSendMessage}
+                    className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    <MessageIcon className="w-4 h-4" />
+                    Send Message
+                  </button>
                 </div>
               </div>
 

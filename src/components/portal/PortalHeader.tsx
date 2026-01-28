@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { NotificationBell } from "@/components/discussion/NotificationBell";
+import { ChatHeaderButton } from "@/components/chat/ChatHeaderButton";
 
 function UserAvatar({ name, className = "w-8 h-8" }: { name?: string; className?: string }) {
   const initials = name
@@ -65,8 +66,9 @@ export function PortalHeader() {
         <h1 className="text-lg font-semibold text-[#222222] font-serif">Member Portal</h1>
       </div>
 
-      {/* Right side: Notifications + User Menu */}
+      {/* Right side: Messages + Notifications + User Menu */}
       <div className="flex items-center gap-2">
+        <ChatHeaderButton />
         <NotificationBell />
 
         {/* User Menu */}
