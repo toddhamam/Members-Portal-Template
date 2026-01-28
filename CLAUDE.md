@@ -547,6 +547,9 @@ useEffect(() => {
 | `GET /api/dashboard/metrics` | Returns aggregated funnel metrics with date filtering |
 | `GET /api/dashboard/active-sessions` | Returns count of active visitors (last 5 min) |
 | `GET /api/dashboard/debug` | Diagnostic endpoint for troubleshooting tracking issues |
+| `GET /api/admin/metrics` | Returns admin dashboard metrics (members, revenue) |
+| `GET /api/admin/members` | Returns paginated member list with search/sort |
+| `GET /api/admin/members/[id]` | Returns detailed member info with purchases and progress |
 
 ### Upsell API Usage
 ```typescript
@@ -654,6 +657,30 @@ $$ LANGUAGE plpgsql;
 ```
 
 **Benefits:** Avoids expensive JOINs or subqueries when displaying lists with counts.
+
+### Migration Best Practices
+
+When creating Supabase migrations:
+
+```sql
+-- Include clear comments explaining the migration
+-- Use IF NOT EXISTS for DDL statements to make migrations idempotent
+CREATE TABLE IF NOT EXISTS my_table (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Backfill existing data when adding new columns
+UPDATE profiles
+SET last_active_at = created_at
+WHERE last_active_at IS NULL;
+```
+
+**Key points:**
+- Include clear comments in migration files
+- Use `IF NOT EXISTS` for DDL statements
+- Backfill existing data when adding new columns
+- Test migrations locally before applying to production
 
 ---
 
@@ -1083,6 +1110,120 @@ Update the `products` table in Supabase:
 UPDATE products
 SET portal_price_cents = 9700  -- $97.00
 WHERE slug = 'pathless-path';
+```
+
+---
+
+## Admin Portal (Analytics Dashboard)
+
+Located at `/portal/admin/*` routes. Provides administrators with member management and analytics capabilities.
+
+### Routes
+| Route | Purpose |
+|-------|---------|
+| `/portal/admin` | Main admin dashboard with metrics overview |
+| `/portal/admin` (member list) | Searchable, sortable list of all members |
+
+### Features
+- **Macro metrics:** Total members, active members (30 days), total revenue, average revenue per member
+- **Member list:** Searchable by name/email, sortable by various columns
+- **Member detail slide-over:** Click a member row to see detailed information including purchases and lesson progress
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/app/portal/admin/page.tsx` | Main admin dashboard page |
+| `src/app/portal/admin/layout.tsx` | Admin access guard (checks `is_admin`) |
+| `src/components/admin/AdminDashboard.tsx` | Dashboard container component |
+| `src/components/admin/MetricCard.tsx` | Reusable metric display card |
+| `src/components/admin/MembersTable.tsx` | Searchable/sortable member list |
+| `src/components/admin/MemberSlideOver.tsx` | Member detail panel |
+| `src/components/admin/ProductProgressList.tsx` | Product/lesson progress display |
+
+### API Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/admin/metrics` | Returns aggregate metrics (members, revenue, activity) |
+| `GET /api/admin/members` | Returns paginated member list with search/sort |
+| `GET /api/admin/members/[id]` | Returns detailed member info with purchases and progress |
+
+### Admin Access Pattern
+
+All admin routes use the service role key to bypass RLS. This simplifies queries and avoids RLS recursion issues:
+
+```typescript
+import { createAdminClientInstance } from "@/lib/supabase/server";
+
+export async function GET() {
+  const supabase = createAdminClientInstance();
+
+  // Verify admin status first
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", userId)
+    .single();
+
+  if (!profile?.is_admin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Now safe to query all data
+  const { data: members } = await supabase
+    .from("profiles")
+    .select("*");
+}
+```
+
+### TypeScript Types
+
+Define explicit types for admin API responses:
+
+```typescript
+interface AdminMetricsResponse {
+  totalMembers: number;
+  activeMembers: number;
+  totalRevenueCents: number;
+  avgRevenuePerMember: number;
+}
+
+interface MemberSummary {
+  id: string;
+  email: string;
+  fullName: string;
+  createdAt: string;
+  lastActiveAt: string | null;
+  purchaseCount: number;
+  totalSpentCents: number;
+}
+
+interface MembersListResponse {
+  members: MemberSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+```
+
+### External Images Configuration
+
+When displaying images from Supabase Storage (like member avatars), configure `next.config.js`:
+
+```javascript
+// next.config.js
+module.exports = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
+};
 ```
 
 ---
