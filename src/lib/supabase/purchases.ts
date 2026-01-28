@@ -18,23 +18,39 @@ export async function grantProductAccess({
   stripeSessionId,
   stripePaymentIntentId,
 }: GrantProductAccessParams) {
+  console.log('[grantProductAccess] Starting for:', { email, productSlug, stripePaymentIntentId });
+
+  // Check for required environment variable
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[grantProductAccess] CRITICAL: SUPABASE_SERVICE_ROLE_KEY is not set');
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not configured');
+  }
+
   const supabase = createAdminClientInstance();
 
   // Normalize email to lowercase for consistent storage and lookup
   const emailLower = email.toLowerCase();
+  console.log('[grantProductAccess] Normalized email:', emailLower);
 
   // Check if user already exists in profiles (case-insensitive)
-  const { data: existingProfile } = await supabase
+  console.log('[grantProductAccess] Checking for existing profile...');
+  const { data: existingProfile, error: profileLookupError } = await supabase
     .from('profiles')
     .select('id')
     .ilike('email', emailLower)
     .single();
+
+  if (profileLookupError && profileLookupError.code !== 'PGRST116') {
+    // PGRST116 is "no rows returned" which is expected for new users
+    console.error('[grantProductAccess] Profile lookup error:', profileLookupError);
+  }
 
   let userId: string;
 
   if (existingProfile) {
     // User exists, use their ID
     userId = existingProfile.id;
+    console.log('[grantProductAccess] Found existing profile:', userId);
 
     // Update stripe_customer_id if we have it and it's not set
     if (stripeCustomerId) {
@@ -47,6 +63,7 @@ export async function grantProductAccess({
   } else {
     // Create a new auth user (email-only, no password yet)
     // The user will set their password on the thank you page
+    console.log('[grantProductAccess] No existing profile, creating new auth user...');
     const [firstName, ...lastNameParts] = (fullName || '').split(' ');
     const lastName = lastNameParts.join(' ');
 
@@ -59,6 +76,7 @@ export async function grantProductAccess({
     });
 
     if (createUserError) {
+      console.error('[grantProductAccess] Failed to create auth user:', createUserError);
       // User might already exist in auth but not in profiles (edge case)
       // Try to get user by email from auth
       const { data: authUsers } = await supabase.auth.admin.listUsers();
@@ -68,9 +86,10 @@ export async function grantProductAccess({
 
       if (existingAuthUser) {
         userId = existingAuthUser.id;
+        console.log('[grantProductAccess] Found existing auth user:', userId);
 
         // Create profile if it doesn't exist
-        await supabase.from('profiles').upsert({
+        const { error: upsertError } = await supabase.from('profiles').upsert({
           id: userId,
           email: emailLower,
           full_name: fullName || '',
@@ -78,15 +97,19 @@ export async function grantProductAccess({
           last_name: lastName,
           stripe_customer_id: stripeCustomerId,
         }, { onConflict: 'id' });
+        if (upsertError) {
+          console.error('[grantProductAccess] Profile upsert error:', upsertError);
+        }
       } else {
-        console.error('Failed to create Supabase user:', createUserError);
+        console.error('[grantProductAccess] No existing auth user found, throwing error');
         throw createUserError;
       }
     } else {
       userId = newUser.user.id;
+      console.log('[grantProductAccess] Created new auth user:', userId);
 
       // The trigger should create the profile, but let's update it with more info
-      await supabase.from('profiles').upsert({
+      const { error: profileUpsertError } = await supabase.from('profiles').upsert({
         id: userId,
         email: emailLower,
         full_name: fullName || '',
@@ -94,10 +117,16 @@ export async function grantProductAccess({
         last_name: lastName,
         stripe_customer_id: stripeCustomerId,
       }, { onConflict: 'id' });
+      if (profileUpsertError) {
+        console.error('[grantProductAccess] Profile upsert error:', profileUpsertError);
+      } else {
+        console.log('[grantProductAccess] Profile upserted successfully');
+      }
     }
   }
 
   // Get the product ID from the slug
+  console.log('[grantProductAccess] Looking up product:', productSlug);
   const { data: product, error: productError } = await supabase
     .from('products')
     .select('id')
@@ -105,12 +134,14 @@ export async function grantProductAccess({
     .single();
 
   if (productError || !product) {
-    console.error(`Product not found: ${productSlug}`, productError);
+    console.error(`[grantProductAccess] Product not found: ${productSlug}`, productError);
     // Don't throw - product might not be seeded yet
     return { userId, granted: false };
   }
+  console.log('[grantProductAccess] Found product:', product.id);
 
   // Grant access (upsert to handle duplicate purchases gracefully)
+  console.log('[grantProductAccess] Granting product access...');
   const { error: purchaseError } = await supabase
     .from('user_purchases')
     .upsert({
@@ -122,10 +153,10 @@ export async function grantProductAccess({
     }, { onConflict: 'user_id,product_id' });
 
   if (purchaseError) {
-    console.error('Failed to grant product access:', purchaseError);
+    console.error('[grantProductAccess] Failed to grant product access:', purchaseError);
     throw purchaseError;
   }
 
-  console.log(`Granted access to ${productSlug} for user ${emailLower}`);
+  console.log(`[grantProductAccess] SUCCESS: Granted access to ${productSlug} for user ${emailLower} (userId: ${userId})`);
   return { userId, granted: true };
 }

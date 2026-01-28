@@ -38,6 +38,12 @@ export async function trackServerEvent(options: TrackServerEventOptions): Promis
 
   let { visitorId, funnelSessionId } = options;
 
+  // Check for required environment variables
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('[Server Tracking] CRITICAL: SUPABASE_SERVICE_ROLE_KEY is not set. Purchase tracking will fail.');
+    return false;
+  }
+
   const supabase = createAdminClientInstance();
 
   // Try to find existing session based on Stripe session/payment intent ID
@@ -86,30 +92,45 @@ export async function trackServerEvent(options: TrackServerEventOptions): Promis
   }
 
   try {
-    const { error } = await supabase
+    console.log(`[Server Tracking] Inserting ${eventType} event for ${funnelStep}...`);
+
+    const insertData = {
+      visitor_id: visitorId,
+      funnel_session_id: funnelSessionId,
+      session_id: sessionId,
+      event_type: eventType,
+      funnel_step: funnelStep,
+      variant: null,
+      revenue_cents: revenueCents,
+      product_slug: productSlug,
+      ip_hash: 'server', // Mark as server-side event
+      user_agent: 'server-side-tracking',
+    };
+
+    const { error, data } = await supabase
       .from('funnel_events')
-      .insert({
-        visitor_id: visitorId,
-        funnel_session_id: funnelSessionId,
-        session_id: sessionId,
-        event_type: eventType,
-        funnel_step: funnelStep,
-        variant: null,
-        revenue_cents: revenueCents,
-        product_slug: productSlug,
-        ip_hash: 'server', // Mark as server-side event
-        user_agent: 'server-side-tracking',
-      });
+      .insert(insertData)
+      .select('id');
 
     if (error) {
-      console.error('[Server Tracking] Failed to insert event:', error);
+      console.error('[Server Tracking] Failed to insert event:', {
+        error: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        insertData,
+      });
       return false;
     }
 
-    console.log(`[Server Tracking] Recorded ${eventType} for ${funnelStep}: $${revenueCents / 100}`);
+    console.log(`[Server Tracking] Successfully recorded ${eventType} for ${funnelStep}: $${revenueCents / 100}`, {
+      insertedId: data?.[0]?.id,
+      visitorId,
+      funnelSessionId,
+    });
     return true;
   } catch (error) {
-    console.error('[Server Tracking] Error:', error);
+    console.error('[Server Tracking] Unexpected error:', error);
     return false;
   }
 }
