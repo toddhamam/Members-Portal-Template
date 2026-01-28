@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         .limit(1000);
 
       if (!countError && eventCounts) {
-        const counts = eventCounts.reduce((acc: Record<string, number>, event) => {
+        const counts = eventCounts.reduce((acc: Record<string, number>, event: { event_type: string }) => {
           acc[event.event_type] = (acc[event.event_type] || 0) + 1;
           return acc;
         }, {});
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
         .limit(5);
 
       if (!purchaseError) {
-        diagnostics.recentPurchases = recentPurchases?.map(p => ({
+        diagnostics.recentPurchases = recentPurchases?.map((p: { id: string; event_type: string; funnel_step: string; revenue_cents: number | null; created_at: string; visitor_id: string | null }) => ({
           id: p.id,
           eventType: p.event_type,
           funnelStep: p.funnel_step,
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
         .limit(10);
 
       if (!viewError) {
-        diagnostics.recentPageViews = recentViews?.map(v => ({
+        diagnostics.recentPageViews = recentViews?.map((v: { funnel_step: string; created_at: string }) => ({
           funnelStep: v.funnel_step,
           createdAt: v.created_at,
         }));
@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
         diagnostics.profiles = {
           status: 'OK',
           recentCount: recentProfiles?.length || 0,
-          recent: recentProfiles?.map(p => ({
+          recent: recentProfiles?.map((p: { id: string; email: string; created_at: string }) => ({
             id: p.id.substring(0, 8) + '...',
             email: p.email,
             createdAt: p.created_at,
@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
         diagnostics.products = {
           status: 'OK',
           count: products?.length || 0,
-          list: products?.map(p => ({ slug: p.slug, name: p.name })),
+          list: products?.map((p: { slug: string; name: string }) => ({ slug: p.slug, name: p.name })),
         };
       }
 
@@ -196,7 +196,7 @@ export async function GET(request: NextRequest) {
         diagnostics.userPurchases = {
           status: 'OK',
           recentCount: recentPurchasesDb?.length || 0,
-          recent: recentPurchasesDb?.map(p => ({
+          recent: recentPurchasesDb?.map((p: { id: string; product_id: string; status: string; created_at: string }) => ({
             id: p.id.substring(0, 8) + '...',
             productId: p.product_id,
             status: p.status,
