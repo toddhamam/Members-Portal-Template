@@ -262,3 +262,135 @@ When an external integration is no longer in use (e.g., account deleted, service
 4. Remove any error handling specific to that service
 
 **Why:** Leaving "dead" integration code can cause unexpected errors if the service returns 401/403 or unexpected responses. Clean removal prevents silent failures.
+
+---
+
+## 16. Prevent Race Conditions in Polling Hooks
+
+Hooks that perform frequent updates or polling must implement proper guards to prevent race conditions:
+
+```typescript
+// Use refs to track in-flight requests and prevent overlapping fetches
+const fetchInProgressRef = useRef(false);
+const latestMessageIdRef = useRef<string | null>(null);
+const currentSearchRef = useRef<string | null>(null);
+
+const fetchData = async () => {
+  // Skip if a fetch is already in progress
+  if (fetchInProgressRef.current) return;
+
+  fetchInProgressRef.current = true;
+  try {
+    const data = await fetch('/api/data');
+    // Only update state if the request is still relevant
+    if (currentSearchRef.current === searchTerm) {
+      setData(data);
+    }
+  } finally {
+    fetchInProgressRef.current = false;
+  }
+};
+```
+
+**Common race condition scenarios:**
+- User types in search while previous search is still loading
+- Polling interval fires while previous poll is still pending
+- Component unmounts before async operation completes
+
+---
+
+## 17. TypeScript Naming Convention Consistency
+
+Be aware of naming convention differences between API responses (snake_case from databases) and component props (camelCase in React):
+
+```typescript
+// API response from Supabase (snake_case)
+interface DbUser {
+  full_name: string;
+  created_at: string;
+  is_admin: boolean;
+}
+
+// Component props (camelCase)
+interface UserCardProps {
+  fullName: string;
+  createdAt: string;
+  isAdmin: boolean;
+}
+
+// Transform at the boundary
+function transformUser(dbUser: DbUser): UserCardProps {
+  return {
+    fullName: dbUser.full_name,
+    createdAt: dbUser.created_at,
+    isAdmin: dbUser.is_admin,
+  };
+}
+```
+
+**Key principle:** Transform snake_case to camelCase at the API/component boundary, not scattered throughout the codebase.
+
+---
+
+## 18. Avoid Implicit 'any' Types
+
+Always explicitly type function parameters and return values to avoid TypeScript errors:
+
+```typescript
+// Bad - implicit 'any' type
+const handleClick = (event) => { ... }
+const processItems = (items) => items.map(item => item.name)
+
+// Good - explicit types
+const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => { ... }
+const processItems = (items: Item[]) => items.map(item => item.name)
+```
+
+---
+
+## 19. SSR-Safe Browser API Access
+
+When using browser-specific APIs like `window` in Next.js, ensure they're only accessed on the client side:
+
+```typescript
+// Bad - may fail during SSR
+const width = window.innerWidth;
+
+// Good - check for browser environment
+const [width, setWidth] = useState(0);
+
+useEffect(() => {
+  setWidth(window.innerWidth);
+  const handleResize = () => setWidth(window.innerWidth);
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
+```
+
+**Common browser-only APIs:** `window`, `document`, `localStorage`, `sessionStorage`, `navigator`
+
+---
+
+## 20. Validate JSON Request Bodies
+
+All API routes accepting JSON bodies must validate the request before parsing:
+
+```typescript
+export async function POST(request: NextRequest) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  // Validate required fields
+  if (!body.email || typeof body.email !== 'string') {
+    return NextResponse.json({ error: "Email is required" }, { status: 400 });
+  }
+
+  // Process valid request...
+}
+```
+
+**Why:** Invalid JSON or missing fields should return 400 (client error), not 500 (server error).

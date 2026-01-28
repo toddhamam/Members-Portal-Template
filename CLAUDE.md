@@ -1649,3 +1649,191 @@ case 'upsell-X':
 ```
 3. Add Klaviyo events in `src/lib/klaviyo.ts`
 4. Update navigation flow in adjacent pages
+
+---
+
+## Admin Direct Messaging
+
+The portal includes a Skool-style direct messaging system that allows admins to communicate with members and send automated messages based on triggers.
+
+### Architecture Overview
+
+**Key Characteristics:**
+- **Polling-based real-time updates** - No WebSockets; uses configurable polling intervals
+- **Admin-initiated conversations** - Only admins can start new conversations with members
+- **Member context** - Admins can view member purchases and progress within the chat interface
+- **Automated DMs** - Trigger-based automated messages for onboarding, engagement, and inactivity
+
+### UI Structure
+
+The chat UI follows Skool's pattern:
+- **Header chat icon** - Located next to notification bell in portal header
+- **Dropdown conversations list** - Shows recent conversations on click
+- **Expandable chat windows** - Pop-up windows for active conversations
+- **Mobile adaptation** - Full-screen chat with back button on mobile
+
+### Key Files
+
+| Directory | Purpose |
+|-----------|---------|
+| `src/components/chat/` | Chat UI components (ChatDropdown, ChatWindow, ConversationList, MessageList) |
+| `src/components/shared/` | Shared UI components (UserAvatar, formatDisplayName) |
+| `src/hooks/` | Chat-related hooks (useConversations, useMessages, useSendMessage, useUnreadCount, useChat) |
+| `src/contexts/` | ChatProvider for managing open windows and unread state |
+| `src/lib/dm-automation.ts` | Automated DM trigger logic |
+| `src/app/api/conversations/` | Conversation CRUD endpoints |
+| `src/app/api/messages/` | Message send/fetch endpoints |
+
+### Database Tables
+
+| Table | Purpose |
+|-------|---------|
+| `conversations` | Stores conversation metadata between users |
+| `messages` | Individual messages within conversations |
+| `dm_automation_rules` | Automated DM trigger configurations |
+| `canned_responses` | Pre-saved message templates for admins |
+
+### API Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/conversations` | List user's conversations |
+| `POST /api/conversations` | Create new conversation (admin only) |
+| `GET /api/conversations/[id]` | Get conversation details |
+| `GET /api/conversations/[id]/messages` | Get messages for a conversation |
+| `POST /api/messages` | Send a message |
+| `PATCH /api/messages/[id]/read` | Mark message as read |
+| `GET /api/admin/members/[id]` | Get member context (purchases, progress) |
+
+### Hook Patterns
+
+**useConversations:**
+```typescript
+const { conversations, loading, error, refresh } = useConversations();
+// Polls for updates at configurable interval
+// Supports optimistic updates via updateConversation()
+```
+
+**useMessages:**
+```typescript
+const { messages, loading, hasMore, loadMore, addMessage } = useMessages(conversationId);
+// Handles pagination and polling for new messages
+// Uses refs to prevent race conditions during polling
+```
+
+**useSendMessage:**
+```typescript
+const { send, sending, error } = useSendMessage();
+await send({ conversationId, content });
+// Optimistic UI update with error rollback
+```
+
+**useUnreadCount:**
+```typescript
+const unreadCount = useUnreadCount();
+// Used for badge display on chat icon
+```
+
+### ChatProvider Context
+
+Manages global chat state:
+```typescript
+const {
+  openWindows,        // Currently open chat windows
+  openChat,           // Open a conversation window
+  closeChat,          // Close a conversation window
+  unreadCount,        // Total unread messages
+  refreshUnreadCount  // Force refresh unread count
+} = useChat();
+```
+
+### Polling Strategy
+
+Since the system uses polling instead of WebSockets:
+- **Active window:** Poll every 3-5 seconds for new messages
+- **Inactive/background:** Poll less frequently (30-60 seconds)
+- **Conversation list:** Poll every 10-15 seconds
+
+```typescript
+// Example polling implementation
+useEffect(() => {
+  const interval = setInterval(() => {
+    if (!fetchInProgressRef.current) {
+      fetchMessages();
+    }
+  }, isWindowActive ? 5000 : 30000);
+
+  return () => clearInterval(interval);
+}, [isWindowActive]);
+```
+
+### Automated DM Triggers
+
+| Trigger Type | Description |
+|--------------|-------------|
+| `onboarding` | Welcome message when user first joins |
+| `engagement` | Message when user completes certain actions |
+| `inactivity` | Re-engagement message after period of inactivity |
+| `purchase` | Follow-up after product purchase |
+
+**Configuration via `dm_automation_rules` table:**
+```sql
+CREATE TABLE dm_automation_rules (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  trigger_type TEXT NOT NULL,
+  delay_minutes INTEGER DEFAULT 0,
+  message_template TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Mobile Responsiveness
+
+Chat UI adapts to mobile with:
+- Full-screen conversation view (replaces dropdown/popup)
+- Back button navigation instead of close button
+- Touch-friendly message input
+- Responsive message bubbles
+
+```tsx
+// Mobile detection for chat UI
+const [isMobile, setIsMobile] = useState(false);
+
+useEffect(() => {
+  const checkMobile = () => setIsMobile(window.innerWidth < 768);
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
+  return () => window.removeEventListener('resize', checkMobile);
+}, []);
+```
+
+### Admin vs. Member Capabilities
+
+| Feature | Admin | Member |
+|---------|-------|--------|
+| Initiate new conversation | Yes | No |
+| View member context | Yes | N/A |
+| Access canned responses | Yes | No |
+| Send messages | Yes | Yes |
+| View conversation history | Yes | Yes |
+
+### Canned Responses
+
+Admins can save and use pre-written message templates:
+
+```typescript
+// Fetch canned responses
+const { data: responses } = await supabase
+  .from('canned_responses')
+  .select('*')
+  .order('title');
+
+// Use in message input
+<select onChange={(e) => setMessage(e.target.value)}>
+  <option value="">Insert template...</option>
+  {responses.map(r => (
+    <option key={r.id} value={r.content}>{r.title}</option>
+  ))}
+</select>
+```
