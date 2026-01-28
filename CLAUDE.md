@@ -587,6 +587,16 @@ await grantProductAccess({
 });
 ```
 
+**Internal Logic:**
+1. Normalizes email to lowercase
+2. Checks for existing user by email (case-insensitive)
+3. Creates new Supabase auth user if not found
+4. Upserts profile with customer data
+5. Creates purchase record (uses `upsert` to handle duplicates gracefully)
+6. Uses `SUPABASE_SERVICE_ROLE_KEY` for administrative access
+
+**Key Point:** The function handles both new and existing users, making it safe to call multiple times for the same purchase.
+
 ### Supabase Client Patterns
 
 Use separate Supabase clients based on the operation's privilege requirements:
@@ -694,6 +704,66 @@ WHERE last_active_at IS NULL;
 | Meta CAPI | Server-side conversion tracking | `META_*` env vars |
 | Hotjar | Session recordings | Client-side |
 | GA4 | Google Analytics 4 tracking | `NEXT_PUBLIC_GA4_MEASUREMENT_ID` |
+
+### Klaviyo API Patterns
+
+Klaviyo is used for email marketing and event tracking. The API uses specific endpoints for different operations:
+
+**API Endpoints:**
+- `POST /profiles/` - Create or update profiles (deduplicates by email)
+- `PATCH /profiles/{id}/` - Update specific profile attributes
+- `GET /profiles/?filter=...` - Retrieve profiles by filter
+- `POST /lists/{id}/relationships/profiles/` - Add profiles to a list
+
+**Key Pattern - Email Normalization:**
+Always normalize emails to lowercase before Klaviyo calls. Klaviyo uses email as the primary identifier, and inconsistent casing can create duplicate profiles:
+
+```typescript
+const emailLower = email.toLowerCase();
+await upsertProfile({ email: emailLower, firstName, lastName });
+```
+
+**Error Handling:**
+Klaviyo calls should always be wrapped in try-catch. A Klaviyo failure should never crash a webhook or block a purchase:
+
+```typescript
+try {
+  await upsertProfile({ email: emailLower, ...customerData });
+  await trackEvent({ email: emailLower, event: "Purchase", properties });
+} catch (error) {
+  console.error('[Klaviyo] Failed (non-critical):', error);
+}
+```
+
+### Stripe Webhook Event Types
+
+The webhook handler processes different Stripe events for different purposes:
+
+| Event | Purpose | When Used |
+|-------|---------|-----------|
+| `payment_intent.succeeded` | Payment completed | Main checkout, upsells |
+| `checkout.session.completed` | Full checkout flow completed | When using Checkout Sessions (not PaymentIntents) |
+
+**Key Differences:**
+- `payment_intent.succeeded` is more granular - fires when any payment succeeds
+- `checkout.session.completed` is higher-level - fires when a full Checkout Session completes
+- This funnel uses PaymentIntents directly, so `payment_intent.succeeded` is the primary event
+
+**Customer Data Retrieval Priority:**
+When processing `payment_intent.succeeded`, retrieve customer data in this order:
+
+1. **PaymentIntent metadata** - Most reliable (set during checkout)
+2. **Attached Stripe customer** - `paymentIntent.customer` → `stripe.customers.retrieve()`
+3. **Charge billing details** - `charges.data[0].billing_details`
+4. **Session customer_details** - For Checkout Session flows
+
+```typescript
+// Fallback chain for customer email
+const customerEmail =
+  paymentIntent.metadata?.customerEmail ||
+  customer?.email ||
+  charge?.billing_details?.email;
+```
 
 ---
 

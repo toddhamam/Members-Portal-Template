@@ -187,3 +187,78 @@ function ParentComponent() {
 ## 11. Handle Special Characters in Filenames
 
 Be aware that special characters (like Unicode narrow no-break spaces) in filenames can cause issues when reading or processing files. When encountering file path errors, check for hidden special characters in the filename.
+
+---
+
+## 12. External Integration Error Handling
+
+**All calls to external services MUST be wrapped in try-catch blocks.** This includes Klaviyo, Meta CAPI, and any other third-party APIs.
+
+```typescript
+// Good - external call wrapped in try-catch
+try {
+  await klaviyo.upsertProfile({ email, firstName });
+  await klaviyo.trackEvent({ email, event: "Purchase" });
+} catch (error) {
+  console.error('[Klaviyo] Failed (non-critical):', error);
+  // Continue processing - don't let external failures crash the flow
+}
+
+// Bad - unhandled external call
+await klaviyo.upsertProfile({ email, firstName }); // Can crash entire webhook!
+```
+
+**Why this matters:** Unhandled exceptions in external integrations can crash webhook handlers or API routes, causing critical operations (like tracking purchases) to fail even though the payment succeeded.
+
+---
+
+## 13. Email Normalization for External Services
+
+Always normalize email addresses to lowercase before passing them to external services:
+
+```typescript
+// Good - normalized before external call
+const emailLower = email.toLowerCase();
+await klaviyo.upsertProfile({ email: emailLower, firstName });
+
+// Bad - raw email might have inconsistent casing
+await klaviyo.upsertProfile({ email, firstName }); // May cause duplicate profiles
+```
+
+**Why:** Different systems may return emails with different casing (e.g., Stripe vs. Supabase). Normalizing prevents duplicate profiles and lookup failures in services like Klaviyo that use email as the primary identifier.
+
+---
+
+## 14. Leverage Service Idempotency
+
+When updating external systems, leverage their built-in idempotency where available:
+
+- **Klaviyo:** Deduplicates profiles by email automatically
+- **Supabase:** Use `upsert` for records that might already exist
+- **Stripe:** Many operations are idempotent by design
+
+This makes operations safe to retry without creating duplicates:
+
+```typescript
+// Safe to call multiple times - Klaviyo deduplicates by email
+await klaviyo.upsertProfile({ email: emailLower, firstName, lastName });
+
+// Safe to retry - Supabase upsert handles existing records
+await supabase.from('user_purchases').upsert({
+  user_id: userId,
+  product_id: productId,
+}, { onConflict: 'user_id,product_id' });
+```
+
+---
+
+## 15. Remove Unused Integrations Completely
+
+When an external integration is no longer in use (e.g., account deleted, service discontinued):
+
+1. Remove all API calls to the service
+2. Remove environment variables
+3. Remove related imports and configuration
+4. Remove any error handling specific to that service
+
+**Why:** Leaving "dead" integration code can cause unexpected errors if the service returns 401/403 or unexpected responses. Clean removal prevents silent failures.
