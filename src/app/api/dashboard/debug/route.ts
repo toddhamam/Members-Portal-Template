@@ -182,8 +182,8 @@ export async function GET(request: NextRequest) {
       // Test 8: Check user_purchases table
       const { data: recentPurchasesDb, error: purchasesError } = await supabase
         .from('user_purchases')
-        .select('id, product_id, status, created_at')
-        .order('created_at', { ascending: false })
+        .select('id, product_id, status, purchased_at')
+        .order('purchased_at', { ascending: false })
         .limit(5);
 
       if (purchasesError) {
@@ -196,11 +196,11 @@ export async function GET(request: NextRequest) {
         diagnostics.userPurchases = {
           status: 'OK',
           recentCount: recentPurchasesDb?.length || 0,
-          recent: recentPurchasesDb?.map((p: { id: string; product_id: string; status: string; created_at: string }) => ({
+          recent: recentPurchasesDb?.map((p: { id: string; product_id: string; status: string; purchased_at: string }) => ({
             id: p.id.substring(0, 8) + '...',
             productId: p.product_id,
             status: p.status,
-            createdAt: p.created_at,
+            purchasedAt: p.purchased_at,
           })),
         };
       }
