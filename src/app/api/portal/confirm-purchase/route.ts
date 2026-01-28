@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { grantProductAccess } from '@/lib/supabase/purchases';
+import { upsertProfile, trackEvent, addProfileToList, FunnelLists } from '@/lib/klaviyo';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-12-15.clover',
@@ -63,6 +64,44 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to grant product access' },
         { status: 500 }
       );
+    }
+
+    // NON-CRITICAL: Sync to Klaviyo (wrapped to prevent errors)
+    try {
+      const [firstName, ...lastNameParts] = (fullName || '').split(' ');
+      const lastName = lastNameParts.join(' ');
+
+      await upsertProfile({
+        email: customer_email,
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
+        properties: {
+          [`purchased_${product_slug.replace(/-/g, '_')}`]: true,
+          last_purchase_date: new Date().toISOString(),
+          purchase_source: 'portal',
+        },
+      });
+
+      // Add to customers list if configured
+      if (FunnelLists.CUSTOMERS) {
+        await addProfileToList(FunnelLists.CUSTOMERS, customer_email);
+      }
+
+      // Track portal purchase event
+      await trackEvent({
+        email: customer_email,
+        eventName: 'Portal Purchase',
+        properties: {
+          product: product_name,
+          product_slug: product_slug,
+          order_id: paymentIntentId,
+        },
+        value: (paymentIntent.amount || 0) / 100,
+      });
+
+      console.log(`[Portal] Klaviyo sync completed for ${customer_email}`);
+    } catch (klaviyoError) {
+      console.error('[Portal] Klaviyo sync failed (non-critical):', klaviyoError);
     }
 
     return NextResponse.json({

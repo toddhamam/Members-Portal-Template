@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { trackEvent, upsertProfile, addProfileToList, FunnelEvents, FunnelLists } from '@/lib/klaviyo';
-import { createShopifyOrder, findOrCreateCustomer } from '@/lib/shopify';
 import { grantProductAccess } from '@/lib/supabase/purchases';
 import { trackServerPurchase } from '@/lib/meta-capi';
 import { trackCheckoutPurchase } from '@/lib/funnel-tracking';
@@ -113,37 +112,7 @@ export async function POST(request: NextRequest) {
           console.error('[Webhook] Meta CAPI integration failed (non-critical):', metaError);
         }
 
-        // 3. Shopify: Create customer and order
-        try {
-          await findOrCreateCustomer({
-            email: customerEmail,
-            firstName,
-            lastName,
-            tags: ['resistance-map-buyer', 'funnel-customer'],
-          });
-
-          await createShopifyOrder({
-            email: customerEmail,
-            firstName,
-            lastName,
-            lineItems: [
-              {
-                title: 'Resistance Mapping Guide™ - Expanded 2nd Edition',
-                quantity: 1,
-                price: '7.00',
-              },
-              ...(includeOrderBump
-                ? [{ title: 'Golden Thread Technique (Advanced)', quantity: 1, price: '17.00' }]
-                : []),
-            ],
-            totalPrice: ((session.amount_total || 0) / 100).toFixed(2),
-            tags: ['resistance-map', 'funnel-order'],
-          });
-        } catch (shopifyError) {
-          console.error('[Webhook] Shopify integration failed (non-critical):', shopifyError);
-        }
-
-        // 4. Create Supabase user and grant product access
+        // 3. Create Supabase user and grant product access
         try {
           await grantProductAccess({
             email: customerEmail,
@@ -302,37 +271,7 @@ export async function POST(request: NextRequest) {
           console.error('[Webhook] Meta CAPI integration failed (non-critical):', metaError);
         }
 
-        // 3. Shopify: Create customer and order
-        try {
-          await findOrCreateCustomer({
-            email: customerEmail,
-            firstName,
-            lastName,
-            tags: ['resistance-map-buyer', 'funnel-customer'],
-          });
-
-          await createShopifyOrder({
-            email: customerEmail,
-            firstName,
-            lastName,
-            lineItems: [
-              {
-                title: 'Resistance Mapping Guide™ - Expanded 2nd Edition',
-                quantity: 1,
-                price: '7.00',
-              },
-              ...(includeOrderBump
-                ? [{ title: 'Golden Thread Technique (Advanced)', quantity: 1, price: '27.00' }]
-                : []),
-            ],
-            totalPrice: (paymentIntent.amount / 100).toFixed(2),
-            tags: ['resistance-map', 'funnel-order'],
-          });
-        } catch (shopifyError) {
-          console.error('[Webhook] Shopify integration failed (non-critical):', shopifyError);
-        }
-
-        // CRITICAL: Create Supabase user and grant product access
+        // 3. Create Supabase user and grant product access
         console.log('[Webhook] Starting Supabase product access grant for:', customerEmail);
         try {
           const mainResult = await grantProductAccess({

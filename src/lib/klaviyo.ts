@@ -38,13 +38,16 @@ export async function upsertProfile({
   phone?: string;
   properties?: Record<string, unknown>;
 }) {
+  // Normalize email to lowercase to prevent case-sensitivity issues
+  const normalizedEmail = email.toLowerCase();
+
   return klaviyoFetch('/profiles/', {
     method: 'POST',
     body: JSON.stringify({
       data: {
         type: 'profile',
         attributes: {
-          email,
+          email: normalizedEmail,
           first_name: firstName,
           last_name: lastName,
           phone_number: phone,
@@ -57,13 +60,16 @@ export async function upsertProfile({
 
 // Add profile to a list
 export async function addProfileToList(listId: string, email: string) {
+  // Normalize email to lowercase to prevent case-sensitivity issues
+  const normalizedEmail = email.toLowerCase();
+
   return klaviyoFetch(`/lists/${listId}/relationships/profiles/`, {
     method: 'POST',
     body: JSON.stringify({
       data: [
         {
           type: 'profile',
-          id: await getProfileIdByEmail(email),
+          id: await getProfileIdByEmail(normalizedEmail),
         },
       ],
     }),
@@ -72,9 +78,12 @@ export async function addProfileToList(listId: string, email: string) {
 
 // Get profile ID by email
 export async function getProfileIdByEmail(email: string): Promise<string> {
-  const response = await klaviyoFetch(`/profiles/?filter=equals(email,"${email}")`);
+  // Normalize email to lowercase to prevent case-sensitivity issues
+  const normalizedEmail = email.toLowerCase();
+
+  const response = await klaviyoFetch(`/profiles/?filter=equals(email,"${normalizedEmail}")`);
   if (response.data.length === 0) {
-    throw new Error(`Profile not found for email: ${email}`);
+    throw new Error(`Profile not found for email: ${normalizedEmail}`);
   }
   return response.data[0].id;
 }
@@ -91,6 +100,9 @@ export async function trackEvent({
   properties?: Record<string, unknown>;
   value?: number;
 }) {
+  // Normalize email to lowercase to prevent case-sensitivity issues
+  const normalizedEmail = email.toLowerCase();
+
   return klaviyoFetch('/events/', {
     method: 'POST',
     body: JSON.stringify({
@@ -109,7 +121,7 @@ export async function trackEvent({
             data: {
               type: 'profile',
               attributes: {
-                email,
+                email: normalizedEmail,
               },
             },
           },
@@ -127,7 +139,9 @@ export async function updateProfileProperties(
   email: string,
   properties: Record<string, unknown>
 ) {
-  const profileId = await getProfileIdByEmail(email);
+  // Normalize email to lowercase to prevent case-sensitivity issues
+  const normalizedEmail = email.toLowerCase();
+  const profileId = await getProfileIdByEmail(normalizedEmail);
 
   return klaviyoFetch(`/profiles/${profileId}/`, {
     method: 'PATCH',

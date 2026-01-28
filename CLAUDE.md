@@ -691,7 +691,6 @@ WHERE last_active_at IS NULL;
 | Stripe | Payments, checkout, webhooks | `STRIPE_*` env vars |
 | Supabase | Auth, database, user access | `SUPABASE_*` env vars |
 | Klaviyo | Email marketing, event tracking | `KLAVIYO_*` env vars |
-| Shopify | Order sync for fulfillment | `SHOPIFY_*` env vars |
 | Meta CAPI | Server-side conversion tracking | `META_*` env vars |
 | Hotjar | Session recordings | Client-side |
 | GA4 | Google Analytics 4 tracking | `NEXT_PUBLIC_GA4_MEASUREMENT_ID` |
@@ -1323,7 +1322,7 @@ The webhook at `/api/webhook` handles `payment_intent.succeeded` events. Look fo
 
 **External integration failures blocking webhook:**
 - Symptom: Purchases intermittently fail to track
-- Root cause: Unhandled errors in Klaviyo/Meta/Shopify calls crash the webhook
+- Root cause: Unhandled errors in Klaviyo/Meta calls crash the webhook
 - Fix: Wrap ALL external integrations in try-catch blocks (see Webhook Architecture below)
 
 **Column name mismatches:**
@@ -1355,13 +1354,6 @@ try {
   await trackServerPurchase({ ... });
 } catch (metaError) {
   console.error('[Webhook] Meta CAPI failed (non-critical):', metaError);
-}
-
-// 3. Shopify
-try {
-  await createShopifyOrder({ ... });
-} catch (shopifyError) {
-  console.error('[Webhook] Shopify failed (non-critical):', shopifyError);
 }
 ```
 

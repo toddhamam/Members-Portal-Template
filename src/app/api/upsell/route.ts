@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe, processOneClickUpsell } from '@/lib/stripe';
 import { trackEvent, FunnelEvents } from '@/lib/klaviyo';
-import { createShopifyOrder } from '@/lib/shopify';
 import { grantProductAccess } from '@/lib/supabase/purchases';
 import { trackServerPurchase } from '@/lib/meta-capi';
 import {
@@ -200,44 +199,42 @@ export async function POST(request: NextRequest) {
         console.error('Failed to grant upsell product access:', accessError);
       }
 
-      // Track in Klaviyo
-      await trackEvent({
-        email: customerEmail,
-        eventName: acceptedEvent,
-        properties: {
-          product: productName,
+      // NON-CRITICAL: Track in Klaviyo (wrapped to prevent checkout errors)
+      try {
+        await trackEvent({
+          email: customerEmail,
+          eventName: acceptedEvent,
+          properties: {
+            product: productName,
+            value: priceAmount / 100,
+          },
           value: priceAmount / 100,
-        },
-        value: priceAmount / 100,
-      });
+        });
+      } catch (klaviyoError) {
+        console.error('[Upsell] Klaviyo tracking failed (non-critical):', klaviyoError);
+      }
 
-      // Track in Meta Conversions API (server-side)
-      const [firstName, ...lastNameParts] = customerName.split(' ');
-      const lastName = lastNameParts.join(' ');
+      // NON-CRITICAL: Track in Meta Conversions API (wrapped to prevent checkout errors)
+      try {
+        const [firstName, ...lastNameParts] = customerName.split(' ');
+        const lastName = lastNameParts.join(' ');
 
-      await trackServerPurchase({
-        email: customerEmail,
-        value: priceAmount / 100,
-        currency: 'USD',
-        orderId: upsellPayment.id,
-        contentIds: [productSlug],
-        contentName: productName,
-        contentCategory: upsellType.startsWith('downsell') ? 'downsell' : 'upsell',
-        numItems: 1,
-        firstName,
-        lastName,
-        eventSourceUrl: `https://offer.innerwealthinitiate.com/${upsellType}`,
-      });
-
-      // Create order in Shopify
-      await createShopifyOrder({
-        email: customerEmail,
-        firstName: customerName.split(' ')[0] || '',
-        lastName: customerName.split(' ').slice(1).join(' ') || '',
-        lineItems: [{ title: productName, quantity: 1, price: (priceAmount / 100).toFixed(2) }],
-        totalPrice: (priceAmount / 100).toFixed(2),
-        tags: [upsellType, 'funnel-upsell'],
-      });
+        await trackServerPurchase({
+          email: customerEmail,
+          value: priceAmount / 100,
+          currency: 'USD',
+          orderId: upsellPayment.id,
+          contentIds: [productSlug],
+          contentName: productName,
+          contentCategory: upsellType.startsWith('downsell') ? 'downsell' : 'upsell',
+          numItems: 1,
+          firstName,
+          lastName,
+          eventSourceUrl: `https://offer.innerwealthinitiate.com/${upsellType}`,
+        });
+      } catch (metaError) {
+        console.error('[Upsell] Meta CAPI tracking failed (non-critical):', metaError);
+      }
 
       // Track in funnel dashboard
       if (upsellType.startsWith('downsell')) {
@@ -253,14 +250,18 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ success: true, accepted: true, paymentIntentId: upsellPayment.id });
     } else {
-      // Track decline in Klaviyo
-      await trackEvent({
-        email: customerEmail,
-        eventName: declinedEvent,
-        properties: {
-          product: productName,
-        },
-      });
+      // NON-CRITICAL: Track decline in Klaviyo (wrapped to prevent checkout errors)
+      try {
+        await trackEvent({
+          email: customerEmail,
+          eventName: declinedEvent,
+          properties: {
+            product: productName,
+          },
+        });
+      } catch (klaviyoError) {
+        console.error('[Upsell] Klaviyo decline tracking failed (non-critical):', klaviyoError);
+      }
 
       // Track decline in funnel dashboard
       if (upsellType.startsWith('downsell')) {
