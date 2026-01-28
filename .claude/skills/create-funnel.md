@@ -260,6 +260,58 @@ The `payment_intent.succeeded` handler should:
 2. Get customer email from: metadata → customer object → charge billing_details (fallback chain)
 3. Process all integrations: Klaviyo, Meta CAPI, Shopify, Supabase access
 
+**CRITICAL ARCHITECTURE PATTERN:**
+
+The webhook MUST be structured with **critical operations first**, followed by **non-critical integrations wrapped in try-catch**. This prevents external service failures from blocking purchase tracking.
+
+```typescript
+// In payment_intent.succeeded handler:
+
+// CRITICAL SECTION: Track purchase to funnel dashboard FIRST
+console.log('[Webhook] Starting funnel dashboard tracking...');
+const trackingSuccess = await trackCheckoutPurchase(
+  paymentIntent.id,
+  paymentIntent.amount,
+  includeOrderBump
+);
+console.log('[Webhook] Tracking result:', trackingSuccess ? 'SUCCESS' : 'FAILED');
+
+// NON-CRITICAL SECTION: External integrations that should NOT block webhook
+
+// 1. Klaviyo (wrap in try-catch)
+try {
+  await upsertProfile({ email: customerEmail, firstName, lastName, ... });
+  await addProfileToList(FunnelLists.CUSTOMERS, customerEmail);
+  await trackEvent({ email: customerEmail, eventName: FunnelEvents.ORDER_COMPLETED, ... });
+} catch (klaviyoError) {
+  console.error('[Webhook] Klaviyo integration failed (non-critical):', klaviyoError);
+}
+
+// 2. Meta CAPI (wrap in try-catch)
+try {
+  await trackServerPurchase({ email: customerEmail, value: orderValue, ... });
+} catch (metaError) {
+  console.error('[Webhook] Meta CAPI integration failed (non-critical):', metaError);
+}
+
+// 3. Shopify (wrap in try-catch)
+try {
+  await findOrCreateCustomer({ email: customerEmail, ... });
+  await createShopifyOrder({ ... });
+} catch (shopifyError) {
+  console.error('[Webhook] Shopify integration failed (non-critical):', shopifyError);
+}
+
+// 4. Supabase product access (important but recoverable)
+try {
+  await grantProductAccess({ email: customerEmail, productSlug: 'product-slug', ... });
+} catch (supabaseError) {
+  console.error('[Webhook] Supabase access grant failed:', supabaseError);
+}
+```
+
+**Why this pattern matters:** If Klaviyo or any external service throws an unhandled exception, it will crash the webhook before the purchase is recorded in `funnel_events`. The dashboard will show $0 revenue even though Stripe processed the payment successfully.
+
 ### Step 6: Analytics Setup
 
 #### GA4 Events (in page components)
@@ -531,6 +583,28 @@ Before launch:
 - [ ] Legal pages accessible from footer
 - [ ] Mobile responsive
 - [ ] Images loading correctly (check Linux case sensitivity)
+- [ ] **Funnel dashboard tracking works** (see verification steps below)
+
+### Funnel Dashboard Tracking Verification
+
+After making a test purchase, verify tracking is working:
+
+1. **Check debug endpoint:** Visit `/api/dashboard/debug` and verify:
+   - `SUPABASE_SERVICE_ROLE_KEY_SET: true`
+   - `database.status: "OK"`
+   - `insertTest.status: "OK"`
+
+2. **Verify purchase recorded:** Check `recentPurchases` array shows your test purchase with correct revenue
+
+3. **Check dashboard:** Visit `/dashboard` and verify the purchase appears in:
+   - Total revenue
+   - Checkout step conversion
+
+4. **Review logs:** In Vercel logs, look for:
+   - `[Webhook] Starting funnel dashboard tracking for PaymentIntent: pi_xxx`
+   - `[Webhook] Funnel dashboard tracking result: SUCCESS`
+
+If tracking fails, see `.claude/skills/funnel-dashboard.md` for troubleshooting guide.
 
 ---
 

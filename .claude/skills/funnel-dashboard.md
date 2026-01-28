@@ -492,7 +492,10 @@ const ACTIVE_AB_TESTS = {
 | `src/app/dashboard/layout.tsx` | Auth wrapper |
 | `src/app/api/dashboard/metrics/route.ts` | Aggregated metrics endpoint |
 | `src/app/api/dashboard/active-sessions/route.ts` | Real-time visitor count |
+| `src/app/api/dashboard/debug/route.ts` | Diagnostic endpoint for troubleshooting |
 | `src/app/api/track/route.ts` | Event ingestion with cookie management |
+| `src/app/api/webhook/route.ts` | Server-side purchase tracking via Stripe |
+| `src/lib/funnel-tracking.ts` | Server-side tracking utility |
 | `src/hooks/useFunnelTracking.ts` | Client-side tracking hook |
 | `src/lib/supabase/types.ts` | TypeScript types |
 | `supabase/migrations/007_funnel_dashboard.sql` | Database schema |
@@ -837,3 +840,177 @@ if (includesOrderBump) {
   });
 }
 ```
+
+---
+
+## Troubleshooting & Debugging
+
+### Debug Endpoint
+
+A diagnostic endpoint at `/api/dashboard/debug` provides comprehensive system diagnostics:
+
+```typescript
+// GET /api/dashboard/debug returns:
+{
+  timestamp: "2024-01-15T10:30:00Z",
+  environment: {
+    SUPABASE_URL_SET: true,
+    SUPABASE_ANON_KEY_SET: true,
+    SUPABASE_SERVICE_ROLE_KEY_SET: true,  // CRITICAL for server-side tracking
+    STRIPE_WEBHOOK_SECRET_SET: true,
+  },
+  database: { status: "OK", tableExists: true, canQuery: true },
+  recentEvents: { total: 150, byType: { page_view: 120, purchase: 30 } },
+  recentPurchases: [...],  // Last 5 purchases with revenue
+  insertTest: { status: "OK", canInsert: true },
+  profiles: { status: "OK", recentCount: 5 },
+  userPurchases: { status: "OK", recentCount: 3 },
+  authAdmin: { status: "OK", canListUsers: true },
+}
+```
+
+**When to use:** If purchases aren't appearing in the dashboard, check this endpoint first.
+
+### Common Issues and Solutions
+
+#### 1. Missing `SUPABASE_SERVICE_ROLE_KEY`
+
+**Symptom:** Purchases not recorded, debug shows `SUPABASE_SERVICE_ROLE_KEY_SET: false`
+
+**Fix:** Add the key to Vercel environment variables and redeploy.
+
+The server-side tracking utility checks for this at runtime:
+```typescript
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('[Server Tracking] CRITICAL: SUPABASE_SERVICE_ROLE_KEY is not set');
+  return false;
+}
+```
+
+#### 2. External Integrations Crashing Webhook
+
+**Symptom:** Purchases intermittently fail to track; Stripe shows successful payments but dashboard shows $0 revenue
+
+**Root Cause:** Unhandled exceptions in Klaviyo/Meta/Shopify calls crash the webhook before `funnel_events` is updated.
+
+**Fix:** Structure the webhook with critical operations first, external integrations wrapped in try-catch:
+
+```typescript
+// In /api/webhook/route.ts
+
+// CRITICAL: Track to funnel dashboard FIRST
+const trackingSuccess = await trackCheckoutPurchase(sessionId, amount, includeOrderBump);
+console.log('[Webhook] Tracking result:', trackingSuccess ? 'SUCCESS' : 'FAILED');
+
+// NON-CRITICAL: External integrations (wrap each in try-catch)
+try {
+  await upsertProfile({ email, ... });
+  await trackEvent({ email, eventName: 'Order Completed', ... });
+} catch (klaviyoError) {
+  console.error('[Webhook] Klaviyo failed (non-critical):', klaviyoError);
+}
+
+try {
+  await trackServerPurchase({ email, value, ... });
+} catch (metaError) {
+  console.error('[Webhook] Meta CAPI failed (non-critical):', metaError);
+}
+
+try {
+  await createShopifyOrder({ ... });
+} catch (shopifyError) {
+  console.error('[Webhook] Shopify failed (non-critical):', shopifyError);
+}
+```
+
+#### 3. Column Name Mismatches
+
+**Symptom:** Debug endpoint shows errors like `column user_purchases.created_at does not exist`
+
+**Root Cause:** Schema uses different column name (e.g., `purchased_at` instead of `created_at`)
+
+**Fix:** Always verify column names against actual Supabase schema before writing queries.
+
+#### 4. TypeScript Implicit Any Errors in Debug Endpoint
+
+**Symptom:** Build fails with `Parameter 'x' implicitly has an 'any' type`
+
+**Fix:** Add explicit type annotations to all `.map()` and `.reduce()` callbacks:
+
+```typescript
+// Bad - implicit any
+eventCounts.reduce((acc, event) => { ... }, {});
+
+// Good - explicit types
+eventCounts.reduce((acc: Record<string, number>, event: { event_type: string }) => {
+  acc[event.event_type] = (acc[event.event_type] || 0) + 1;
+  return acc;
+}, {});
+```
+
+### Webhook Logging Pattern
+
+Add comprehensive logging to track the full purchase flow:
+
+```typescript
+console.log('[Webhook] Processing payment_intent.succeeded:', {
+  id: paymentIntent.id,
+  amount: paymentIntent.amount,
+  metadata: paymentIntent.metadata,
+});
+
+// After finding customer email
+console.log('[Webhook] Customer email found:', customerEmail);
+
+// Before tracking
+console.log('[Webhook] Starting funnel dashboard tracking for PaymentIntent:', paymentIntent.id);
+
+// After tracking
+console.log('[Webhook] Funnel dashboard tracking result:', trackingSuccess ? 'SUCCESS' : 'FAILED');
+
+// After granting product access
+console.log('[Webhook] Main product access result:', mainResult);
+```
+
+### Server-Side Tracking Utility
+
+The `src/lib/funnel-tracking.ts` module provides reliable server-side tracking:
+
+```typescript
+import { trackCheckoutPurchase, trackUpsellPurchase, trackDownsellPurchase } from '@/lib/funnel-tracking';
+
+// In webhook for checkout purchases
+await trackCheckoutPurchase(paymentIntentId, amountCents, includeOrderBump);
+
+// In upsell API for accepted upsells
+await trackUpsellPurchase(sessionId, 'upsell-1', revenueCents, productSlug);
+
+// In upsell API for accepted downsells
+await trackDownsellPurchase(sessionId, revenueCents, productSlug);
+```
+
+**Key features:**
+- Uses admin client (`createAdminClientInstance`) to bypass RLS
+- Attempts to link to existing visitor sessions
+- Falls back to generating server-prefixed IDs if no session found
+- Returns `boolean` indicating success/failure
+- Comprehensive error logging
+
+### Verification Checklist
+
+After making tracking changes, verify:
+
+1. **Debug endpoint shows all green:**
+   - `SUPABASE_SERVICE_ROLE_KEY_SET: true`
+   - `database.status: "OK"`
+   - `insertTest.status: "OK"`
+
+2. **Test purchase records correctly:**
+   - Make a test purchase
+   - Check debug endpoint for new purchase in `recentPurchases`
+   - Verify revenue amount is correct
+   - Check dashboard updates within seconds
+
+3. **Webhook logs show success:**
+   - `[Webhook] Funnel dashboard tracking result: SUCCESS`
+   - No unhandled exceptions before tracking completes

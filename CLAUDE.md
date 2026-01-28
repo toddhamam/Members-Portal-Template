@@ -546,6 +546,7 @@ useEffect(() => {
 | `POST /api/track` | Tracks funnel events (page views, purchases, upsell decisions) |
 | `GET /api/dashboard/metrics` | Returns aggregated funnel metrics with date filtering |
 | `GET /api/dashboard/active-sessions` | Returns count of active visitors (last 5 min) |
+| `GET /api/dashboard/debug` | Diagnostic endpoint for troubleshooting tracking issues |
 
 ### Upsell API Usage
 ```typescript
@@ -1135,6 +1136,111 @@ function CheckoutPage() {
 **Local testing:** Set `NEXT_PUBLIC_TRACK_LOCALHOST=true` to enable tracking on localhost.
 
 **Full implementation guide:** See `.claude/skills/funnel-dashboard.md`
+
+### Debug Endpoint
+
+A diagnostic endpoint is available at `/api/dashboard/debug` for troubleshooting tracking issues.
+
+**What it checks:**
+- Environment variable status (Supabase, Stripe keys)
+- Database connectivity and table access
+- Recent funnel events by type
+- Recent purchases with revenue
+- User profiles and purchases
+- Auth admin access
+
+**Usage:** Visit `https://offer.innerwealthinitiate.com/api/dashboard/debug` to see full diagnostics.
+
+**Key file:** `src/app/api/dashboard/debug/route.ts`
+
+---
+
+## Troubleshooting Purchase Tracking
+
+If purchases aren't appearing in the funnel dashboard, follow this diagnostic process:
+
+### 1. Check the Debug Endpoint
+
+Visit `/api/dashboard/debug` and verify:
+- `SUPABASE_SERVICE_ROLE_KEY_SET: true` - Required for server-side tracking
+- `database.status: "OK"` - Can connect to Supabase
+- `insertTest.status: "OK"` - Can insert into `funnel_events` table
+
+### 2. Check Webhook Logs
+
+The webhook at `/api/webhook` handles `payment_intent.succeeded` events. Look for these console logs:
+- `[Webhook] Processing payment_intent.succeeded` - Event received
+- `[Webhook] Customer email found:` - Email extraction succeeded
+- `[Webhook] Starting funnel dashboard tracking` - Tracking initiated
+- `[Webhook] Funnel dashboard tracking result: SUCCESS` - Tracking completed
+
+### 3. Common Issues
+
+**Missing `SUPABASE_SERVICE_ROLE_KEY`:**
+- Symptom: Events not recorded, dashboard shows no purchases
+- Fix: Add the key to Vercel environment variables and redeploy
+
+**External integration failures blocking webhook:**
+- Symptom: Purchases intermittently fail to track
+- Root cause: Unhandled errors in Klaviyo/Meta/Shopify calls crash the webhook
+- Fix: Wrap ALL external integrations in try-catch blocks (see Webhook Architecture below)
+
+**Column name mismatches:**
+- Symptom: Database query errors in debug endpoint
+- Example: `user_purchases` uses `purchased_at`, not `created_at`
+- Fix: Always verify column names against actual schema
+
+### 4. Webhook Architecture (Critical Pattern)
+
+The webhook must be structured with **critical operations first**, followed by **non-critical integrations wrapped in try-catch**:
+
+```typescript
+// CRITICAL SECTION: Must succeed for purchase to be recorded
+console.log('[Webhook] Starting funnel dashboard tracking...');
+const trackingSuccess = await trackCheckoutPurchase(sessionId, amount, includeOrderBump);
+console.log('[Webhook] Tracking result:', trackingSuccess ? 'SUCCESS' : 'FAILED');
+
+// NON-CRITICAL SECTION: External integrations that should not block
+// 1. Klaviyo
+try {
+  await upsertProfile({ ... });
+  await trackEvent({ ... });
+} catch (klaviyoError) {
+  console.error('[Webhook] Klaviyo failed (non-critical):', klaviyoError);
+}
+
+// 2. Meta CAPI
+try {
+  await trackServerPurchase({ ... });
+} catch (metaError) {
+  console.error('[Webhook] Meta CAPI failed (non-critical):', metaError);
+}
+
+// 3. Shopify
+try {
+  await createShopifyOrder({ ... });
+} catch (shopifyError) {
+  console.error('[Webhook] Shopify failed (non-critical):', shopifyError);
+}
+```
+
+**Why this matters:** If Klaviyo throws an unhandled exception, it can crash the webhook before the purchase is recorded in `funnel_events`. The dashboard then shows no revenue even though the payment succeeded.
+
+### 5. Server-Side Tracking Requirements
+
+The `trackCheckoutPurchase()` function in `src/lib/funnel-tracking.ts` requires:
+
+1. **`SUPABASE_SERVICE_ROLE_KEY`** - Must be set in environment
+2. **Admin client** - Uses `createAdminClientInstance()` to bypass RLS
+3. **Proper logging** - Logs success/failure for debugging
+
+```typescript
+// Check at start of tracking function
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('[Server Tracking] CRITICAL: SUPABASE_SERVICE_ROLE_KEY is not set');
+  return false;
+}
+```
 
 ---
 
