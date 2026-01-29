@@ -1143,6 +1143,41 @@ The claim-account page relies on the session_id to fetch the customer's email. A
 
 Located at `/portal/*` routes. Users set password on the claim-account page and access purchased content.
 
+### Membership Tier Logic
+
+**Derive tier from purchases, don't store it.** Instead of maintaining a `membership_tier` column in `profiles`, determine a user's tier (free/paid) by checking for paid purchases in `user_purchases`:
+
+```typescript
+// Good - derive from purchases
+const { data: purchases } = await supabase
+  .from('user_purchases')
+  .select('product_id, products(is_lead_magnet)')
+  .eq('user_id', userId);
+
+const hasPaidPurchase = purchases?.some(p => !p.products?.is_lead_magnet);
+const tier = hasPaidPurchase ? 'paid' : 'free';
+
+// Bad - storing redundant membership_tier column
+// This can get out of sync with actual purchases
+```
+
+**Why this pattern:** Avoids data synchronization issues where the tier column might not match actual purchase status.
+
+### Lead Magnet Access
+
+Products can be flagged as `is_lead_magnet` in the database. Any authenticated user can access these products regardless of purchase history:
+
+```typescript
+// Check product access
+const hasAccess =
+  product.is_lead_magnet ||  // Free for all members
+  userPurchases.some(p => p.product_id === product.id);  // Or purchased
+```
+
+**Implementation locations:**
+- `useProducts` and `useProduct` hooks - Filter accessible products
+- Lesson page access checks - Allow lead magnet lessons for any authenticated user
+
 ### Portal Structure
 - `/portal` - Dashboard
 - `/portal/products` - List of purchased products

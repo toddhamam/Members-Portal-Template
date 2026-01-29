@@ -394,3 +394,107 @@ export async function POST(request: NextRequest) {
 ```
 
 **Why:** Invalid JSON or missing fields should return 400 (client error), not 500 (server error).
+
+---
+
+## 21. Use Local Sign-Out Scope
+
+When signing out users with Supabase Auth, use `scope: 'local'` instead of `scope: 'global'`:
+
+```typescript
+// Good - fast, reliable sign-out
+await supabase.auth.signOut({ scope: 'local' });
+
+// Bad - can cause UI freeze on network issues
+await supabase.auth.signOut({ scope: 'global' });
+```
+
+**Why:** `scope: 'global'` makes a network call to invalidate all sessions across devices. If there are network issues, this can cause the sign-out to hang or fail, making the UI appear frozen. `scope: 'local'` only clears the local session, which is fast and reliable for most use cases.
+
+---
+
+## 22. Use Non-Null Assertions When Type is Guaranteed
+
+When TypeScript can't infer that a value is non-null despite earlier checks (e.g., after filtering or conditional logic), use the non-null assertion operator (`!`):
+
+```typescript
+// Example: product is guaranteed to exist due to earlier check
+const products = allProducts.filter(p => p.id === selectedId);
+if (products.length === 0) {
+  return <NotFound />;
+}
+
+// TypeScript may not know products[0] is defined, but we've guaranteed it
+const currentProduct = products[0]!;
+// Now use currentProduct without null checks
+```
+
+**When to use:**
+- After early returns that eliminate null cases
+- After filtering/finding operations where existence is guaranteed by prior logic
+- When TypeScript's flow analysis can't follow the conditional guarantees
+
+**When NOT to use:**
+- When the value might actually be null/undefined
+- As a shortcut to avoid proper null handling
+- On external data that hasn't been validated
+
+---
+
+## 23. Admin User Creation with Supabase Auth Admin
+
+For backend-managed user creation (e.g., creating accounts during checkout), use Supabase's admin API:
+
+```typescript
+import { createAdminClientInstance } from "@/lib/supabase/server";
+
+const supabase = createAdminClientInstance();
+
+// Create user with admin privileges (bypasses email confirmation)
+const { data: authData, error } = await supabase.auth.admin.createUser({
+  email: email.toLowerCase(),
+  email_confirm: true,  // Auto-confirm email
+  user_metadata: { full_name: fullName },
+});
+```
+
+**Key points:**
+- Requires `SUPABASE_SERVICE_ROLE_KEY` (admin client)
+- `email_confirm: true` skips email verification for checkout flows
+- Always normalize email to lowercase before creating
+
+---
+
+## 24. Debounce Search Input for API Calls
+
+When implementing search functionality that triggers API calls, use debouncing to avoid excessive requests:
+
+```typescript
+const [search, setSearch] = useState("");
+const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+const handleSearchChange = (value: string) => {
+  setSearch(value);
+
+  // Clear pending search
+  if (searchTimeoutRef.current) {
+    clearTimeout(searchTimeoutRef.current);
+  }
+
+  // Debounce: only trigger API after 300ms of no typing
+  searchTimeoutRef.current = setTimeout(() => {
+    fetchResults(value);
+  }, 300);
+};
+
+// Clean up on unmount
+useEffect(() => {
+  return () => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+  };
+}, []);
+```
+
+**Why:** Prevents triggering an API request on every keystroke, reducing server load and improving perceived performance.
