@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClientInstance, getUser } from '@/lib/supabase/server';
-import type { MemberDetailResponse, MemberProductProgress, MemberPurchaseHistory, PurchaseSource } from '@/lib/admin/types';
+import type { MemberDetailResponse, MemberProductProgress, MemberPurchaseHistory, PurchaseSource, MembershipTier } from '@/lib/admin/types';
 
 /**
  * GET /api/portal/admin/members/[id]
@@ -61,7 +61,8 @@ export async function GET(
             slug,
             thumbnail_url,
             price_cents,
-            portal_price_cents
+            portal_price_cents,
+            is_lead_magnet
           )
         `)
         .eq('user_id', memberId)
@@ -118,6 +119,9 @@ export async function GET(
     // Build purchase history
     const purchaseHistory: MemberPurchaseHistory[] = [];
 
+    // Track if member has any paid (non-lead-magnet) purchases for tier calculation
+    let hasPaidPurchase = false;
+
     for (const purchase of purchases) {
       const product = purchase.products as {
         id: string;
@@ -126,9 +130,15 @@ export async function GET(
         thumbnail_url: string | null;
         price_cents: number;
         portal_price_cents: number | null;
+        is_lead_magnet: boolean;
       } | null;
 
       if (!product) continue;
+
+      // Check if this is a paid (non-lead-magnet) purchase
+      if (!product.is_lead_magnet) {
+        hasPaidPurchase = true;
+      }
 
       const isPortal = purchase.purchase_source === 'portal';
       const priceCents = isPortal && product.portal_price_cents
@@ -291,6 +301,9 @@ export async function GET(
       };
     }).filter(Boolean) as MemberProductProgress[];
 
+    // Determine membership tier
+    const membershipTier: MembershipTier = hasPaidPurchase ? 'paid' : 'free';
+
     // Build response
     const response: MemberDetailResponse = {
       profile: {
@@ -302,6 +315,7 @@ export async function GET(
         avatarUrl: memberProfile.avatar_url,
         stripeCustomerId: memberProfile.stripe_customer_id,
         joinedAt: memberProfile.created_at,
+        membershipTier,
       },
       financials: {
         lifetimeValue,

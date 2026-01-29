@@ -5,7 +5,7 @@ import Link from "next/link";
 import { MetricCard, SmallMetric } from "@/components/portal/admin/MetricCard";
 import { MembersTable } from "@/components/portal/admin/MembersTable";
 import { MemberSlideOver } from "@/components/portal/admin/MemberSlideOver";
-import type { AdminMetricsResponse, MemberSummary } from "@/lib/admin/types";
+import type { AdminMetricsResponse, MemberSummary, MembershipTier } from "@/lib/admin/types";
 
 // Date range options
 const DATE_RANGES = [
@@ -41,6 +41,7 @@ export default function AdminDashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<string>("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [tierFilter, setTierFilter] = useState<MembershipTier | "all">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalMembers, setTotalMembers] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -96,6 +97,10 @@ export default function AdminDashboardPage() {
         params.set("search", searchQuery);
       }
 
+      if (tierFilter !== "all") {
+        params.set("tier", tierFilter);
+      }
+
       const response = await fetch(`/api/portal/admin/members?${params}`);
 
       if (!response.ok) {
@@ -111,7 +116,7 @@ export default function AdminDashboardPage() {
     } finally {
       setIsLoadingMembers(false);
     }
-  }, [currentPage, sortBy, sortOrder, searchQuery]);
+  }, [currentPage, sortBy, sortOrder, searchQuery, tierFilter]);
 
   useEffect(() => {
     fetchMembers();
@@ -220,7 +225,7 @@ export default function AdminDashboardPage() {
               <MetricCard
                 title="Total Members"
                 value={metrics.members.total.toLocaleString()}
-                subtitle={`${metrics.members.newInPeriod} new this period`}
+                subtitle={`${metrics.members.freeMembers} free · ${metrics.members.paidMembers} paid`}
                 gradient="violet"
                 icon={
                   <div className="w-10 h-10 rounded-full bg-violet-100/80 flex items-center justify-center">
@@ -290,8 +295,8 @@ export default function AdminDashboardPage() {
               />
 
               <MetricCard
-                title="Portal Conversion"
-                value={formatPercent(metrics.purchases.portalConversionRate)}
+                title="Free → Paid"
+                value={formatPercent(metrics.members.conversionRate)}
                 subtitle={`${metrics.purchases.averageProductsPerMember.toFixed(1)} products/member`}
                 gradient="slate"
                 icon={
@@ -428,28 +433,45 @@ export default function AdminDashboardPage() {
               </p>
             </div>
 
-            {/* Search */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search by name or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full sm:w-64 pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
-              />
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            {/* Filters */}
+            <div className="flex items-center gap-3">
+              {/* Tier Filter */}
+              <select
+                value={tierFilter}
+                onChange={(e) => {
+                  setTierFilter(e.target.value as MembershipTier | "all");
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all bg-white"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                <option value="all">All Tiers</option>
+                <option value="free">Free</option>
+                <option value="paid">Paid</option>
+              </select>
+
+              {/* Search */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full sm:w-64 pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all"
                 />
-              </svg>
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
 

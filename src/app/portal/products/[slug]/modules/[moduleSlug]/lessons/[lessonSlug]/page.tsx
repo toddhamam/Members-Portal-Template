@@ -162,7 +162,8 @@ export default function LessonPage() {
           }));
 
           setModules(currentModules);
-          setIsOwned(!!purchaseResult.data);
+          // Lead magnets are accessible to all authenticated users
+          setIsOwned(!!purchaseResult.data || currentProduct!.is_lead_magnet);
         }
 
         // Find current lesson from cached or fetched modules
@@ -279,7 +280,8 @@ export default function LessonPage() {
 
   const { prev, next, prevModule, nextModule } = adjacentLessons();
   const isCompleted = !!progress?.completed_at;
-  const canAccess = isOwned || lesson?.is_free_preview;
+  // Access: user owns product, lesson is free preview, or product is a lead magnet
+  const canAccess = isOwned || lesson?.is_free_preview || product?.is_lead_magnet;
 
   // Calculate overall progress for sidebar
   const totalLessons = modules.reduce((sum, m) => sum + m.lessons.length, 0);

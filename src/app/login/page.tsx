@@ -141,8 +141,8 @@ export default function LoginPage() {
       {/* Footer */}
       <p className="text-center text-sm text-[#6b7280] mt-6">
         Don&apos;t have an account?{" "}
-        <Link href="/" className="text-[#ee5d0b] hover:text-[#d54d00] font-medium">
-          Purchase a product
+        <Link href="/join" className="text-[#ee5d0b] hover:text-[#d54d00] font-medium">
+          Create a free account
         </Link>
       </p>
     </div>

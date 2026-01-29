@@ -10,6 +10,9 @@ export type PurchaseSource = 'funnel' | 'portal';
 export interface AdminMetricsResponse {
   members: {
     total: number;
+    freeMembers: number;        // Members with no paid purchases
+    paidMembers: number;        // Members with at least one paid purchase
+    conversionRate: number;     // (paidMembers / total) * 100
     newInPeriod: number;
   };
   revenue: {
@@ -49,6 +52,8 @@ export interface AdminMetricsResponse {
 // GET /api/portal/admin/members
 // ============================================
 
+export type MembershipTier = 'free' | 'paid';
+
 export interface MemberSummary {
   id: string;
   email: string;
@@ -58,6 +63,7 @@ export interface MemberSummary {
   overallProgress: number;      // Average progress across owned products (0-100)
   ltv: number;                  // Total spent in dollars
   joinedAt: string;             // ISO date string
+  membershipTier: MembershipTier;
 }
 
 export interface MembersListResponse {
@@ -76,7 +82,8 @@ export type MemberSortField =
   | 'products_count'
   | 'ltv'
   | 'created_at'
-  | 'progress';
+  | 'progress'
+  | 'tier';
 
 export type SortOrder = 'asc' | 'desc';
 
@@ -131,6 +138,7 @@ export interface MemberDetailResponse {
     avatarUrl: string | null;
     stripeCustomerId: string | null;
     joinedAt: string;
+    membershipTier: MembershipTier;
   };
   financials: {
     lifetimeValue: number;      // Total spent in dollars

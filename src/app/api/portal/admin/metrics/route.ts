@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         .gte('created_at', startDate)
         .lte('created_at', endDate),
 
-      // All purchases with product prices
+      // All purchases with product prices and lead magnet flag
       supabase
         .from('user_purchases')
         .select(`
@@ -79,7 +79,8 @@ export async function GET(request: NextRequest) {
             name,
             slug,
             price_cents,
-            portal_price_cents
+            portal_price_cents,
+            is_lead_magnet
           )
         `)
         .eq('status', 'active'),
@@ -143,13 +144,14 @@ export async function GET(request: NextRequest) {
     let funnelRevenue = 0;
     const uniqueCustomers = new Set<string>();
     const portalCustomers = new Set<string>();
+    const paidCustomers = new Set<string>(); // Members with at least one paid (non-lead-magnet) purchase
     const purchaseCountByProduct = new Map<string, number>();
 
     for (const purchase of purchases) {
       uniqueCustomers.add(purchase.user_id);
 
       // Get price (use portal price for portal purchases if available)
-      const product = purchase.products as { price_cents: number; portal_price_cents: number | null } | null;
+      const product = purchase.products as { price_cents: number; portal_price_cents: number | null; is_lead_magnet: boolean } | null;
       const isPortal = purchase.purchase_source === 'portal';
       const priceCents = isPortal && product?.portal_price_cents
         ? product.portal_price_cents
@@ -162,6 +164,11 @@ export async function GET(request: NextRequest) {
         portalCustomers.add(purchase.user_id);
       } else {
         funnelRevenue += priceCents;
+      }
+
+      // Track if this is a paid (non-lead-magnet) purchase
+      if (product && !product.is_lead_magnet) {
+        paidCustomers.add(purchase.user_id);
       }
 
       // Count purchases per product
@@ -218,10 +225,20 @@ export async function GET(request: NextRequest) {
     }
     const averageCompletionRate = userCount > 0 ? totalCompletionSum / userCount : 0;
 
+    // Calculate free vs paid member counts
+    const paidMembers = paidCustomers.size;
+    const freeMembers = totalMembers - paidMembers;
+    const freeToPaidConversionRate = totalMembers > 0
+      ? (paidMembers / totalMembers) * 100
+      : 0;
+
     // Build response
     const metrics: AdminMetricsResponse = {
       members: {
         total: totalMembers,
+        freeMembers,
+        paidMembers,
+        conversionRate: freeToPaidConversionRate,
         newInPeriod: newMembers,
       },
       revenue: {

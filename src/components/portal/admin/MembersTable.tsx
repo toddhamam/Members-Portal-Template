@@ -143,6 +143,15 @@ export function MembersTable({
               </span>
             </th>
             <th
+              className="text-center px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700 transition-colors"
+              onClick={() => onSort("tier")}
+            >
+              <span className="flex items-center justify-center">
+                Tier
+                <SortIcon field="tier" sortBy={sortBy} sortOrder={sortOrder} />
+              </span>
+            </th>
+            <th
               className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700 transition-colors"
               onClick={() => onSort("products_count")}
             >
@@ -217,6 +226,15 @@ export function MembersTable({
               </td>
               <td className="px-5 py-4 text-sm text-slate-600 hidden sm:table-cell">
                 {member.email}
+              </td>
+              <td className="px-5 py-4 text-center">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                  member.membershipTier === 'paid'
+                    ? 'bg-lime-100 text-lime-700'
+                    : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {member.membershipTier === 'paid' ? 'Paid' : 'Free'}
+                </span>
               </td>
               <td className="px-5 py-4 text-sm text-slate-600 text-right tabular-nums">
                 {member.productsOwned}

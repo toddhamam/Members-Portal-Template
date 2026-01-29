@@ -31,6 +31,7 @@ export interface Product {
   product_type: ProductType;
   thumbnail_url: string | null;
   is_active: boolean;
+  is_lead_magnet: boolean;
   sort_order: number;
   created_at: string;
 }
@@ -369,6 +370,7 @@ export interface Database {
           product_type: ProductType;
           thumbnail_url?: string | null;
           is_active?: boolean;
+          is_lead_magnet?: boolean;
           sort_order?: number;
           created_at?: string;
         };
@@ -382,6 +384,7 @@ export interface Database {
           product_type?: ProductType;
           thumbnail_url?: string | null;
           is_active?: boolean;
+          is_lead_magnet?: boolean;
           sort_order?: number;
         };
         Relationships: [];

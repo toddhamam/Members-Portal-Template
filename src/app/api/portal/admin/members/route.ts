@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClientInstance, getUser } from '@/lib/supabase/server';
-import type { MembersListResponse, MemberSummary, MemberSortField, SortOrder } from '@/lib/admin/types';
+import type { MembersListResponse, MemberSummary, MemberSortField, SortOrder, MembershipTier } from '@/lib/admin/types';
 
 /**
  * GET /api/portal/admin/members
@@ -14,6 +14,7 @@ import type { MembersListResponse, MemberSummary, MemberSortField, SortOrder } f
  * - search: Search by name or email
  * - sortBy: Sort field (default: 'created_at')
  * - sortOrder: 'asc' or 'desc' (default: 'desc')
+ * - tier: Filter by membership tier ('free' | 'paid')
  */
 export async function GET(request: NextRequest) {
   try {
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const sortBy = (searchParams.get('sortBy') || 'created_at') as MemberSortField;
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as SortOrder;
+    const tierFilter = searchParams.get('tier') as MembershipTier | null;
 
     const offset = (page - 1) * limit;
 
@@ -95,7 +97,7 @@ export async function GET(request: NextRequest) {
         .select(`
           user_id,
           product_id,
-          products (price_cents, portal_price_cents),
+          products (price_cents, portal_price_cents, is_lead_magnet),
           purchase_source
         `)
         .in('user_id', userIds)
@@ -108,10 +110,10 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Build member purchase stats
-    const memberStats = new Map<string, { productsOwned: number; ltv: number; progressSum: number; progressCount: number }>();
+    const memberStats = new Map<string, { productsOwned: number; ltv: number; progressSum: number; progressCount: number; hasPaidPurchase: boolean }>();
 
     for (const userId of userIds) {
-      memberStats.set(userId, { productsOwned: 0, ltv: 0, progressSum: 0, progressCount: 0 });
+      memberStats.set(userId, { productsOwned: 0, ltv: 0, progressSum: 0, progressCount: 0, hasPaidPurchase: false });
     }
 
     // Process purchases
@@ -119,12 +121,17 @@ export async function GET(request: NextRequest) {
       const stats = memberStats.get(purchase.user_id);
       if (stats) {
         stats.productsOwned++;
-        const product = purchase.products as { price_cents: number; portal_price_cents: number | null } | null;
+        const product = purchase.products as { price_cents: number; portal_price_cents: number | null; is_lead_magnet: boolean } | null;
         const isPortal = purchase.purchase_source === 'portal';
         const priceCents = isPortal && product?.portal_price_cents
           ? product.portal_price_cents
           : (product?.price_cents || 0);
         stats.ltv += priceCents / 100; // Convert to dollars
+
+        // Track if user has any paid (non-lead-magnet) purchases
+        if (product && !product.is_lead_magnet) {
+          stats.hasPaidPurchase = true;
+        }
       }
     }
 
@@ -138,8 +145,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Build response
-    const members: MemberSummary[] = profiles.map((p: { id: string; email: string; full_name: string | null; avatar_url: string | null; created_at: string }) => {
+    let members: MemberSummary[] = profiles.map((p: { id: string; email: string; full_name: string | null; avatar_url: string | null; created_at: string }) => {
       const stats = memberStats.get(p.id)!;
+      const membershipTier: MembershipTier = stats.hasPaidPurchase ? 'paid' : 'free';
       return {
         id: p.id,
         email: p.email,
@@ -149,8 +157,14 @@ export async function GET(request: NextRequest) {
         overallProgress: stats.progressCount > 0 ? stats.progressSum / stats.progressCount : 0,
         ltv: stats.ltv,
         joinedAt: p.created_at,
+        membershipTier,
       };
     });
+
+    // Filter by tier if requested
+    if (tierFilter) {
+      members = members.filter(m => m.membershipTier === tierFilter);
+    }
 
     // Sort by computed fields if needed
     if (sortBy === 'ltv') {
@@ -159,6 +173,13 @@ export async function GET(request: NextRequest) {
       members.sort((a, b) => sortOrder === 'asc' ? a.productsOwned - b.productsOwned : b.productsOwned - a.productsOwned);
     } else if (sortBy === 'progress') {
       members.sort((a, b) => sortOrder === 'asc' ? a.overallProgress - b.overallProgress : b.overallProgress - a.overallProgress);
+    } else if (sortBy === 'tier') {
+      members.sort((a, b) => {
+        const tierOrder = { paid: 0, free: 1 };
+        return sortOrder === 'asc'
+          ? tierOrder[a.membershipTier] - tierOrder[b.membershipTier]
+          : tierOrder[b.membershipTier] - tierOrder[a.membershipTier];
+      });
     }
 
     const response: MembersListResponse = {

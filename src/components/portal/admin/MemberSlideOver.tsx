@@ -157,9 +157,18 @@ export function MemberSlideOver({ memberId, isOpen, onClose }: MemberSlideOverPr
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold text-slate-800 truncate">
-                    {member.profile.fullName || "No name"}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-slate-800 truncate">
+                      {member.profile.fullName || "No name"}
+                    </h3>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${
+                      member.profile.membershipTier === 'paid'
+                        ? 'bg-lime-100 text-lime-700'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {member.profile.membershipTier === 'paid' ? 'Paid' : 'Free'}
+                    </span>
+                  </div>
                   <p className="text-sm text-slate-500 truncate">{member.profile.email}</p>
                   <p className="text-xs text-slate-400 mt-1">
                     Joined {formatDate(member.profile.joinedAt)}

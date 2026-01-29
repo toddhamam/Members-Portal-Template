@@ -37,13 +37,14 @@ export function useProducts() {
       if (productsResult.error) throw productsResult.error;
 
       // Combine products with ownership status
+      // Lead magnets are accessible to all authenticated users
       const purchasedProductIds = new Set(
         (purchasesResult.data || []).map((p: { product_id: string }) => p.product_id)
       );
       const productsWithAccess: ProductWithAccess[] = (productsResult.data || []).map(
         (product: Product) => ({
           ...product,
-          is_owned: purchasedProductIds.has(product.id),
+          is_owned: purchasedProductIds.has(product.id) || product.is_lead_magnet,
         })
       );
 
@@ -86,16 +87,21 @@ export function useProduct(slug: string) {
       if (productError) throw productError;
 
       // Check if user owns this product (using user from context)
+      // Lead magnets are accessible to all authenticated users
       let isOwned = false;
-      if (user && productData) {
-        const { data: purchase } = await supabase
-          .from("user_purchases")
-          .select("id")
-          .eq("user_id", user.id)
-          .eq("product_id", productData.id)
-          .eq("status", "active")
-          .single();
-        isOwned = !!purchase;
+      if (productData) {
+        if (productData.is_lead_magnet) {
+          isOwned = true;
+        } else if (user) {
+          const { data: purchase } = await supabase
+            .from("user_purchases")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("product_id", productData.id)
+            .eq("status", "active")
+            .single();
+          isOwned = !!purchase;
+        }
       }
 
       setProduct(productData ? { ...productData, is_owned: isOwned } : null);

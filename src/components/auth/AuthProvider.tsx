@@ -109,14 +109,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
-    try {
-      await supabase.auth.signOut({ scope: 'global' });
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
+    // Clear local state first for immediate UI feedback
     setUser(null);
     setProfile(null);
     setSession(null);
+
+    try {
+      // Use 'local' scope for faster sign out (doesn't require network call to invalidate all sessions)
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // State already cleared, so user is effectively logged out locally
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
   }, []);
 
