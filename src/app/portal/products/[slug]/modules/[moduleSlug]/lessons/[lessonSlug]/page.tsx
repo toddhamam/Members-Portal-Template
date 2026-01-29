@@ -233,7 +233,7 @@ export default function LessonPage() {
   }, [productSlug, moduleSlug, lessonSlug]);
 
   const handleToggleComplete = async () => {
-    if (!lesson) return;
+    if (!lesson || !product) return;
 
     setIsCompleting(true);
     try {
@@ -249,6 +249,18 @@ export default function LessonPage() {
         ...prev,
         [lesson.id]: updatedProgress,
       }));
+
+      // If lesson was just completed, check if the entire course is now complete
+      if (newCompleted) {
+        fetch('/api/portal/check-course-completion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId: product.id }),
+        }).catch((err) => {
+          // Don't let this error affect the UI
+          console.error('Error checking course completion:', err);
+        });
+      }
     } catch (err) {
       console.error("Failed to toggle completion:", err);
     }

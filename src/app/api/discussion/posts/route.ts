@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClientInstance } from '@/lib/supabase/server';
 import type { DiscussionPost, PostWithAuthor, ReactionType } from '@/lib/supabase/types';
+import { triggerFirstCommunityPost } from '@/lib/dm-automation';
 
 const POSTS_PER_PAGE = 20;
 
@@ -170,6 +171,26 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('[Discussion API] Error creating post:', error);
       return NextResponse.json({ error: 'Failed to create post' }, { status: 500 });
+    }
+
+    // Check if this is the user's first community post and trigger automation
+    try {
+      const { count } = await adminSupabase
+        .from('discussion_posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('author_id', user.id);
+
+      // If count is 1, this was their first post
+      if (count === 1) {
+        console.log(`[Discussion API] First post detected for user ${user.id}, triggering automation`);
+        // Don't await - run in background to not delay response
+        triggerFirstCommunityPost(user.id).catch((err) => {
+          console.error('[Discussion API] Error triggering first post automation:', err);
+        });
+      }
+    } catch (automationError) {
+      // Don't let automation errors break post creation
+      console.error('[Discussion API] Error checking first post:', automationError);
     }
 
     return NextResponse.json({ post }, { status: 201 });
