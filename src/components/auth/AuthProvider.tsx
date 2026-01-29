@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/portal/reset-password/confirm`,
+      redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
     });
     return { error: error ? new Error(error.message) : null };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase is a stable singleton
