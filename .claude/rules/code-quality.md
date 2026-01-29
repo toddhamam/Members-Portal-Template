@@ -498,3 +498,147 @@ useEffect(() => {
 ```
 
 **Why:** Prevents triggering an API request on every keystroke, reducing server load and improving perceived performance.
+
+---
+
+## 25. Use AbortController to Cancel Fetch Requests
+
+When implementing search or data fetching that can be interrupted (by new input or component unmount), use `AbortController` to cancel pending requests:
+
+```typescript
+const abortControllerRef = useRef<AbortController | null>(null);
+
+const fetchData = async (query: string) => {
+  // Cancel any pending request
+  if (abortControllerRef.current) {
+    abortControllerRef.current.abort();
+  }
+
+  // Create new controller for this request
+  abortControllerRef.current = new AbortController();
+
+  try {
+    const response = await fetch(`/api/search?q=${query}`, {
+      signal: abortControllerRef.current.signal,
+    });
+    const data = await response.json();
+    setResults(data);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      // Request was cancelled, ignore
+      return;
+    }
+    console.error('Fetch error:', error);
+  }
+};
+
+// Clean up on unmount
+useEffect(() => {
+  return () => {
+    abortControllerRef.current?.abort();
+  };
+}, []);
+```
+
+**Why:** Without cancellation, stale responses from slow requests can overwrite newer data, causing incorrect UI states.
+
+---
+
+## 26. Use Relative Positioning for Dropdowns
+
+When positioning dropdowns or popovers relative to an input element, calculate positions relative to the parent container, not the viewport:
+
+```typescript
+// Bad - viewport-based positioning breaks with scrolling/containers
+const rect = element.getBoundingClientRect();
+dropdown.style.top = `${rect.bottom}px`;  // Viewport coordinates
+
+// Good - relative to parent container
+const parentRect = container.getBoundingClientRect();
+const elementRect = element.getBoundingClientRect();
+dropdown.style.top = `${elementRect.bottom - parentRect.top}px`;  // Relative coordinates
+```
+
+**Why:** Viewport-based positioning breaks when the page scrolls or when the dropdown is inside a positioned container. Relative positioning ensures the dropdown stays attached to its trigger element.
+
+---
+
+## 27. Prevent Creating Empty Records
+
+Don't create database records (conversations, posts, etc.) until there's meaningful content:
+
+```typescript
+// Bad - creates empty conversation on "New Chat" click
+const handleNewChat = async (userId: string) => {
+  const { data } = await supabase.from('conversations').insert({ ... });
+  navigate(`/chat/${data.id}`);
+};
+
+// Good - defer creation until first message
+const handleNewChat = (userId: string) => {
+  // Store draft recipient, create conversation on first message
+  setDraftRecipient(userId);
+  setShowComposer(true);
+};
+
+const handleSendFirstMessage = async (content: string) => {
+  const { data: conversation } = await supabase
+    .from('conversations')
+    .insert({ ... })
+    .select()
+    .single();
+
+  await supabase.from('messages').insert({
+    conversation_id: conversation.id,
+    content,
+  });
+};
+```
+
+**Why:** Empty records clutter the database and confuse users who see "conversations" with no messages.
+
+---
+
+## 28. Provide Clear UI Feedback for Search States
+
+Search interfaces must handle all states with appropriate feedback:
+
+```tsx
+// All search states with clear feedback
+{loading && <div className="p-3 text-gray-400">Searching...</div>}
+
+{!loading && query.length < minLength && (
+  <div className="p-3 text-gray-400">
+    Type at least {minLength} characters to search
+  </div>
+)}
+
+{!loading && query.length >= minLength && results.length === 0 && (
+  <div className="p-3 text-gray-400">No results found</div>
+)}
+
+{!loading && results.length > 0 && (
+  <ul>
+    {results.map(item => <SearchResult key={item.id} item={item} />)}
+  </ul>
+)}
+```
+
+**Why:** Users need immediate feedback about why results aren't showing. Silent empty states cause confusion.
+
+---
+
+## 29. Use Correct API Path Conventions
+
+This project uses specific API path conventions. Be aware of the correct paths:
+
+| Pattern | Correct Path |
+|---------|--------------|
+| Admin endpoints | `/api/admin/*` (server-side admin) |
+| Portal admin endpoints | `/api/portal/admin/*` (portal-specific admin) |
+| Portal endpoints | `/api/portal/*` |
+| Auth endpoints | `/api/auth/*` |
+
+**Common mistake:** Using `/api/admin/members` when the correct path is `/api/portal/admin/members` for portal-related admin features.
+
+**Tip:** Check existing API routes in `src/app/api/` before creating new endpoints to follow established patterns.

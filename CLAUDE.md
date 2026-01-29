@@ -1178,6 +1178,24 @@ const hasAccess =
 - `useProducts` and `useProduct` hooks - Filter accessible products
 - Lesson page access checks - Allow lead magnet lessons for any authenticated user
 
+### Product Display Order
+
+When displaying product lists (e.g., in the portal dashboard or products page), **lead magnets should always appear below paid products**, regardless of the user's membership tier:
+
+```typescript
+// Sort products: paid products first, then lead magnets
+const sortedProducts = [...products].sort((a, b) => {
+  if (a.is_lead_magnet && !b.is_lead_magnet) return 1;  // Lead magnets go to end
+  if (!a.is_lead_magnet && b.is_lead_magnet) return -1; // Paid products go to front
+  return 0; // Maintain original order within each group
+});
+```
+
+**Why this pattern:** Paid products represent the user's primary investment and should be prominently displayed. Lead magnets, while valuable, are supplementary content. This ordering:
+- Encourages users to engage with paid content first
+- Helps users discover paid products they don't own
+- Keeps the most valuable content visible without scrolling
+
 ### Portal Structure
 - `/portal` - Dashboard
 - `/portal/products` - List of purchased products
