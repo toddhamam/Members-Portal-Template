@@ -888,3 +888,131 @@ function getInitials(name: string): string {
 ```
 
 **Why:** User data can be incomplete (no avatar uploaded, missing name). Graceful fallbacks prevent broken UI states.
+
+---
+
+## 37. Middleware Must Not Block Auth Callbacks
+
+When configuring middleware for subdomain routing or authentication, ensure it doesn't interfere with critical auth callback routes:
+
+```typescript
+// middleware.ts
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // ALWAYS allow auth callbacks through without modification
+  if (pathname.startsWith('/auth/callback')) {
+    return NextResponse.next();
+  }
+
+  // ... rest of middleware logic (subdomain routing, etc.)
+}
+```
+
+**Why:** Auth callbacks from Supabase (password reset, email confirmation, OAuth) include tokens in the URL. If middleware rewrites or redirects these routes, the token exchange fails and users see cryptic errors.
+
+**Common symptoms:**
+- "Invalid or expired link" errors after clicking password reset emails
+- OAuth sign-in failures
+- Email confirmation links not working
+
+---
+
+## 38. Vercel Deployment Troubleshooting
+
+When deployments don't reflect expected changes, systematically check these areas:
+
+**1. Verify the Deployed Commit:**
+```bash
+# Check Vercel dashboard -> Deployments -> click deployment -> see commit SHA
+# Compare with your local branch
+git log --oneline -1
+```
+
+**2. Force a Fresh Deployment:**
+- Vercel dashboard → Deployments → Click "..." on latest → "Redeploy"
+- Or push an empty commit: `git commit --allow-empty -m "Force redeploy" && git push`
+
+**3. Check Git Integration:**
+- Vercel dashboard → Project Settings → Git
+- Ensure the correct repository and branch are connected
+- Check that the production branch matches your deployment target
+
+**4. Clear Edge Cache (for 404s on new routes):**
+- New routes may return cached 404s briefly
+- Wait 1-2 minutes or trigger a fresh deployment
+
+**5. Environment Variables:**
+- `NEXT_PUBLIC_*` variables are baked in at build time
+- Changes require a new deployment to take effect
+- Non-public variables are read at runtime
+
+**Common issues:**
+- **Outdated deployment:** Vercel deployed an older commit (check commit SHA)
+- **Wrong branch:** Production is deploying from a different branch than expected
+- **Cron limits:** Hobby plans limit cron frequency (max daily on Hobby)
+- **Build cache:** Stale cache causing old code to run (try "Redeploy" without cache)
+
+---
+
+## 39. Optimistic UI Updates for Auth State
+
+For better perceived performance, update local UI state immediately before async auth operations complete:
+
+```typescript
+const signOut = useCallback(async () => {
+  // 1. Update UI state IMMEDIATELY
+  setUser(null);
+  setProfile(null);
+
+  // 2. Then make the async call
+  try {
+    await supabase.auth.signOut({ scope: 'local' });
+  } catch (error) {
+    // Handle error if needed, but UI is already updated
+    console.error('Sign out error:', error);
+  }
+
+  // 3. Navigate
+  router.push('/login');
+}, [router]);
+```
+
+**Why:** Users see immediate feedback instead of waiting for network round-trips. This is especially important for sign-out, where the user expects instant response.
+
+**When to use:**
+- Sign-out operations
+- Toggling UI states that don't depend on server confirmation
+- Any operation where optimistic UI makes sense
+
+**When NOT to use:**
+- Sign-in (user needs confirmation of success)
+- Operations where rollback would confuse the user
+
+---
+
+## 40. Verify Email Provider Configuration
+
+When using custom SMTP (SendGrid, Mailgun, etc.) for transactional emails:
+
+**1. Verify Sender Identity:**
+- **SendGrid:** Verify sender email OR authenticate entire domain
+- **Mailgun:** Add and verify domain
+- Unverified senders result in emails going to spam or being blocked
+
+**2. Configure in Supabase:**
+- Dashboard → Project Settings → Authentication → SMTP Settings
+- Enter SMTP host, port, username (API key), password
+
+**3. Test the Flow:**
+```bash
+# Trigger a password reset and verify:
+# 1. Email is received (check spam folder)
+# 2. From address shows your brand, not "Supabase"
+# 3. Links work correctly
+```
+
+**Common issues:**
+- Emails in spam → sender not verified
+- "From" shows wrong address → SMTP not configured in Supabase
+- Emails not sending → SMTP credentials incorrect

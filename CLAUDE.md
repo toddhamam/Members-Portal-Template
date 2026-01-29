@@ -1155,6 +1155,104 @@ The claim-account page relies on the session_id to fetch the customer's email. A
 
 ---
 
+## Password Reset Flow
+
+Returning users can reset their password through a multi-step flow.
+
+### Flow Overview
+
+```
+/reset-password → email sent → click link → /auth/callback → /reset-password/confirm → /portal
+```
+
+### How It Works
+
+1. **Reset password page** (`/reset-password`) - User enters their email
+2. **AuthProvider** calls `supabase.auth.resetPasswordForEmail()` with a `redirectTo` URL pointing to `/auth/callback`
+3. **Supabase** sends a password reset email with a magic link
+4. **User clicks link** - Redirects to `/auth/callback?type=recovery&...`
+5. **Auth callback route** (`/api/auth/callback/route.ts`) exchanges the token and redirects to `/reset-password/confirm`
+6. **Confirm page** (`/reset-password/confirm`) - User enters new password, calls `supabase.auth.updateUser()`
+7. **Success** - User is signed in and redirected to `/portal`
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/app/reset-password/page.tsx` | Password reset request form |
+| `src/app/reset-password/confirm/page.tsx` | New password entry form |
+| `src/app/auth/callback/route.ts` | Token exchange handler |
+| `src/contexts/AuthProvider.tsx` | Contains `resetPassword` function |
+
+### AuthProvider Pattern
+
+The `AuthProvider` centralizes all authentication logic. Key patterns:
+
+```tsx
+// useMemo to prevent unnecessary re-renders of consuming components
+const value = useMemo(() => ({
+  user,
+  profile,
+  loading,
+  signIn,
+  signUp,
+  signOut,
+  resetPassword,
+}), [user, profile, loading]);
+
+// useCallback for stable function references passed to children
+const signOut = useCallback(async () => {
+  // Update local state IMMEDIATELY for faster perceived response
+  setUser(null);
+  setProfile(null);
+
+  // Then make the async call
+  await supabase.auth.signOut({ scope: 'local' });
+  router.push('/login');
+}, [router]);
+```
+
+### Supabase Dashboard Configuration
+
+For password reset to work, configure these in the Supabase dashboard:
+
+1. **Authentication > URL Configuration:**
+   - **Site URL:** `https://innerwealthinitiate.com` (production domain)
+   - **Redirect URLs:** Add all valid callback URLs:
+     - `https://innerwealthinitiate.com/auth/callback`
+     - `https://offer.innerwealthinitiate.com/auth/callback`
+     - `http://localhost:3000/auth/callback` (for local dev)
+
+2. **Authentication > Email Templates:**
+   - Customize the password reset email template for branding
+   - Ensure the `{{ .ConfirmationURL }}` placeholder is used
+
+3. **SMTP Settings (for branded emails):**
+   - Configure custom SMTP (e.g., SendGrid) in Supabase dashboard
+   - This makes emails come from your brand instead of "Supabase"
+   - Remember to verify sender email/domain in your email provider
+
+### Error Handling
+
+Handle invalid or expired reset links gracefully:
+
+```tsx
+// In reset-password/confirm/page.tsx
+const { data: { session }, error } = await supabase.auth.getSession();
+
+if (!session) {
+  // Link was invalid or expired
+  return (
+    <div className="text-red-500">
+      This password reset link is invalid or has expired.
+      <Link href="/reset-password">Request a new link</Link>
+    </div>
+  );
+}
+```
+
+---
+
 ## Member Portal
 
 Located at `/portal/*` routes. Users set password on the claim-account page and access purchased content.
