@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import type { AuthChangeEvent } from "@supabase/supabase-js";
@@ -27,8 +27,9 @@ function BrandLogo({ className = "w-10 h-10" }: { className?: string }) {
   );
 }
 
-export default function ResetPasswordConfirmPage() {
+function ResetPasswordConfirmContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { updatePassword } = useAuth();
 
   const [password, setPassword] = useState("");
@@ -40,15 +41,33 @@ export default function ResetPasswordConfirmPage() {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   useEffect(() => {
-    // Check if we have a valid recovery session
-    const checkSession = async () => {
+    const exchangeCodeAndCheckSession = async () => {
       const supabase = createClient();
+      const code = searchParams.get("code");
 
-      // Try to get the session - Supabase will automatically exchange the token from URL
-      const { data: { session }, error } = await supabase.auth.getSession();
+      // If we have a code in the URL, exchange it for a session
+      if (code) {
+        console.log("[Reset Password] Exchanging code for session...");
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-      if (error) {
-        console.error("Session error:", error);
+        if (exchangeError) {
+          console.error("[Reset Password] Code exchange error:", exchangeError);
+          setError("Invalid or expired reset link. Please request a new password reset.");
+          setIsCheckingSession(false);
+          return;
+        }
+
+        console.log("[Reset Password] Code exchanged successfully");
+        setIsValidSession(true);
+        setIsCheckingSession(false);
+        return;
+      }
+
+      // No code in URL, check for existing session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error("Session error:", sessionError);
         setError("Invalid or expired reset link. Please request a new password reset.");
         setIsCheckingSession(false);
         return;
@@ -72,12 +91,12 @@ export default function ResetPasswordConfirmPage() {
       }
     });
 
-    checkSession();
+    exchangeCodeAndCheckSession();
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,5 +289,13 @@ export default function ResetPasswordConfirmPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordConfirmPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#faf9f7]" />}>
+      <ResetPasswordConfirmContent />
+    </Suspense>
   );
 }
