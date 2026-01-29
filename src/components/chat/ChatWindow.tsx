@@ -34,7 +34,7 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({ conversationId, conversation, position }: ChatWindowProps) {
-  const { closeConversation, minimizeConversation, decrementUnread, refreshUnreadCount } = useChat();
+  const { closeConversation, minimizeConversation, refreshUnreadCount, triggerConversationListRefresh } = useChat();
   const { user, profile } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -90,25 +90,24 @@ export function ChatWindow({ conversationId, conversation, position }: ChatWindo
   // Mark as read when opening the window
   useEffect(() => {
     const markAsRead = async () => {
-      if (conversation?.unreadCount && conversation.unreadCount > 0) {
-        try {
-          await fetch(`/api/messages/conversations/${conversationId}/mark-read`, {
-            method: "POST",
-          });
-          // Update local unread count
-          decrementUnread(conversation.unreadCount);
-        } catch (error) {
-          console.error("[ChatWindow] Failed to mark as read:", error);
+      try {
+        const response = await fetch(`/api/messages/conversations/${conversationId}/mark-read`, {
+          method: "POST",
+        });
+        if (response.ok) {
+          // Refresh unread count from server to ensure accuracy
+          refreshUnreadCount();
+          // Also trigger conversation list refresh to update UI
+          triggerConversationListRefresh();
         }
+      } catch (error) {
+        console.error("[ChatWindow] Failed to mark as read:", error);
       }
     };
 
+    // Always mark as read when window opens
     markAsRead();
-    // Also refresh when unmounting
-    return () => {
-      refreshUnreadCount();
-    };
-  }, [conversationId, conversation?.unreadCount, decrementUnread, refreshUnreadCount]);
+  }, [conversationId, refreshUnreadCount, triggerConversationListRefresh]);
 
   // Handle scroll to detect if user scrolled up
   const handleScroll = useCallback(() => {
@@ -125,8 +124,8 @@ export function ChatWindow({ conversationId, conversation, position }: ChatWindo
     }
   }, [hasMore, loadingMore, loadMore]);
 
-  const handleSend = useCallback((content: string) => {
-    sendMessage(conversationId, content);
+  const handleSend = useCallback((content: string, attachment?: { url: string; type: string; name: string; size: number }) => {
+    sendMessage(conversationId, content, attachment as Parameters<typeof sendMessage>[2]);
   }, [conversationId, sendMessage]);
 
   // Group messages by date
@@ -255,6 +254,7 @@ export function ChatWindow({ conversationId, conversation, position }: ChatWindo
         <div className="safe-area-bottom">
           <ChatInput
             onSend={handleSend}
+            conversationId={conversationId}
             disabled={sending || loading}
             placeholder={`Message ${formatDisplayName(otherParticipant.name)}`}
           />
@@ -393,6 +393,7 @@ export function ChatWindow({ conversationId, conversation, position }: ChatWindo
         {/* Input */}
         <ChatInput
           onSend={handleSend}
+          conversationId={conversationId}
           disabled={sending || loading}
           placeholder={`Message ${formatDisplayName(otherParticipant.name)}`}
         />

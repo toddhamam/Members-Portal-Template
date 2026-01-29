@@ -63,7 +63,7 @@ export function NewMessageModal({ isOpen, onClose }: NewMessageModalProps) {
           params.set("search", search);
         }
 
-        const response = await fetch(`/api/admin/members?${params}`);
+        const response = await fetch(`/api/portal/admin/members?${params}`);
         if (!response.ok) throw new Error("Failed to fetch members");
 
         const data = await response.json();

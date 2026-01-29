@@ -32,6 +32,16 @@ export async function GET(request: NextRequest) {
 
     const adminSupabase = createAdminClientInstance();
 
+    // Check if user is admin - admins can see all their conversations,
+    // non-admins only see conversations with at least one message
+    const { data: userProfile } = await adminSupabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+
+    const isUserAdmin = userProfile?.is_admin || false;
+
     // Get user's conversations with participant info
     // We need to join multiple tables to get the "other" participant
     const { data: participantRecords, error: participantError } = await adminSupabase
@@ -134,6 +144,12 @@ export async function GET(request: NextRequest) {
         unreadCount: pr.unread_count,
       };
     });
+
+    // For non-admin users, filter out conversations with no messages
+    // This prevents members from seeing empty conversations that admins just created
+    if (!isUserAdmin) {
+      conversations = conversations.filter((c) => c.last_message_at !== null);
+    }
 
     // Apply search filter if provided
     if (search) {

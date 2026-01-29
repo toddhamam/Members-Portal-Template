@@ -294,6 +294,8 @@ export interface ConversationParticipant {
   created_at: string;
 }
 
+export type AttachmentType = 'image' | 'video' | 'document';
+
 export interface DirectMessage {
   id: string;
   conversation_id: string;
@@ -303,6 +305,10 @@ export interface DirectMessage {
   updated_at: string;
   is_edited: boolean;
   is_deleted: boolean;
+  attachment_url: string | null;
+  attachment_type: AttachmentType | null;
+  attachment_name: string | null;
+  attachment_size_bytes: number | null;
 }
 
 // Direct messaging types with joins (for display)

@@ -19,6 +19,7 @@ interface MentionDropdownProps {
   selectedIndex: number;
   onSelect: (user: { id: string; full_name: string | null }) => void;
   position: { top: number; left: number };
+  queryLength: number;
 }
 
 function MentionDropdown({
@@ -27,8 +28,10 @@ function MentionDropdown({
   selectedIndex,
   onSelect,
   position,
+  queryLength,
 }: MentionDropdownProps) {
-  if (!isLoading && users.length === 0) {
+  // Don't show dropdown until user types at least 1 character after @
+  if (queryLength === 0) {
     return null;
   }
 
@@ -37,8 +40,12 @@ function MentionDropdown({
       className="absolute z-50 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-1 max-h-48 overflow-y-auto"
       style={{ top: position.top, left: position.left }}
     >
-      {isLoading ? (
+      {queryLength < 2 ? (
+        <div className="px-4 py-2 text-sm text-[#6b7280]">Type at least 2 characters...</div>
+      ) : isLoading ? (
         <div className="px-4 py-2 text-sm text-[#6b7280]">Searching...</div>
+      ) : users.length === 0 ? (
+        <div className="px-4 py-2 text-sm text-[#6b7280]">No users found</div>
       ) : (
         users.map((user, index) => {
           const initials = user.full_name
@@ -146,15 +153,20 @@ export function MentionInput({
 
     document.body.appendChild(mirror);
 
-    const rect = textarea.getBoundingClientRect();
     const spanRect = span.getBoundingClientRect();
     const mirrorRect = mirror.getBoundingClientRect();
 
     document.body.removeChild(mirror);
 
+    // Calculate position relative to the textarea (for absolute positioning within relative parent)
+    // The dropdown appears below the textarea, so we use the textarea's height plus padding
+    const lineHeight = parseInt(style.lineHeight) || 24;
+    const relativeTop = (spanRect.top - mirrorRect.top) + lineHeight;
+    const relativeLeft = Math.max(0, spanRect.left - mirrorRect.left);
+
     return {
-      top: rect.top + (spanRect.top - mirrorRect.top) + 24, // Add line height offset
-      left: Math.min(rect.left + (spanRect.left - mirrorRect.left), rect.right - 260),
+      top: relativeTop,
+      left: Math.min(relativeLeft, textarea.offsetWidth - 260), // Keep dropdown within textarea width
     };
   }, [value]);
 
@@ -272,6 +284,7 @@ export function MentionInput({
           selectedIndex={selectedIndex}
           onSelect={handleSelectUser}
           position={mentionState.dropdownPosition}
+          queryLength={mentionState.query.length}
         />
       )}
     </div>

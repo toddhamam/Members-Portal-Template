@@ -48,7 +48,29 @@ export function useProducts() {
         })
       );
 
-      setProducts(productsWithAccess);
+      // Sort products: paid products first (owned, then locked), lead magnets at bottom
+      // Each group maintains its sort_order
+      const sortedProducts = productsWithAccess.sort((a, b) => {
+        const aIsLeadMagnet = a.is_lead_magnet;
+        const bIsLeadMagnet = b.is_lead_magnet;
+        const aIsPurchased = purchasedProductIds.has(a.id);
+        const bIsPurchased = purchasedProductIds.has(b.id);
+
+        // Lead magnets always go to the bottom
+        if (aIsLeadMagnet && !bIsLeadMagnet) return 1;
+        if (!aIsLeadMagnet && bIsLeadMagnet) return -1;
+
+        // Within paid products: owned (purchased) first, then locked
+        if (!aIsLeadMagnet && !bIsLeadMagnet) {
+          if (aIsPurchased && !bIsPurchased) return -1;
+          if (!aIsPurchased && bIsPurchased) return 1;
+        }
+
+        // Within the same group, maintain sort_order
+        return a.sort_order - b.sort_order;
+      });
+
+      setProducts(sortedProducts);
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Failed to fetch products"));
     } finally {

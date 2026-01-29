@@ -1,5 +1,12 @@
 import { useState, useCallback } from 'react';
-import type { MessageWithSender } from '@/lib/supabase/types';
+import type { MessageWithSender, AttachmentType } from '@/lib/supabase/types';
+
+interface AttachmentData {
+  url: string;
+  type: AttachmentType;
+  name: string;
+  size: number;
+}
 
 interface SendMessageResponse {
   message: MessageWithSender;
@@ -16,8 +23,13 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sendMessage = useCallback(async (conversationId: string, content: string): Promise<MessageWithSender | null> => {
-    if (!conversationId || !content.trim()) {
+  const sendMessage = useCallback(async (
+    conversationId: string,
+    content: string,
+    attachment?: AttachmentData
+  ): Promise<MessageWithSender | null> => {
+    // Allow empty content if there's an attachment
+    if (!conversationId || (!content.trim() && !attachment)) {
       return null;
     }
 
@@ -30,7 +42,13 @@ export function useSendMessage(options: UseSendMessageOptions = {}) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           conversationId,
-          content: content.trim(),
+          content: content.trim() || (attachment ? '' : ''),
+          attachment: attachment ? {
+            url: attachment.url,
+            type: attachment.type,
+            name: attachment.name,
+            size: attachment.size,
+          } : undefined,
         }),
       });
 

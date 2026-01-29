@@ -14,6 +14,7 @@ interface ChatState {
 interface ChatContextValue extends ChatState {
   totalUnreadCount: number;
   soundEnabled: boolean;
+  conversationListVersion: number; // Increment to trigger conversation list refresh
   openList: () => void;
   closeList: () => void;
   toggleList: () => void;
@@ -24,6 +25,7 @@ interface ChatContextValue extends ChatState {
   refreshUnreadCount: () => void;
   decrementUnread: (amount: number) => void;
   toggleSound: () => void;
+  triggerConversationListRefresh: () => void;
 }
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -59,6 +61,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
   });
 
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [conversationListVersion, setConversationListVersion] = useState(0);
   const prevUnreadCount = useRef<number>(0);
 
   // Initialize sound preference from localStorage
@@ -175,10 +178,15 @@ export function ChatProvider({ children }: ChatProviderProps) {
     });
   }, []);
 
+  const triggerConversationListRefresh = useCallback(() => {
+    setConversationListVersion((v) => v + 1);
+  }, []);
+
   const value: ChatContextValue = {
     ...state,
     totalUnreadCount: unreadCount,
     soundEnabled,
+    conversationListVersion,
     openList,
     closeList,
     toggleList,
@@ -189,6 +197,7 @@ export function ChatProvider({ children }: ChatProviderProps) {
     refreshUnreadCount,
     decrementUnread: decrementBy,
     toggleSound,
+    triggerConversationListRefresh,
   };
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

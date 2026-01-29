@@ -58,7 +58,7 @@ interface ConversationListProps {
 }
 
 export function ConversationList({ onNewMessage, isHeaderDropdown = false }: ConversationListProps) {
-  const { isListOpen, closeList, openConversation, soundEnabled, toggleSound } = useChat();
+  const { isListOpen, closeList, openConversation, soundEnabled, toggleSound, conversationListVersion } = useChat();
   const { profile } = useAuth();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -66,10 +66,17 @@ export function ConversationList({ onNewMessage, isHeaderDropdown = false }: Con
 
   const isAdmin = profile?.is_admin || false;
 
-  const { conversations, loading, error, hasMore, loadMore } = useConversations({
+  const { conversations, loading, error, hasMore, loadMore, refresh } = useConversations({
     search: debouncedSearch,
     pollInterval: isListOpen ? 30000 : 0, // Poll every 30 seconds when open
   });
+
+  // Refresh when conversationListVersion changes (triggered by marking messages as read)
+  useEffect(() => {
+    if (conversationListVersion > 0) {
+      refresh();
+    }
+  }, [conversationListVersion, refresh]);
 
   // Debounce search
   useEffect(() => {
