@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Auth routes that should NOT be rewritten on portal subdomain
-  const isAuthRoute = pathname === '/login' || pathname === '/portal/signup' || pathname === '/portal/reset-password';
+  const isAuthRoute = pathname === '/login' || pathname === '/portal/signup' || pathname === '/portal/reset-password' || pathname.startsWith('/auth/');
   const isPortalSubdomain = hostname.startsWith('portal.');
   const isFunnelSubdomain = hostname.startsWith('offer.');
 
@@ -42,8 +42,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Main domain: update session for portal routes, dashboard, and login page
-  if (pathname.startsWith('/portal') || pathname.startsWith('/dashboard') || pathname === '/login') {
+  // Main domain: update session for portal routes, dashboard, login, and auth callback
+  if (pathname.startsWith('/portal') || pathname.startsWith('/dashboard') || pathname === '/login' || pathname.startsWith('/auth/')) {
     return await updateSession(request);
   }
 
