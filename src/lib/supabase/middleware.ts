@@ -54,7 +54,7 @@ export async function updateSession(
   const isAuthRoute =
     pathname === '/login' ||
     pathname === '/portal/signup' ||
-    pathname === '/portal/reset-password';
+    pathname.startsWith('/portal/reset-password');
 
   // If trying to access protected route without auth, redirect to login
   if ((isPortalRoute || isDashboardRoute) && !isAuthRoute && !user) {
