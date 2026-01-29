@@ -4,6 +4,21 @@ import { updateSession } from '@/lib/supabase/middleware';
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const pathname = request.nextUrl.pathname;
+  const searchParams = request.nextUrl.searchParams;
+
+  // Handle Supabase auth codes that land on the root URL
+  // This happens when Supabase redirects password reset links to the Site URL
+  // instead of the specified redirectTo URL
+  const code = searchParams.get('code');
+  if (code && pathname === '/') {
+    // Redirect to auth callback with the code
+    // Assume recovery type if no type specified (most common case for root URL redirects)
+    const type = searchParams.get('type') || 'recovery';
+    const callbackUrl = new URL('/auth/callback', request.url);
+    callbackUrl.searchParams.set('code', code);
+    callbackUrl.searchParams.set('type', type);
+    return NextResponse.redirect(callbackUrl);
+  }
 
   // Auth routes that should NOT be rewritten on portal subdomain
   const isAuthRoute = pathname === '/login' || pathname === '/portal/signup' || pathname === '/portal/reset-password' || pathname.startsWith('/auth/');
