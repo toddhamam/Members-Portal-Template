@@ -1162,27 +1162,85 @@ Returning users can reset their password through a multi-step flow.
 ### Flow Overview
 
 ```
-/reset-password → email sent → click link → /auth/callback → /reset-password/confirm → /portal
+/portal/reset-password → email sent → click link → /auth/callback → /portal/reset-password/confirm → /portal
 ```
 
 ### How It Works
 
-1. **Reset password page** (`/reset-password`) - User enters their email
-2. **AuthProvider** calls `supabase.auth.resetPasswordForEmail()` with a `redirectTo` URL pointing to `/auth/callback`
+1. **Reset password page** (`/portal/reset-password`) - User enters their email
+2. **AuthProvider** calls `supabase.auth.resetPasswordForEmail()` with a `redirectTo` URL pointing to `/auth/callback?type=recovery`
 3. **Supabase** sends a password reset email with a magic link
-4. **User clicks link** - Redirects to `/auth/callback?type=recovery&...`
-5. **Auth callback route** (`/api/auth/callback/route.ts`) exchanges the token and redirects to `/reset-password/confirm`
-6. **Confirm page** (`/reset-password/confirm`) - User enters new password, calls `supabase.auth.updateUser()`
-7. **Success** - User is signed in and redirected to `/portal`
+4. **User clicks link** - Supabase verifies token, then redirects to `/auth/callback?code=xxx&type=recovery`
+5. **Auth callback route** (`src/app/auth/callback/route.ts`) exchanges the code for a session server-side
+6. **Auth callback** sets session cookies on the redirect response and redirects to `/portal/reset-password/confirm`
+7. **Confirm page** (`/portal/reset-password/confirm`) - Detects valid session, user enters new password
+8. **Success** - Password updated via `supabase.auth.updateUser()`, user redirected to `/portal`
 
 ### Key Files
 
 | File | Purpose |
 |------|---------|
-| `src/app/reset-password/page.tsx` | Password reset request form |
-| `src/app/reset-password/confirm/page.tsx` | New password entry form |
-| `src/app/auth/callback/route.ts` | Token exchange handler |
-| `src/contexts/AuthProvider.tsx` | Contains `resetPassword` function |
+| `src/app/portal/reset-password/page.tsx` | Password reset request form |
+| `src/app/portal/reset-password/confirm/page.tsx` | New password entry form |
+| `src/app/auth/callback/route.ts` | Code exchange and session setup |
+| `src/components/auth/AuthProvider.tsx` | Contains `resetPassword` function |
+
+### Critical Implementation Details
+
+**1. Auth Callback Must Set Cookies on Response:**
+The auth callback exchanges the code server-side and MUST set cookies on the redirect response (not just the cookie store):
+
+```typescript
+// Store cookies to set on the redirect response
+const cookiesToSetOnResponse: Array<{...}> = [];
+
+// In setAll callback, collect cookies
+cookiesToSetOnResponse.push({ name, value, options });
+
+// Set cookies on the redirect response
+const response = NextResponse.redirect(redirectUrl);
+cookiesToSetOnResponse.forEach(({ name, value, options }) => {
+  response.cookies.set(name, value, options);
+});
+return response;
+```
+
+**2. Middleware Must Not Interfere:**
+The main middleware must skip session update for `/auth/callback` since it handles its own auth flow:
+
+```typescript
+// Skip session update for auth callback - it handles its own auth flow
+if (pathname === '/auth/callback') {
+  return NextResponse.next();
+}
+```
+
+**3. Middleware Must Allow Authenticated Users on Confirm Page:**
+The confirm page needs special handling - authenticated users MUST be allowed to access it (to set their new password):
+
+```typescript
+const isPasswordResetConfirm = pathname === '/portal/reset-password/confirm';
+
+// Don't redirect authenticated users from password reset confirm page
+if ((pathname === '/login' || pathname === '/portal/signup') && user) {
+  // Redirect to portal - but NOT from reset-password pages
+}
+```
+
+**4. PKCE Fallback Pattern:**
+If server-side code exchange fails (e.g., PKCE verifier missing), pass the code to the client for another attempt:
+
+```typescript
+if (error && type === "recovery") {
+  // Fallback: pass code to client-side
+  const confirmUrl = new URL("/portal/reset-password/confirm", origin);
+  confirmUrl.searchParams.set("code", code);
+  return NextResponse.redirect(confirmUrl);
+}
+```
+
+**5. Same Browser Requirement:**
+PKCE requires the user to click the email link in the **same browser** where they requested the reset. The code verifier is stored in a cookie - different browser = no cookie = exchange fails.
 
 ### AuthProvider Pattern
 
