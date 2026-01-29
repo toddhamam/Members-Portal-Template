@@ -122,6 +122,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 }
 ```
 
+**Important - Auth State Race Condition:**
+The `loading` state from `useAuth` may become `false` before the `profile` data finishes loading asynchronously. Always check that `profile` exists AND has the expected properties before rendering protected content:
+
+```tsx
+// Good - checks both loading AND profile existence
+if (loading || !profile?.is_admin) {
+  return <LoadingSkeleton />;
+}
+
+// Bad - only checking loading can cause premature redirects
+if (!loading && !profile?.is_admin) {
+  router.push("/portal"); // May redirect before profile loads!
+}
+```
+
 **Server-side (API routes):**
 For admin API endpoints, explicitly check `profile.is_admin` and return 403 Forbidden:
 
@@ -642,3 +657,83 @@ This project uses specific API path conventions. Be aware of the correct paths:
 **Common mistake:** Using `/api/admin/members` when the correct path is `/api/portal/admin/members` for portal-related admin features.
 
 **Tip:** Check existing API routes in `src/app/api/` before creating new endpoints to follow established patterns.
+
+---
+
+## 30. Use JSONB for Flexible Configuration Storage
+
+When storing configuration data that may have varying structure per record type, use PostgreSQL's `JSONB` type:
+
+```sql
+-- Migration example
+CREATE TABLE dm_automations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  trigger_type TEXT NOT NULL,
+  trigger_config JSONB DEFAULT '{}',  -- Flexible per-trigger configuration
+  message_template TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+```typescript
+// TypeScript interface for type safety
+interface TriggerConfig {
+  delayMinutes?: number;
+  memberTypes?: string[];  // e.g., ['free', 'paid']
+  productSlugs?: string[];
+}
+
+// Query with JSONB operators
+const { data } = await supabase
+  .from('dm_automations')
+  .select('*')
+  .contains('trigger_config', { memberTypes: ['free'] });
+```
+
+**Why:** JSONB provides flexibility for configurations that vary by type (e.g., different triggers need different parameters) while maintaining the ability to query and index specific fields.
+
+---
+
+## 31. Toggle Switch UI State Patterns
+
+Toggle switches must accurately represent their underlying boolean state with clear visual feedback:
+
+```tsx
+// Toggle component with correct state representation
+interface ToggleProps {
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+  disabled?: boolean;
+}
+
+function Toggle({ enabled, onChange, disabled }: ToggleProps) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      disabled={disabled}
+      onClick={() => onChange(!enabled)}
+      className={cn(
+        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+        enabled ? "bg-green-500" : "bg-gray-600",
+        disabled && "opacity-50 cursor-not-allowed"
+      )}
+    >
+      <span
+        className={cn(
+          "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+          enabled ? "translate-x-6" : "translate-x-1"  // Right = on, Left = off
+        )}
+      />
+    </button>
+  );
+}
+```
+
+**Visual conventions:**
+- **Off state:** Knob on left, muted/gray background
+- **On state:** Knob on right, active/green background
+- **Disabled:** Reduced opacity, `cursor-not-allowed`
+- Always use `role="switch"` and `aria-checked` for accessibility

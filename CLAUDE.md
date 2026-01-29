@@ -1238,26 +1238,45 @@ WHERE slug = 'pathless-path';
 
 ## Admin Portal (Analytics Dashboard)
 
-Located at `/portal/admin/*` routes. Provides administrators with member management and analytics capabilities.
+Located at `/portal/admin/*` routes. Provides administrators with member management, analytics, and automation capabilities.
 
 ### Routes
 | Route | Purpose |
 |-------|---------|
-| `/portal/admin` | Main admin dashboard with metrics overview |
-| `/portal/admin` (member list) | Searchable, sortable list of all members |
+| `/portal/admin` | Main admin dashboard with metrics overview and member list |
+| `/portal/admin/automations` | DM automation rules configuration |
+
+### Architecture Pattern
+
+The admin portal follows a consistent structure:
+- **Main `page.tsx`** in `/portal/admin/` serves as the primary dashboard (Analytics/Members)
+- **Subdirectory `page.tsx`** files (e.g., `/portal/admin/automations/page.tsx`) for distinct admin sections
+- **Shared `layout.tsx`** wraps all admin routes with access control and navigation
+- **`AdminNav` component** provides consistent navigation between admin sections
+
+```tsx
+// Example: AdminNav component usage in layout
+<div className="flex">
+  <AdminNav />
+  <main className="flex-1">{children}</main>
+</div>
+```
 
 ### Features
 - **Macro metrics:** Total members, active members (30 days), total revenue, average revenue per member
 - **Member list:** Searchable by name/email, sortable by various columns
 - **Member detail slide-over:** Click a member row to see detailed information including purchases and lesson progress
+- **DM Automations:** Configure automated messages triggered by member actions
 
 ### Key Files
 
 | File | Purpose |
 |------|---------|
 | `src/app/portal/admin/page.tsx` | Main admin dashboard page |
-| `src/app/portal/admin/layout.tsx` | Admin access guard (checks `is_admin`) |
+| `src/app/portal/admin/layout.tsx` | Admin access guard (checks `is_admin`) + navigation |
+| `src/app/portal/admin/automations/page.tsx` | DM automation management |
 | `src/components/admin/AdminDashboard.tsx` | Dashboard container component |
+| `src/components/admin/AdminNav.tsx` | Navigation between admin sections |
 | `src/components/admin/MetricCard.tsx` | Reusable metric display card |
 | `src/components/admin/MembersTable.tsx` | Searchable/sortable member list |
 | `src/components/admin/MemberSlideOver.tsx` | Member detail panel |
