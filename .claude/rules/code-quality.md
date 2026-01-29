@@ -737,3 +737,154 @@ function Toggle({ enabled, onChange, disabled }: ToggleProps) {
 - **On state:** Knob on right, active/green background
 - **Disabled:** Reduced opacity, `cursor-not-allowed`
 - Always use `role="switch"` and `aria-checked` for accessibility
+
+---
+
+## 32. Non-Blocking Async for Background Tasks
+
+When triggering background operations (automations, analytics, notifications) that shouldn't block the main response, use `.catch()` to handle errors without awaiting:
+
+```typescript
+// Good - non-blocking, doesn't delay user response
+triggerFirstCommunityPost(user.id).catch(err => {
+  console.error('[Automation] Failed to trigger:', err);
+});
+
+// Return response immediately
+return NextResponse.json({ success: true });
+
+// Bad - blocks response on non-critical operation
+await triggerFirstCommunityPost(user.id);  // User waits for this
+return NextResponse.json({ success: true });
+```
+
+**When to use:**
+- Analytics tracking
+- Email/notification triggers
+- Automation workflows
+- Any operation that can fail without affecting the primary response
+
+**Key principle:** User-facing actions should complete quickly. Background tasks can fail silently (with logging) without blocking.
+
+---
+
+## 33. Always Call Newly Created Functions
+
+When creating new functions or trigger handlers, ensure they are actually invoked from the relevant code paths:
+
+```typescript
+// Bad - function exists but never called
+export async function triggerWelcomeAutomation(userId: string) {
+  // Implementation exists but nothing calls it
+}
+
+// Good - function is invoked from the appropriate event handler
+// In signup handler or webhook:
+await triggerWelcomeAutomation(user.id);
+```
+
+**Checklist when adding new functions:**
+1. Create the function implementation
+2. Add the import to the calling file
+3. Actually invoke the function in the correct event/handler
+4. Test the complete flow end-to-end
+
+**Why:** A common oversight is implementing logic without wiring it up. The function exists but never executes.
+
+---
+
+## 34. Debounce Frequent Database Writes
+
+For operations that could fire many times in quick succession (progress tracking, activity logging), use refs to limit write frequency:
+
+```typescript
+const lastUpdateRef = useRef<number>(0);
+const MIN_UPDATE_INTERVAL = 5000; // 5 seconds
+
+const handleProgress = async (currentTime: number) => {
+  const now = Date.now();
+
+  // Skip if updated too recently
+  if (now - lastUpdateRef.current < MIN_UPDATE_INTERVAL) {
+    return;
+  }
+
+  lastUpdateRef.current = now;
+
+  await supabase
+    .from('lesson_progress')
+    .upsert({ lesson_id, user_id, progress_seconds: currentTime });
+};
+```
+
+**Common scenarios:**
+- Video/audio progress tracking
+- Scroll position saving
+- User activity timestamps
+- Auto-save drafts
+
+**Why:** Without debouncing, rapid events (video progress updates every second) would flood the database with writes.
+
+---
+
+## 35. RLS Policies Affect Joined Data
+
+Row Level Security policies on related tables affect what data is visible when joining:
+
+```typescript
+// Problem: Author data is null because RLS on profiles only allows
+// users to see their own profile
+const { data: posts } = await supabase
+  .from('discussion_posts')
+  .select('*, author:profiles(full_name, avatar_url)')
+  .order('created_at', { ascending: false });
+// Result: posts[0].author is null for other users' posts!
+
+// Solution: Add RLS policy to allow viewing basic profile info
+// In Supabase SQL editor:
+CREATE POLICY "Allow viewing basic profile info"
+ON profiles FOR SELECT
+USING (
+  -- Allow users to see: their own profile OR basic info of others
+  auth.uid() = id
+  OR true  -- Or specific columns via column-level security
+);
+```
+
+**Key insight:** When fetching data with joins, check RLS policies on ALL joined tables, not just the primary table.
+
+---
+
+## 36. Graceful Fallbacks for User Display
+
+UI components displaying user information should handle missing or incomplete data:
+
+```typescript
+// UserAvatar with graceful fallbacks
+function UserAvatar({ user }: { user: User | null }) {
+  // Handle missing user entirely
+  if (!user) {
+    return <DefaultAvatar />;
+  }
+
+  // Fallback for missing avatar: show initials
+  if (!user.avatar_url) {
+    const initials = getInitials(user.full_name || user.email || '?');
+    return <InitialsAvatar initials={initials} />;
+  }
+
+  // Full avatar available
+  return <Image src={user.avatar_url} alt={user.full_name || 'User'} />;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+```
+
+**Why:** User data can be incomplete (no avatar uploaded, missing name). Graceful fallbacks prevent broken UI states.

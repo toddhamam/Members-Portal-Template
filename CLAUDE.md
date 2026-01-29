@@ -692,6 +692,22 @@ WHERE last_active_at IS NULL;
 - Backfill existing data when adding new columns
 - Test migrations locally before applying to production
 
+**Migrations vs. Code Deployments:**
+
+Database migrations and application code are deployed independently:
+
+| Change Type | Applied Via | Takes Effect |
+|-------------|-------------|--------------|
+| SQL migrations (tables, RLS, functions) | Supabase Dashboard or CLI | Immediately after SQL execution |
+| Application code (API routes, UI) | Vercel deployment | After successful build + deploy |
+
+**Example scenario:** If an RLS policy is blocking profile visibility in community posts:
+1. Fix the RLS policy via Supabase SQL editor → **Works immediately**
+2. No need to wait for or trigger a Vercel deployment
+3. Code changes for the same feature (if any) can be deployed separately
+
+This separation means database issues can often be fixed without code changes, and vice versa.
+
 ---
 
 ## Integrations
@@ -1859,6 +1875,46 @@ CREATE TABLE dm_automation_rules (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
+
+### Cron Job for Delayed Automations
+
+Delayed DM automations require a cron job to process pending messages. Simply having the automation logic isn't enough—a scheduler must periodically run to check for due messages.
+
+**Vercel Cron Setup:**
+
+1. **Add cron route** at `src/app/api/cron/process-automations/route.ts`:
+```typescript
+import { NextResponse } from "next/server";
+
+export async function GET(request: Request) {
+  // Verify cron secret in production
+  const authHeader = request.headers.get("authorization");
+  if (process.env.NODE_ENV === "production" && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Process pending automations
+  const result = await processScheduledAutomations();
+  return NextResponse.json({ processed: result.count });
+}
+```
+
+2. **Configure in `vercel.json`:**
+```json
+{
+  "crons": [
+    {
+      "path": "/api/cron/process-automations",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
+```
+
+**Key points:**
+- Cron runs independently of user actions
+- Use `CRON_SECRET` environment variable for production security
+- Schedule frequency depends on needed precision (every 5 mins is typical)
 
 ### Mobile Responsiveness
 
