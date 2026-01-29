@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -40,6 +40,9 @@ function ResetPasswordConfirmContent() {
   const [isValidSession, setIsValidSession] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
+  // Ref to prevent double execution in React 18 Strict Mode
+  const codeExchangeAttempted = useRef(false);
+
   useEffect(() => {
     const exchangeCodeAndCheckSession = async () => {
       const supabase = createClient();
@@ -47,6 +50,13 @@ function ResetPasswordConfirmContent() {
 
       // If we have a code in the URL, exchange it for a session
       if (code) {
+        // Prevent double execution (React 18 Strict Mode runs effects twice)
+        if (codeExchangeAttempted.current) {
+          console.log("[Reset Password] Code exchange already attempted, skipping...");
+          return;
+        }
+        codeExchangeAttempted.current = true;
+
         console.log("[Reset Password] Exchanging code for session...");
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
