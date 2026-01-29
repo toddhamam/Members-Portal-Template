@@ -44,40 +44,32 @@ function ResetPasswordConfirmContent() {
   const codeExchangeAttempted = useRef(false);
 
   useEffect(() => {
-    const exchangeCodeAndCheckSession = async () => {
+    const checkSession = async () => {
       const supabase = createClient();
       const code = searchParams.get("code");
 
-      // If we have a code in the URL, exchange it for a session
+      // If we have a code in the URL (fallback for edge cases), try to exchange it
       if (code) {
         // Prevent double execution (React 18 Strict Mode runs effects twice)
         if (codeExchangeAttempted.current) {
-          console.log("[Reset Password] Code exchange already attempted, skipping...");
           return;
         }
         codeExchangeAttempted.current = true;
 
-        console.log("[Reset Password] Exchanging code for session...");
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-        if (exchangeError) {
-          console.error("[Reset Password] Code exchange error:", exchangeError);
-          setError("Invalid or expired reset link. Please request a new password reset.");
+        if (!exchangeError) {
+          setIsValidSession(true);
           setIsCheckingSession(false);
           return;
         }
-
-        console.log("[Reset Password] Code exchanged successfully");
-        setIsValidSession(true);
-        setIsCheckingSession(false);
-        return;
+        // Code might already be used by server-side callback, check for existing session
       }
 
-      // No code in URL, check for existing session
+      // Check for existing session (set by server-side auth callback)
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
       if (sessionError) {
-        console.error("Session error:", sessionError);
         setError("Invalid or expired reset link. Please request a new password reset.");
         setIsCheckingSession(false);
         return;
@@ -101,7 +93,7 @@ function ResetPasswordConfirmContent() {
       }
     });
 
-    exchangeCodeAndCheckSession();
+    checkSession();
 
     return () => {
       subscription.unsubscribe();

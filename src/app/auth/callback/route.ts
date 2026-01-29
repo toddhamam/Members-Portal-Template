@@ -9,16 +9,11 @@ export async function GET(request: NextRequest) {
   const next = requestUrl.searchParams.get("next") || "/portal";
   const type = requestUrl.searchParams.get("type");
 
-  // For password recovery, pass the code to the confirm page to handle client-side
-  // This avoids PKCE issues that can occur with server-side code exchange
-  if (type === "recovery" && code) {
-    const confirmUrl = new URL("/portal/reset-password/confirm", requestUrl.origin);
-    confirmUrl.searchParams.set("code", code);
-    return NextResponse.redirect(confirmUrl);
-  }
-
   if (code) {
     const cookieStore = await cookies();
+
+    // Store cookies to be set on the response
+    const cookiesToSetOnResponse: Array<{ name: string; value: string; options?: Record<string, unknown> }> = [];
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,23 +26,42 @@ export async function GET(request: NextRequest) {
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set(name, value, options);
+              cookiesToSetOnResponse.push({ name, value, options });
             });
           },
         },
       }
     );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error) {
-      // For other auth flows, redirect to the next page
-      return NextResponse.redirect(new URL(next, requestUrl.origin));
+    if (error) {
+      // For recovery type with PKCE failure, try passing code to client-side
+      if (type === "recovery") {
+        const confirmUrl = new URL("/portal/reset-password/confirm", requestUrl.origin);
+        confirmUrl.searchParams.set("code", code);
+        return NextResponse.redirect(confirmUrl);
+      }
+
+      return NextResponse.redirect(
+        new URL("/login?error=auth_callback_error", requestUrl.origin)
+      );
     }
 
-    console.error("[Auth Callback] Error exchanging code:", error);
+    // Determine redirect URL
+    const redirectUrl = type === "recovery"
+      ? new URL("/portal/reset-password/confirm", requestUrl.origin)
+      : new URL(next, requestUrl.origin);
+
+    // Create response and set cookies on it
+    const response = NextResponse.redirect(redirectUrl);
+    cookiesToSetOnResponse.forEach(({ name, value, options }) => {
+      response.cookies.set(name, value, options as Record<string, string | boolean | number | Date>);
+    });
+
+    return response;
   }
 
-  // If no code or error, redirect to login with error
   return NextResponse.redirect(
     new URL("/login?error=auth_callback_error", requestUrl.origin)
   );

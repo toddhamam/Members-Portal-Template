@@ -57,7 +57,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Main domain: update session for portal routes, dashboard, login, and auth callback
+  // Skip session update for auth callback - it handles its own auth flow
+  if (pathname === '/auth/callback') {
+    return NextResponse.next();
+  }
+
+  // Main domain: update session for portal routes, dashboard, login, and other auth routes
   if (pathname.startsWith('/portal') || pathname.startsWith('/dashboard') || pathname === '/login' || pathname.startsWith('/auth/')) {
     return await updateSession(request);
   }

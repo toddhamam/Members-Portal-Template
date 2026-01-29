@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 function BrandLogo({ className = "w-10 h-10" }: { className?: string }) {
@@ -24,13 +25,22 @@ function BrandLogo({ className = "w-10 h-10" }: { className?: string }) {
   );
 }
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const { resetPassword } = useAuth();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // Check for error from expired link redirect
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    if (errorParam === "expired_link") {
+      setError("Your password reset link has expired. Please request a new one.");
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,5 +159,13 @@ export default function ResetPasswordPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#faf9f7]" />}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
