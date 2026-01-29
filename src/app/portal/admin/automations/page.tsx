@@ -1,20 +1,25 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 
 interface Automation {
   id: string;
   name: string;
   description: string | null;
   trigger_type: string;
-  trigger_config: Record<string, string>;
+  trigger_config: Record<string, string> | null;
   message_template: string;
   is_enabled: boolean;
   delay_minutes: number;
   sent_count: number;
   created_at: string;
 }
+
+const MEMBER_TYPE_LABELS: Record<string, string> = {
+  all: "All Members",
+  free: "Free Members Only",
+  paid: "Paid Members Only",
+};
 
 const TRIGGER_LABELS: Record<string, string> = {
   welcome: "New Member Welcome",
@@ -55,6 +60,11 @@ function AutomationCard({ automation, onToggle, onEdit }: {
           </div>
           <p className="text-sm text-slate-500 mt-1">
             {TRIGGER_LABELS[automation.trigger_type] || automation.trigger_type}
+            {automation.trigger_type === "welcome" && automation.trigger_config?.member_type && (
+              <span className="ml-2 text-xs text-slate-400">
+                ({MEMBER_TYPE_LABELS[automation.trigger_config.member_type] || automation.trigger_config.member_type})
+              </span>
+            )}
           </p>
           {automation.description && (
             <p className="text-sm text-slate-400 mt-2 line-clamp-2">
@@ -80,14 +90,14 @@ function AutomationCard({ automation, onToggle, onEdit }: {
           </button>
           <button
             onClick={onToggle}
-            className={`relative w-12 h-6 rounded-full transition-colors ${
+            className={`relative w-11 h-6 rounded-full transition-colors ${
               automation.is_enabled ? "bg-green-500" : "bg-slate-300"
             }`}
             title={automation.is_enabled ? "Disable" : "Enable"}
           >
             <span
-              className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                automation.is_enabled ? "translate-x-6" : "translate-x-0.5"
+              className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${
+                automation.is_enabled ? "translate-x-5" : "translate-x-0"
               }`}
             />
           </button>
@@ -106,7 +116,7 @@ function AutomationCard({ automation, onToggle, onEdit }: {
 function EditModal({ automation, onClose, onSave }: {
   automation: Automation | null;
   onClose: () => void;
-  onSave: (data: Partial<Automation>) => void;
+  onSave: (data: Partial<Automation> & { trigger_config?: Record<string, string> }) => void;
 }) {
   const [formData, setFormData] = useState({
     name: automation?.name || "",
@@ -115,13 +125,29 @@ function EditModal({ automation, onClose, onSave }: {
     message_template: automation?.message_template || "",
     delay_minutes: automation?.delay_minutes || 0,
     is_enabled: automation?.is_enabled || false,
+    member_type: automation?.trigger_config?.member_type || "all",
   });
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    await onSave(formData);
+
+    // Build trigger_config based on trigger type
+    const trigger_config: Record<string, string> = {};
+    if (formData.trigger_type === "welcome" && formData.member_type !== "all") {
+      trigger_config.member_type = formData.member_type;
+    }
+
+    await onSave({
+      name: formData.name,
+      description: formData.description,
+      trigger_type: formData.trigger_type,
+      message_template: formData.message_template,
+      delay_minutes: formData.delay_minutes,
+      is_enabled: formData.is_enabled,
+      trigger_config,
+    });
     setSaving(false);
   };
 
@@ -173,6 +199,26 @@ function EditModal({ automation, onClose, onSave }: {
               ))}
             </select>
           </div>
+
+          {/* Member Type Filter - only for welcome trigger */}
+          {formData.trigger_type === "welcome" && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Send To</label>
+              <select
+                value={formData.member_type}
+                onChange={(e) => setFormData({ ...formData, member_type: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500"
+              >
+                <option value="all">All New Members</option>
+                <option value="free">Free Members Only</option>
+                <option value="paid">Paid Members Only</option>
+              </select>
+              <p className="text-xs text-slate-400 mt-1">
+                Free = signed up without purchasing. Paid = made at least one purchase.
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Message Template</label>
             <textarea
@@ -202,13 +248,13 @@ function EditModal({ automation, onClose, onSave }: {
             <button
               type="button"
               onClick={() => setFormData({ ...formData, is_enabled: !formData.is_enabled })}
-              className={`relative w-12 h-6 rounded-full transition-colors ${
+              className={`relative w-11 h-6 rounded-full transition-colors ${
                 formData.is_enabled ? "bg-green-500" : "bg-slate-300"
               }`}
             >
               <span
-                className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                  formData.is_enabled ? "translate-x-6" : "translate-x-0.5"
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${
+                  formData.is_enabled ? "translate-x-5" : "translate-x-0"
                 }`}
               />
             </button>
@@ -287,50 +333,68 @@ export default function AutomationsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
         });
-        if (response.ok) {
-          await fetchAutomations();
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error("Failed to update automation:", errorData);
+          alert(`Failed to update automation: ${errorData.error || response.statusText}`);
+          return;
         }
+        await fetchAutomations();
       } else {
         const response = await fetch("/api/admin/automations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
         });
-        if (response.ok) {
-          await fetchAutomations();
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error("Failed to create automation:", errorData);
+          alert(`Failed to create automation: ${errorData.error || response.statusText}`);
+          return;
         }
+        await fetchAutomations();
       }
       setEditingAutomation(null);
       setShowNewModal(false);
     } catch (error) {
       console.error("Failed to save automation:", error);
+      alert("Failed to save automation. Please try again.");
     }
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
-            <Link href="/portal/admin" className="hover:text-slate-700">Admin</Link>
-            <span>/</span>
-            <span className="text-slate-700">Automations</span>
+    <>
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200/60">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-sm">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-slate-800">Message Automations</h1>
+                <p className="text-sm text-slate-500">Automated DMs for member events</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowNewModal(true)}
+              className="px-4 py-2 bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              New Automation
+            </button>
           </div>
-          <h1 className="text-2xl font-bold text-slate-800">Message Automations</h1>
-          <p className="text-slate-500 mt-1">
-            Set up automated direct messages for various member events
-          </p>
         </div>
-        <button
-          onClick={() => setShowNewModal(true)}
-          className="px-4 py-2 bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-colors flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Automation
-        </button>
-      </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-5xl mx-auto px-6 py-6">
 
       {loading ? (
         <div className="space-y-4">
@@ -369,6 +433,7 @@ export default function AutomationsPage() {
           onSave={handleSave}
         />
       )}
-    </div>
+      </main>
+    </>
   );
 }

@@ -31,6 +31,7 @@ interface TriggerContext {
   progressPercent?: number;
   daysSinceJoin?: number;
   contextKey?: string; // Unique key to prevent duplicate sends
+  memberType?: "free" | "paid"; // For segmenting welcome messages
 }
 
 interface AutomationRecord {
@@ -232,6 +233,30 @@ async function getMemberDetails(memberId: string): Promise<{ name: string; first
 }
 
 /**
+ * Check if member has any paid purchases (not lead magnets)
+ */
+async function getMemberType(memberId: string): Promise<"free" | "paid"> {
+  const supabase = createAdminClientInstance();
+
+  const { data: purchases } = await supabase
+    .from("user_purchases")
+    .select("products(is_lead_magnet)")
+    .eq("user_id", memberId);
+
+  if (!purchases || purchases.length === 0) {
+    return "free";
+  }
+
+  // Check if any purchase is for a non-lead-magnet product
+  const hasPaidPurchase = purchases.some(
+    (p: { products: { is_lead_magnet: boolean } | null }) =>
+      p.products && !p.products.is_lead_magnet
+  );
+
+  return hasPaidPurchase ? "paid" : "free";
+}
+
+/**
  * Main function to trigger automations
  */
 export async function triggerAutomation(
@@ -268,7 +293,24 @@ export async function triggerAutomation(
     daysSinceJoin: memberDetails.daysSinceJoin,
   };
 
+  // Get member type for welcome trigger filtering
+  let memberType: "free" | "paid" | undefined;
+  if (triggerType === "welcome") {
+    memberType = await getMemberType(context.memberId);
+    console.log(`[DM Automation] Member ${context.memberId} is ${memberType}`);
+  }
+
   for (const automation of automations as AutomationRecord[]) {
+    // Check member type filter for welcome triggers
+    if (
+      automation.trigger_type === "welcome" &&
+      automation.trigger_config?.member_type &&
+      automation.trigger_config.member_type !== memberType
+    ) {
+      console.log(`[DM Automation] Skipping ${automation.name} - member type mismatch (wants ${automation.trigger_config.member_type}, member is ${memberType})`);
+      continue;
+    }
+
     // Check if specific product matches (for purchase_specific)
     if (
       automation.trigger_type === "purchase_specific" &&

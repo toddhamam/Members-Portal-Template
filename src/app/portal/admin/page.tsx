@@ -148,9 +148,9 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf9f7]">
+    <>
       {/* Header */}
-      <header className="bg-white border-b border-slate-200/60 sticky top-0 z-10">
+      <header className="bg-white border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -173,30 +173,21 @@ export default function AdminDashboardPage() {
                 <h1 className="text-xl font-semibold text-slate-800">
                   Portal Analytics
                 </h1>
-                <p className="text-sm text-slate-500">Admin Dashboard</p>
+                <p className="text-sm text-slate-500">Member metrics & insights</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <select
-                value={selectedRange}
-                onChange={(e) => setSelectedRange(Number(e.target.value))}
-                className="px-4 py-2 border border-violet-200/60 rounded-xl bg-gradient-to-br from-violet-50 to-white text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all cursor-pointer"
-              >
-                {DATE_RANGES.map((range) => (
-                  <option key={range.days} value={range.days}>
-                    {range.label}
-                  </option>
-                ))}
-              </select>
-
-              <Link
-                href="/portal"
-                className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 transition-colors"
-              >
-                Back to Portal
-              </Link>
-            </div>
+            <select
+              value={selectedRange}
+              onChange={(e) => setSelectedRange(Number(e.target.value))}
+              className="px-4 py-2 border border-violet-200/60 rounded-xl bg-gradient-to-br from-violet-50 to-white text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all cursor-pointer"
+            >
+              {DATE_RANGES.map((range) => (
+                <option key={range.days} value={range.days}>
+                  {range.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </header>
@@ -517,6 +508,6 @@ export default function AdminDashboardPage() {
         isOpen={selectedMemberId !== null}
         onClose={() => setSelectedMemberId(null)}
       />
-    </div>
+    </>
   );
 }
