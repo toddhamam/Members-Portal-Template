@@ -530,6 +530,33 @@ useEffect(() => {
 }, []);
 ```
 
+**Batching Queries for Bulk Operations:**
+When processing data for multiple users (e.g., member lists), fetch related data for all relevant IDs in a single batch query instead of N+1 queries:
+
+```typescript
+// Good - batch query for all users at once
+const userIds = members.map(m => m.id);
+
+const [purchases, progress] = await Promise.all([
+  supabase.from('user_purchases').select('*').in('user_id', userIds),
+  supabase.from('lesson_progress').select('*').in('user_id', userIds),
+]);
+
+// Create lookup maps for O(1) access
+const purchasesByUser = purchases.data?.reduce((acc, p) => {
+  (acc[p.user_id] ??= []).push(p);
+  return acc;
+}, {} as Record<string, Purchase[]>) ?? {};
+
+// Bad - N+1 queries (one per user)
+for (const member of members) {
+  const { data } = await supabase
+    .from('user_purchases')
+    .select('*')
+    .eq('user_id', member.id);  // Runs once per member!
+}
+```
+
 ---
 
 ## API Endpoints
@@ -1540,6 +1567,68 @@ interface MembersListResponse {
   page: number;
   pageSize: number;
 }
+```
+
+### Activity Tracking
+
+The admin dashboard tracks member activity to identify engagement levels and re-engagement opportunities.
+
+**Activity Status Definitions:**
+
+| Status | Criteria | Description |
+|--------|----------|-------------|
+| Active | Activity within last 7 days | Engaged members |
+| At Risk | Activity 8-30 days ago | May need re-engagement |
+| Dormant | No activity for 30+ days | Opportunity for re-engagement campaigns |
+
+**Terminology:** Use "Dormant" instead of "Churned" for inactive members. This project uses lifetime access, so inactive members aren't lost—they're opportunities for re-engagement.
+
+**Debounced Activity Tracking:**
+
+Activity tracking uses debouncing to avoid excessive database writes. The `AuthProvider` is the central hub for this cross-cutting concern:
+
+```typescript
+// In AuthProvider - track activity with 5-minute debounce
+const ACTIVITY_DEBOUNCE_MS = 5 * 60 * 1000; // 5 minutes
+
+useEffect(() => {
+  if (!user?.id) return;
+
+  const lastTracked = sessionStorage.getItem('lastActivityTracked');
+  const now = Date.now();
+
+  // Skip if tracked recently
+  if (lastTracked && now - parseInt(lastTracked) < ACTIVITY_DEBOUNCE_MS) {
+    return;
+  }
+
+  // Track activity (non-blocking, fail silently)
+  fetch('/api/activity', { method: 'POST' }).catch(() => {});
+  sessionStorage.setItem('lastActivityTracked', now.toString());
+}, [user?.id]);
+```
+
+**Key principles:**
+- Use `sessionStorage` to manage debouncing across page navigations
+- Activity tracking should be non-blocking and fail silently
+- Never let tracking failures affect core functionality
+
+**`last_active_at` Backfill Strategy:**
+
+When adding the `last_active_at` column, backfill existing data from activity sources in priority order:
+
+```sql
+-- Migration: Backfill last_active_at from existing activity data
+UPDATE profiles p
+SET last_active_at = COALESCE(
+  -- Priority 1: Most recent lesson progress
+  (SELECT MAX(updated_at) FROM lesson_progress WHERE user_id = p.id),
+  -- Priority 2: Most recent discussion activity
+  (SELECT MAX(created_at) FROM discussion_posts WHERE author_id = p.id),
+  -- Priority 3: Profile creation date (fallback)
+  p.created_at
+)
+WHERE last_active_at IS NULL;
 ```
 
 ### External Images Configuration

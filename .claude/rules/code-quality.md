@@ -1106,3 +1106,124 @@ On authentication pages (login, signup, password reset), the brand logo should l
 ```
 
 **Why:** Users on auth pages are trying to authenticate. Clicking the logo should keep them in the authentication flow, not redirect them to an external marketing site where they need to find their way back.
+
+---
+
+## 44. Use Custom CSS Tooltips Instead of Native Title Attribute
+
+For better UX and cross-device compatibility, use custom CSS tooltips instead of the native `title` attribute:
+
+```tsx
+// Bad - native title attribute
+<div title="This is an explanation">
+  Some metric
+</div>
+
+// Good - custom CSS tooltip with consistent styling
+<div className="group relative">
+  <span>Some metric</span>
+  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+    opacity-0 group-hover:opacity-100 transition-opacity
+    bg-gray-900 text-white text-sm px-3 py-2 rounded-lg
+    pointer-events-none whitespace-nowrap z-50">
+    This is an explanation
+  </div>
+</div>
+```
+
+**Why:**
+- Native `title` tooltips have inconsistent timing/appearance across browsers
+- Mobile devices don't support hover for `title` attributes
+- Custom tooltips allow brand-consistent styling and immediate visibility
+
+---
+
+## 45. Handle Edge Cases in API Responses
+
+API responses must gracefully handle empty states and provide appropriate defaults:
+
+```typescript
+// Good - explicit handling of empty states
+return NextResponse.json({
+  members: members ?? [],
+  total: total ?? 0,
+  activeCount: activeMembers?.length ?? 0,
+  revenueTotal: revenue ?? 0,
+});
+
+// Bad - can return undefined or cause errors
+return NextResponse.json({
+  members,  // Could be undefined
+  total,    // Could be undefined
+});
+```
+
+**UI handling:**
+
+```tsx
+// Good - handle zero/empty states explicitly
+{metrics.totalMembers === 0 ? (
+  <div className="text-gray-400">No members yet</div>
+) : (
+  <div>{metrics.totalMembers} members</div>
+)}
+
+// Good - handle empty arrays
+{members.length === 0 ? (
+  <EmptyState message="No members found" />
+) : (
+  <MembersList members={members} />
+)}
+```
+
+**Why:** Empty arrays and zero counts are valid states, not errors. UIs should display helpful messages rather than broken states.
+
+---
+
+## 46. Logical Ordering of Dashboard Metrics
+
+When displaying multiple metrics in a dashboard, order them logically by importance and relationship:
+
+```tsx
+// Good - ordered by importance/relationship
+<div className="grid grid-cols-4 gap-4">
+  <MetricCard title="Total Members" value={totalMembers} />
+  <MetricCard title="Active Members" value={activeMembers} />
+  <MetricCard title="At Risk" value={atRiskMembers} />
+  <MetricCard title="Dormant" value={dormantMembers} />
+</div>
+
+// Bad - random ordering
+<div className="grid grid-cols-4 gap-4">
+  <MetricCard title="Dormant" value={dormantMembers} />
+  <MetricCard title="Total Members" value={totalMembers} />
+  <MetricCard title="At Risk" value={atRiskMembers} />
+  <MetricCard title="Active Members" value={activeMembers} />
+</div>
+```
+
+**Common orderings:**
+- **Engagement funnel:** Total → Active → At Risk → Dormant
+- **Revenue:** Total revenue → Average order → Conversion rate
+- **Time-based:** Today → This week → This month → All time
+
+---
+
+## 47. Plan Mode for Complex Features
+
+Before implementing complex features, use planning to explore the codebase and design the approach:
+
+**When to use planning:**
+- Multi-file changes
+- New architectural patterns
+- Features with unclear scope
+- Database schema changes
+
+**Planning process:**
+1. Explore existing patterns in the codebase
+2. Identify files that need changes
+3. Consider edge cases and error handling
+4. Get user feedback on the approach
+5. Break implementation into discrete tasks
+
+**Why:** Planning prevents wasted effort from implementing an approach that doesn't align with user expectations or existing patterns.
