@@ -4,7 +4,7 @@
 export type ProductType = 'main' | 'order_bump' | 'upsell' | 'downsell';
 export type ContentType = 'video' | 'audio' | 'pdf' | 'text' | 'download';
 export type PurchaseStatus = 'active' | 'refunded' | 'expired';
-export type PurchaseSource = 'funnel' | 'portal';
+export type PurchaseSource = 'funnel' | 'portal' | 'migration';
 export type ResourceType = 'pdf' | 'worksheet' | 'checklist' | 'audio' | 'video' | 'link' | 'other';
 
 export interface Profile {

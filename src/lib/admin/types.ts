@@ -1,6 +1,6 @@
 // Admin Portal Analytics Types
 
-export type PurchaseSource = 'funnel' | 'portal';
+export type PurchaseSource = 'funnel' | 'portal' | 'migration';
 
 // ============================================
 // ADMIN METRICS API RESPONSE
