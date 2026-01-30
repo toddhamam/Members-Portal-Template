@@ -2,6 +2,10 @@
 
 export type PurchaseSource = 'funnel' | 'portal' | 'migration';
 
+// Activity status based on last_active_at
+// Active: within 30 days, At Risk: 30-60 days, Dormant: 60+ days, Never: null
+export type ActivityStatus = 'active' | 'at_risk' | 'dormant' | 'never';
+
 // ============================================
 // ADMIN METRICS API RESPONSE
 // GET /api/portal/admin/metrics
@@ -45,6 +49,14 @@ export interface AdminMetricsResponse {
     postsInPeriod: number;
     commentsInPeriod: number;
   };
+  activity: {
+    activeIn7Days: number;        // Members active in last 7 days
+    activeIn30Days: number;       // Members active in last 30 days
+    atRiskCount: number;          // 30-60 days inactive
+    dormantCount: number;         // 60+ days inactive
+    freeDormantCount: number;     // Free members 60+ days inactive
+    paidDormantCount: number;     // Paid members 60+ days inactive
+  };
 }
 
 // ============================================
@@ -64,6 +76,8 @@ export interface MemberSummary {
   ltv: number;                  // Total spent in dollars
   joinedAt: string;             // ISO date string
   membershipTier: MembershipTier;
+  lastActiveAt: string | null;  // ISO date string, null if never active
+  activityStatus: ActivityStatus;
 }
 
 export interface MembersListResponse {
@@ -83,7 +97,9 @@ export type MemberSortField =
   | 'ltv'
   | 'created_at'
   | 'progress'
-  | 'tier';
+  | 'tier'
+  | 'last_active_at'
+  | 'activity_status';
 
 export type SortOrder = 'asc' | 'desc';
 
@@ -139,6 +155,9 @@ export interface MemberDetailResponse {
     stripeCustomerId: string | null;
     joinedAt: string;
     membershipTier: MembershipTier;
+    lastActiveAt: string | null;
+    activityStatus: ActivityStatus;
+    daysSinceActive: number | null;
   };
   financials: {
     lifetimeValue: number;      // Total spent in dollars

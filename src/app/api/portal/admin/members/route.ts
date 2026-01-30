@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClientInstance, getUser } from '@/lib/supabase/server';
-import type { MembersListResponse, MemberSummary, MemberSortField, SortOrder, MembershipTier } from '@/lib/admin/types';
+import type { MembersListResponse, MemberSummary, MemberSortField, SortOrder, MembershipTier, ActivityStatus } from '@/lib/admin/types';
+
+/**
+ * Calculate activity status based on last_active_at date.
+ * Active: within 30 days, At Risk: 30-60 days, Dormant: 60+ days, Never: null
+ */
+function getActivityStatus(lastActiveAt: string | null): ActivityStatus {
+  if (!lastActiveAt) return 'never';
+
+  const lastActive = new Date(lastActiveAt);
+  const now = new Date();
+  const daysSinceActive = Math.floor((now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (daysSinceActive <= 30) return 'active';
+  if (daysSinceActive <= 60) return 'at_risk';
+  return 'dormant';
+}
 
 /**
  * GET /api/portal/admin/members
@@ -15,6 +31,7 @@ import type { MembersListResponse, MemberSummary, MemberSortField, SortOrder, Me
  * - sortBy: Sort field (default: 'created_at')
  * - sortOrder: 'asc' or 'desc' (default: 'desc')
  * - tier: Filter by membership tier ('free' | 'paid')
+ * - activity: Filter by activity status ('active' | 'at_risk' | 'dormant' | 'never')
  */
 export async function GET(request: NextRequest) {
   try {
@@ -45,13 +62,14 @@ export async function GET(request: NextRequest) {
     const sortBy = (searchParams.get('sortBy') || 'created_at') as MemberSortField;
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as SortOrder;
     const tierFilter = searchParams.get('tier') as MembershipTier | null;
+    const activityFilter = searchParams.get('activity') as ActivityStatus | null;
 
     const offset = (page - 1) * limit;
 
     // Build base query for profiles
     let query = supabase
       .from('profiles')
-      .select('id, email, full_name, avatar_url, created_at', { count: 'exact' });
+      .select('id, email, full_name, avatar_url, created_at, last_active_at', { count: 'exact' });
 
     // Apply search filter
     if (search) {
@@ -65,8 +83,10 @@ export async function GET(request: NextRequest) {
       query = query.order('email', { ascending: sortOrder === 'asc' });
     } else if (sortBy === 'created_at') {
       query = query.order('created_at', { ascending: sortOrder === 'asc' });
+    } else if (sortBy === 'last_active_at') {
+      query = query.order('last_active_at', { ascending: sortOrder === 'asc', nullsFirst: sortOrder === 'asc' });
     } else {
-      // For computed fields (ltv, products_count, progress), we'll sort client-side after enriching
+      // For computed fields (ltv, products_count, progress, activity_status), we'll sort client-side after enriching
       query = query.order('created_at', { ascending: false });
     }
 
@@ -145,9 +165,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Build response
-    let members: MemberSummary[] = profiles.map((p: { id: string; email: string; full_name: string | null; avatar_url: string | null; created_at: string }) => {
+    let members: MemberSummary[] = profiles.map((p: { id: string; email: string; full_name: string | null; avatar_url: string | null; created_at: string; last_active_at: string | null }) => {
       const stats = memberStats.get(p.id)!;
       const membershipTier: MembershipTier = stats.hasPaidPurchase ? 'paid' : 'free';
+      const activityStatus = getActivityStatus(p.last_active_at);
       return {
         id: p.id,
         email: p.email,
@@ -158,12 +179,19 @@ export async function GET(request: NextRequest) {
         ltv: stats.ltv,
         joinedAt: p.created_at,
         membershipTier,
+        lastActiveAt: p.last_active_at,
+        activityStatus,
       };
     });
 
     // Filter by tier if requested
     if (tierFilter) {
       members = members.filter(m => m.membershipTier === tierFilter);
+    }
+
+    // Filter by activity status if requested
+    if (activityFilter) {
+      members = members.filter(m => m.activityStatus === activityFilter);
     }
 
     // Sort by computed fields if needed
@@ -179,6 +207,14 @@ export async function GET(request: NextRequest) {
         return sortOrder === 'asc'
           ? tierOrder[a.membershipTier] - tierOrder[b.membershipTier]
           : tierOrder[b.membershipTier] - tierOrder[a.membershipTier];
+      });
+    } else if (sortBy === 'activity_status') {
+      // Sort order: active > at_risk > dormant > never
+      const activityOrder: Record<ActivityStatus, number> = { active: 0, at_risk: 1, dormant: 2, never: 3 };
+      members.sort((a, b) => {
+        return sortOrder === 'asc'
+          ? activityOrder[a.activityStatus] - activityOrder[b.activityStatus]
+          : activityOrder[b.activityStatus] - activityOrder[a.activityStatus];
       });
     }
 

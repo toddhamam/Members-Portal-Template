@@ -5,7 +5,24 @@ import Link from "next/link";
 import { MetricCard, SmallMetric } from "@/components/portal/admin/MetricCard";
 import { MembersTable } from "@/components/portal/admin/MembersTable";
 import { MemberSlideOver } from "@/components/portal/admin/MemberSlideOver";
-import type { AdminMetricsResponse, MemberSummary, MembershipTier } from "@/lib/admin/types";
+import type { AdminMetricsResponse, MemberSummary, MembershipTier, ActivityStatus } from "@/lib/admin/types";
+
+// Info tooltip component with CSS-based hover tooltip
+function InfoTooltip({ text, colorClass }: { text: string; colorClass: string }) {
+  return (
+    <div className="absolute top-2 right-2 group">
+      <span className={`${colorClass} cursor-help`}>
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </span>
+      <div className="absolute right-0 top-6 z-50 hidden group-hover:block w-64 p-3 bg-slate-800 text-white text-xs rounded-lg shadow-lg">
+        <div className="absolute -top-1 right-2 w-2 h-2 bg-slate-800 rotate-45" />
+        {text}
+      </div>
+    </div>
+  );
+}
 
 // Date range options
 const DATE_RANGES = [
@@ -42,6 +59,7 @@ export default function AdminDashboardPage() {
   const [sortBy, setSortBy] = useState<string>("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [tierFilter, setTierFilter] = useState<MembershipTier | "all">("all");
+  const [activityFilter, setActivityFilter] = useState<ActivityStatus | "all">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalMembers, setTotalMembers] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -101,6 +119,10 @@ export default function AdminDashboardPage() {
         params.set("tier", tierFilter);
       }
 
+      if (activityFilter !== "all") {
+        params.set("activity", activityFilter);
+      }
+
       const response = await fetch(`/api/portal/admin/members?${params}`);
 
       if (!response.ok) {
@@ -116,7 +138,7 @@ export default function AdminDashboardPage() {
     } finally {
       setIsLoadingMembers(false);
     }
-  }, [currentPage, sortBy, sortOrder, searchQuery, tierFilter]);
+  }, [currentPage, sortBy, sortOrder, searchQuery, tierFilter, activityFilter]);
 
   useEffect(() => {
     fetchMembers();
@@ -310,6 +332,70 @@ export default function AdminDashboardPage() {
               />
             </div>
 
+            {/* Member Activity Overview */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-5 mb-6">
+              <h3 className="text-base font-semibold text-slate-800 mb-4">
+                Member Activity
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="relative text-center p-4 bg-gradient-to-br from-violet-50 to-white rounded-xl border border-violet-100/60">
+                  <InfoTooltip
+                    text="Members who logged in or engaged with the portal within the last 7 days. Highly engaged members."
+                    colorClass="text-violet-300 hover:text-violet-500"
+                  />
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <span className="w-2 h-2 rounded-full bg-violet-500" />
+                    <p className="text-sm text-violet-600/80">Active (7d)</p>
+                  </div>
+                  <p className="text-2xl font-semibold text-slate-800">
+                    {metrics.activity.activeIn7Days}
+                  </p>
+                </div>
+                <div className="relative text-center p-4 bg-gradient-to-br from-green-50 to-white rounded-xl border border-green-100/60">
+                  <InfoTooltip
+                    text="Members who logged in or engaged with the portal within the last 30 days. Considered actively engaged."
+                    colorClass="text-green-300 hover:text-green-500"
+                  />
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                    <p className="text-sm text-green-600/80">Active (30d)</p>
+                  </div>
+                  <p className="text-2xl font-semibold text-slate-800">
+                    {metrics.activity.activeIn30Days}
+                  </p>
+                </div>
+                <div className="relative text-center p-4 bg-gradient-to-br from-yellow-50 to-white rounded-xl border border-yellow-100/60">
+                  <InfoTooltip
+                    text="Members inactive for 30-60 days. Good candidates for re-engagement emails or DMs to bring them back."
+                    colorClass="text-yellow-300 hover:text-yellow-500"
+                  />
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                    <p className="text-sm text-yellow-600/80">At Risk (30-60d)</p>
+                  </div>
+                  <p className="text-2xl font-semibold text-slate-800">
+                    {metrics.activity.atRiskCount}
+                  </p>
+                </div>
+                <div className="relative text-center p-4 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200/60">
+                  <InfoTooltip
+                    text="Members inactive for 60+ days. Since members have lifetime access, these are opportunities for re-engagement campaigns, not lost customers."
+                    colorClass="text-slate-300 hover:text-slate-500"
+                  />
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <span className="w-2 h-2 rounded-full bg-slate-400" />
+                    <p className="text-sm text-slate-500">Dormant (60d+)</p>
+                  </div>
+                  <p className="text-2xl font-semibold text-slate-800">
+                    {metrics.activity.dormantCount}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {metrics.activity.freeDormantCount} free · {metrics.activity.paidDormantCount} paid
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Secondary Metrics Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
               {/* Most Popular Products */}
@@ -438,6 +524,22 @@ export default function AdminDashboardPage() {
                 <option value="all">All Tiers</option>
                 <option value="free">Free</option>
                 <option value="paid">Paid</option>
+              </select>
+
+              {/* Activity Filter */}
+              <select
+                value={activityFilter}
+                onChange={(e) => {
+                  setActivityFilter(e.target.value as ActivityStatus | "all");
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400 transition-all bg-white"
+              >
+                <option value="all">All Activity</option>
+                <option value="active">Active (30d)</option>
+                <option value="at_risk">At Risk (30-60d)</option>
+                <option value="dormant">Dormant (60d+)</option>
+                <option value="never">Never Active</option>
               </select>
 
               {/* Search */}

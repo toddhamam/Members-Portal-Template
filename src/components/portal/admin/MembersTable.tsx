@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import type { MemberSummary } from "@/lib/admin/types";
+import type { MemberSummary, ActivityStatus } from "@/lib/admin/types";
 import { useChatOptional } from "@/components/chat";
 
 interface MembersTableProps {
@@ -47,6 +47,28 @@ function formatDate(dateString: string): string {
   if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
   if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
   return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
+function formatLastActive(dateString: string | null): string {
+  if (!dateString) return "Never";
+  return formatDate(dateString);
+}
+
+const activityStatusConfig: Record<ActivityStatus, { color: string; label: string }> = {
+  active: { color: "bg-green-500", label: "Active" },
+  at_risk: { color: "bg-yellow-500", label: "At Risk" },
+  dormant: { color: "bg-slate-400", label: "Dormant" },
+  never: { color: "bg-slate-300 border border-slate-400", label: "Never" },
+};
+
+function ActivityStatusDot({ status }: { status: ActivityStatus }) {
+  const config = activityStatusConfig[status];
+  return (
+    <span
+      className={`inline-block w-2 h-2 rounded-full ${config.color}`}
+      title={config.label}
+    />
+  );
 }
 
 function SortIcon({ field, sortBy, sortOrder }: { field: string; sortBy: string; sortOrder: "asc" | "desc" }) {
@@ -187,6 +209,15 @@ export function MembersTable({
                 <SortIcon field="created_at" sortBy={sortBy} sortOrder={sortOrder} />
               </span>
             </th>
+            <th
+              className="text-right px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700 transition-colors hidden md:table-cell"
+              onClick={() => onSort("last_active_at")}
+            >
+              <span className="flex items-center justify-end">
+                Last Active
+                <SortIcon field="last_active_at" sortBy={sortBy} sortOrder={sortOrder} />
+              </span>
+            </th>
             <th className="text-center px-5 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">
               Actions
             </th>
@@ -259,6 +290,14 @@ export function MembersTable({
               </td>
               <td className="px-5 py-4 text-sm text-slate-500 text-right hidden lg:table-cell">
                 {formatDate(member.joinedAt)}
+              </td>
+              <td className="px-5 py-4 text-right hidden md:table-cell">
+                <div className="flex items-center justify-end gap-2">
+                  <ActivityStatusDot status={member.activityStatus} />
+                  <span className="text-sm text-slate-500">
+                    {formatLastActive(member.lastActiveAt)}
+                  </span>
+                </div>
               </td>
               <td className="px-5 py-4 text-center">
                 <button

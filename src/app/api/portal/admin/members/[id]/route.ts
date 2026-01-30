@@ -1,6 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClientInstance, getUser } from '@/lib/supabase/server';
-import type { MemberDetailResponse, MemberProductProgress, MemberPurchaseHistory, PurchaseSource, MembershipTier } from '@/lib/admin/types';
+import type { MemberDetailResponse, MemberProductProgress, MemberPurchaseHistory, PurchaseSource, MembershipTier, ActivityStatus } from '@/lib/admin/types';
+
+/**
+ * Calculate activity status based on last_active_at date.
+ */
+function getActivityStatus(lastActiveAt: string | null): ActivityStatus {
+  if (!lastActiveAt) return 'never';
+
+  const lastActive = new Date(lastActiveAt);
+  const now = new Date();
+  const daysSinceActive = Math.floor((now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (daysSinceActive <= 30) return 'active';
+  if (daysSinceActive <= 60) return 'at_risk';
+  return 'dormant';
+}
+
+/**
+ * Calculate days since last active.
+ */
+function getDaysSinceActive(lastActiveAt: string | null): number | null {
+  if (!lastActiveAt) return null;
+
+  const lastActive = new Date(lastActiveAt);
+  const now = new Date();
+  return Math.floor((now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24));
+}
 
 /**
  * GET /api/portal/admin/members/[id]
@@ -37,7 +63,7 @@ export async function GET(
     // Fetch member profile
     const { data: memberProfile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, email, full_name, first_name, last_name, avatar_url, stripe_customer_id, created_at')
+      .select('id, email, full_name, first_name, last_name, avatar_url, stripe_customer_id, created_at, last_active_at')
       .eq('id', memberId)
       .single();
 
@@ -316,6 +342,9 @@ export async function GET(
         stripeCustomerId: memberProfile.stripe_customer_id,
         joinedAt: memberProfile.created_at,
         membershipTier,
+        lastActiveAt: memberProfile.last_active_at,
+        activityStatus: getActivityStatus(memberProfile.last_active_at),
+        daysSinceActive: getDaysSinceActive(memberProfile.last_active_at),
       },
       financials: {
         lifetimeValue,

@@ -42,6 +42,11 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate') || thirtyDaysAgo.toISOString();
     const endDate = searchParams.get('endDate') || now.toISOString();
 
+    // Activity tracking date thresholds
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const activityThirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString();
+
     // Fetch all data in parallel for performance
     const [
       profilesResult,
@@ -55,6 +60,11 @@ export async function GET(request: NextRequest) {
       reactionsResult,
       postsInPeriodResult,
       commentsInPeriodResult,
+      activeIn7DaysResult,
+      activeIn30DaysResult,
+      atRiskResult,
+      dormantResult,
+      dormantProfilesResult,
     ] = await Promise.all([
       // Total members
       supabase.from('profiles').select('id', { count: 'exact', head: true }),
@@ -128,6 +138,37 @@ export async function GET(request: NextRequest) {
         .select('id', { count: 'exact', head: true })
         .gte('created_at', startDate)
         .lte('created_at', endDate),
+
+      // Activity tracking: active in last 7 days
+      supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .gte('last_active_at', sevenDaysAgo),
+
+      // Activity tracking: active in last 30 days
+      supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .gte('last_active_at', activityThirtyDaysAgo),
+
+      // Activity tracking: at risk (30-60 days inactive)
+      supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .lt('last_active_at', activityThirtyDaysAgo)
+        .gte('last_active_at', sixtyDaysAgo),
+
+      // Activity tracking: dormant (60+ days inactive)
+      supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .lt('last_active_at', sixtyDaysAgo),
+
+      // All profiles with last_active_at and purchases for dormant tier breakdown
+      supabase
+        .from('profiles')
+        .select('id, last_active_at')
+        .lt('last_active_at', sixtyDaysAgo),
     ]);
 
     // Calculate metrics
@@ -232,6 +273,18 @@ export async function GET(request: NextRequest) {
       ? (paidMembers / totalMembers) * 100
       : 0;
 
+    // Calculate dormant tier breakdown (free vs paid dormant members)
+    const dormantProfiles = dormantProfilesResult.data || [];
+    let freeDormantCount = 0;
+    let paidDormantCount = 0;
+    for (const dormantProfile of dormantProfiles) {
+      if (paidCustomers.has(dormantProfile.id)) {
+        paidDormantCount++;
+      } else {
+        freeDormantCount++;
+      }
+    }
+
     // Build response
     const metrics: AdminMetricsResponse = {
       members: {
@@ -265,6 +318,14 @@ export async function GET(request: NextRequest) {
         totalReactions: reactionsResult.count || 0,
         postsInPeriod: postsInPeriodResult.count || 0,
         commentsInPeriod: commentsInPeriodResult.count || 0,
+      },
+      activity: {
+        activeIn7Days: activeIn7DaysResult.count || 0,
+        activeIn30Days: activeIn30DaysResult.count || 0,
+        atRiskCount: atRiskResult.count || 0,
+        dormantCount: dormantResult.count || 0,
+        freeDormantCount,
+        paidDormantCount,
       },
     };
 

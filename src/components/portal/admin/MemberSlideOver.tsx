@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import type { MemberDetailResponse } from "@/lib/admin/types";
+import type { MemberDetailResponse, ActivityStatus } from "@/lib/admin/types";
 import { ProductProgressList } from "./ProductProgressList";
 import { useChatOptional } from "@/components/chat";
 
@@ -40,6 +40,23 @@ function formatDate(dateString: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+const activityStatusConfig: Record<ActivityStatus, { color: string; bgColor: string; label: string }> = {
+  active: { color: "text-green-600", bgColor: "bg-green-500", label: "Active" },
+  at_risk: { color: "text-yellow-600", bgColor: "bg-yellow-500", label: "At Risk" },
+  dormant: { color: "text-slate-500", bgColor: "bg-slate-400", label: "Dormant" },
+  never: { color: "text-slate-400", bgColor: "bg-slate-300", label: "Never Active" },
+};
+
+function formatLastActive(lastActiveAt: string | null, daysSinceActive: number | null): string {
+  if (!lastActiveAt || daysSinceActive === null) return "Never";
+  if (daysSinceActive === 0) return "Today";
+  if (daysSinceActive === 1) return "Yesterday";
+  if (daysSinceActive < 7) return `${daysSinceActive}d ago`;
+  if (daysSinceActive < 30) return `${Math.floor(daysSinceActive / 7)}w ago`;
+  if (daysSinceActive < 365) return `${Math.floor(daysSinceActive / 30)}mo ago`;
+  return formatDate(lastActiveAt);
 }
 
 export function MemberSlideOver({ memberId, isOpen, onClose }: MemberSlideOverProps) {
@@ -173,6 +190,16 @@ export function MemberSlideOver({ memberId, isOpen, onClose }: MemberSlideOverPr
                   <p className="text-xs text-slate-400 mt-1">
                     Joined {formatDate(member.profile.joinedAt)}
                   </p>
+                  {/* Activity Status */}
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className={`inline-block w-2 h-2 rounded-full ${activityStatusConfig[member.profile.activityStatus].bgColor}`} />
+                    <span className={`text-xs ${activityStatusConfig[member.profile.activityStatus].color}`}>
+                      {activityStatusConfig[member.profile.activityStatus].label}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      · Last active {formatLastActive(member.profile.lastActiveAt, member.profile.daysSinceActive)}
+                    </span>
+                  </div>
                   {/* Send Message Button */}
                   <button
                     onClick={handleSendMessage}

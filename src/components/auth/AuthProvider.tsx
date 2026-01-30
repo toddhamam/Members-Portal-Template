@@ -20,6 +20,37 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Debounce interval for activity tracking (5 minutes)
+const ACTIVITY_DEBOUNCE_MS = 5 * 60 * 1000;
+
+/**
+ * Track user activity with debouncing.
+ * Updates last_active_at in the database, but only if more than 5 minutes
+ * have passed since the last update (using sessionStorage as debounce).
+ */
+const trackActivity = async () => {
+  try {
+    const lastUpdate = sessionStorage.getItem('lastActivityUpdate');
+    const now = Date.now();
+
+    // Skip if updated within the debounce interval
+    if (lastUpdate && now - parseInt(lastUpdate, 10) < ACTIVITY_DEBOUNCE_MS) {
+      return;
+    }
+
+    // Call activity endpoint (non-blocking, fire and forget)
+    fetch('/api/portal/activity', { method: 'POST' }).catch(() => {
+      // Silently ignore errors - activity tracking is non-critical
+    });
+
+    sessionStorage.setItem('lastActivityUpdate', now.toString());
+  } catch {
+    // sessionStorage may not be available (private browsing)
+    // Just try the fetch without debouncing
+    fetch('/api/portal/activity', { method: 'POST' }).catch(() => {});
+  }
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -56,6 +87,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Load profile in background (don't block rendering)
       if (initialSession?.user) {
         fetchProfile(initialSession.user.id);
+        // Track activity when session is established
+        trackActivity();
       }
     };
 
@@ -70,6 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (newSession?.user) {
           // Load profile in background
           fetchProfile(newSession.user.id);
+          // Track activity when session changes (sign in, token refresh)
+          trackActivity();
         } else {
           setProfile(null);
         }
