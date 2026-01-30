@@ -961,6 +961,28 @@ import { cn } from "@/styles/style-guide";
 
 ## React Component Patterns
 
+### Shared UI Components
+
+Reusable UI components live in `src/components/shared/` and should be used instead of creating local duplicates:
+
+| Component | Purpose |
+|-----------|---------|
+| `UserAvatar` | Displays user avatar with fallback to initials |
+| `formatDisplayName` | Formats names as "John D." for privacy |
+
+**Example - UserAvatar:**
+```tsx
+import { UserAvatar } from "@/components/shared/UserAvatar";
+
+// The shared component handles all cases:
+// - Avatar URL present → shows image
+// - No avatar → shows initials from name
+// - No name → shows default placeholder
+<UserAvatar user={profile} size="sm" />
+```
+
+**Key benefit:** Changes to shared components propagate everywhere. When a user updates their avatar, it reflects immediately in the header, sidebar, and all other locations using the shared `UserAvatar` component.
+
 ### Component Memoization
 
 Use `React.memo` for components that might re-render unnecessarily when parent state changes:

@@ -1016,3 +1016,93 @@ When using custom SMTP (SendGrid, Mailgun, etc.) for transactional emails:
 - Emails in spam → sender not verified
 - "From" shows wrong address → SMTP not configured in Supabase
 - Emails not sending → SMTP credentials incorrect
+
+---
+
+## 41. Prefer Shared Components Over Local Duplicates
+
+Always use shared, well-tested components from `src/components/shared/` instead of creating local versions with limited functionality:
+
+```tsx
+// Bad - local component with limited functionality
+function PortalHeader() {
+  // Local UserAvatar that only handles one case
+  const UserAvatar = ({ url }: { url: string }) => (
+    <img src={url} className="w-8 h-8 rounded-full" />
+  );
+
+  return <UserAvatar url={profile.avatar_url} />;
+}
+
+// Good - use the shared component with full functionality
+import { UserAvatar } from "@/components/shared/UserAvatar";
+
+function PortalHeader() {
+  return <UserAvatar user={profile} size="sm" />;
+}
+```
+
+**Why this matters:**
+- Shared components handle edge cases (missing avatar → initials fallback, missing user → default)
+- Changes to the shared component propagate everywhere (e.g., avatar updates reflect immediately across the app)
+- Reduces code duplication and maintenance burden
+
+**Common symptoms of local duplicates:**
+- Avatar changes not reflecting in header but working elsewhere
+- Inconsistent fallback behavior across the app
+- Same bug fixed in one place but not another
+
+---
+
+## 42. Auth Pages Should Use Dedicated Layouts
+
+Authentication-related pages (login, signup, password reset) should NOT be nested within layouts that assume the user is logged in:
+
+```
+# Bad - auth pages inside portal layout
+src/app/portal/
+├── layout.tsx          # Shows sidebar, assumes auth
+├── reset-password/     # User is NOT logged in here!
+│   └── page.tsx
+└── dashboard/
+    └── page.tsx
+
+# Good - auth pages in dedicated location
+src/app/
+├── login/
+│   └── page.tsx        # Standalone, no nav
+├── portal/
+│   ├── layout.tsx      # Shows sidebar, requires auth
+│   └── dashboard/
+│       └── page.tsx
+└── auth/
+    └── callback/       # Handles auth redirects
+        └── route.ts
+```
+
+**Why this matters:**
+- Parent layouts render for all child routes, including auth pages
+- Navigation elements (sidebars, mobile nav) will incorrectly appear on auth pages
+- Users see confusing UI during login/reset flows
+
+**Exception:** Password reset *confirm* page may need to be in the portal layout if it requires an authenticated session to update the password. In that case, conditionally hide navigation elements based on the route.
+
+---
+
+## 43. Brand Logo Links on Auth Pages
+
+On authentication pages (login, signup, password reset), the brand logo should link to the login page, not the root domain:
+
+```tsx
+// Bad - links to marketing site, takes user out of auth flow
+<Link href="/">
+  <Image src="/logo.png" alt="Brand" />
+</Link>
+
+// Good - keeps user in auth context
+<Link href="/login">
+  <Image src="/logo.png" alt="Brand" />
+</Link>
+```
+
+**Why:** Users on auth pages are trying to authenticate. Clicking the logo should keep them in the authentication flow, not redirect them to an external marketing site where they need to find their way back.
