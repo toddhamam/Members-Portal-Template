@@ -56,12 +56,12 @@ export async function updateSession(
   const isPublicAuthRoute =
     pathname === '/login' ||
     pathname === '/portal/signup' ||
-    pathname === '/portal/reset-password';
+    pathname.startsWith('/reset-password');
 
   // Password reset confirm page needs special handling:
   // - Unauthenticated users should be allowed (to see error message)
   // - Authenticated users MUST be allowed (to set their new password)
-  const isPasswordResetConfirm = pathname === '/portal/reset-password/confirm';
+  const isPasswordResetConfirm = pathname === '/reset-password/confirm';
 
   // If trying to access protected route without auth, redirect to login
   // (but allow public auth routes and password reset confirm)

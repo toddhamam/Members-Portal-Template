@@ -151,7 +151,7 @@ function ResetPasswordConfirmContent() {
     return (
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-3">
+          <Link href="/login" className="inline-flex items-center gap-3">
             <BrandLogo className="w-12 h-12" />
             <div>
               <span className="text-sm font-medium tracking-widest text-[#222222] block">INNER WEALTH</span>
@@ -188,7 +188,7 @@ function ResetPasswordConfirmContent() {
     return (
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-3">
+          <Link href="/login" className="inline-flex items-center gap-3">
             <BrandLogo className="w-12 h-12" />
             <div>
               <span className="text-sm font-medium tracking-widest text-[#222222] block">INNER WEALTH</span>
@@ -211,7 +211,7 @@ function ResetPasswordConfirmContent() {
             {error || "This password reset link is invalid or has expired."}
           </p>
           <Link
-            href="/portal/reset-password"
+            href="/reset-password"
             className="inline-block w-full bg-[#222222] hover:bg-black text-white font-medium py-4 rounded-lg transition-colors tracking-wide text-center"
           >
             Request New Reset Link
@@ -224,7 +224,7 @@ function ResetPasswordConfirmContent() {
   return (
     <div className="w-full max-w-md">
       <div className="text-center mb-8">
-        <Link href="/" className="inline-flex items-center gap-3">
+        <Link href="/login" className="inline-flex items-center gap-3">
           <BrandLogo className="w-12 h-12" />
           <div>
             <span className="text-sm font-medium tracking-widest text-[#222222] block">INNER WEALTH</span>

@@ -63,7 +63,7 @@ function ResetPasswordContent() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-3">
+          <Link href="/login" className="inline-flex items-center gap-3">
             <BrandLogo className="w-12 h-12" />
             <div>
               <span className="text-sm font-medium tracking-widest text-[#222222] block">INNER WEALTH</span>
@@ -100,7 +100,7 @@ function ResetPasswordContent() {
     <div className="w-full max-w-md">
       {/* Logo */}
       <div className="text-center mb-8">
-        <Link href="/" className="inline-flex items-center gap-3">
+        <Link href="/login" className="inline-flex items-center gap-3">
           <BrandLogo className="w-12 h-12" />
           <div>
             <span className="text-sm font-medium tracking-widest text-[#222222] block">INNER WEALTH</span>

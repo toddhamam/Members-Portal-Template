@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Auth routes that should NOT be rewritten on portal subdomain
-  const isAuthRoute = pathname === '/login' || pathname === '/portal/signup' || pathname.startsWith('/portal/reset-password') || pathname.startsWith('/auth/');
+  const isAuthRoute = pathname === '/login' || pathname === '/portal/signup' || pathname.startsWith('/reset-password') || pathname.startsWith('/auth/');
   const isPortalSubdomain = hostname.startsWith('portal.');
   const isFunnelSubdomain = hostname.startsWith('offer.');
 

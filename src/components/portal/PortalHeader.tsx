@@ -6,25 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { NotificationBell } from "@/components/discussion/NotificationBell";
 import { ChatHeaderButton } from "@/components/chat/ChatHeaderButton";
-
-function UserAvatar({ name, className = "w-8 h-8" }: { name?: string; className?: string }) {
-  const initials = name
-    ? name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : "?";
-
-  return (
-    <div
-      className={`${className} rounded-full bg-[#d4a574] flex items-center justify-center text-white font-medium text-sm`}
-    >
-      {initials}
-    </div>
-  );
-}
+import { UserAvatar } from "@/components/shared/UserAvatar";
 
 export function PortalHeader() {
   const router = useRouter();
@@ -77,7 +59,12 @@ export function PortalHeader() {
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 transition-colors"
         >
-          <UserAvatar name={displayName} />
+          <UserAvatar
+              avatarUrl={profile?.avatar_url}
+              name={displayName}
+              userId={profile?.id}
+              size="sm"
+            />
           <span className="text-sm font-medium text-[#222222] hidden sm:block">
             {displayName}
           </span>

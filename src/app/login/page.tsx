@@ -56,7 +56,7 @@ export default function LoginPage() {
     <div className="w-full max-w-md">
       {/* Logo */}
       <div className="text-center mb-8">
-        <Link href="/" className="inline-flex items-center gap-3">
+        <Link href="/login" className="inline-flex items-center gap-3">
           <BrandLogo className="w-12 h-12" />
           <div>
             <span className="text-sm font-medium tracking-widest text-[#222222] block">INNER WEALTH</span>
@@ -121,7 +121,7 @@ export default function LoginPage() {
               <span className="ml-2 text-sm text-[#4b5563]">Remember me</span>
             </label>
             <Link
-              href="/portal/reset-password"
+              href="/reset-password"
               className="text-sm text-[#ee5d0b] hover:text-[#d54d00]"
             >
               Forgot password?

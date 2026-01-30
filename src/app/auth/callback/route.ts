@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       // For recovery type with PKCE failure, try passing code to client-side
       if (type === "recovery") {
-        const confirmUrl = new URL("/portal/reset-password/confirm", requestUrl.origin);
+        const confirmUrl = new URL("/reset-password/confirm", requestUrl.origin);
         confirmUrl.searchParams.set("code", code);
         return NextResponse.redirect(confirmUrl);
       }
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     // Determine redirect URL
     const redirectUrl = type === "recovery"
-      ? new URL("/portal/reset-password/confirm", requestUrl.origin)
+      ? new URL("/reset-password/confirm", requestUrl.origin)
       : new URL(next, requestUrl.origin);
 
     // Create response and set cookies on it
