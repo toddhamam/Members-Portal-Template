@@ -1227,3 +1227,160 @@ Before implementing complex features, use planning to explore the codebase and d
 5. Break implementation into discrete tasks
 
 **Why:** Planning prevents wasted effort from implementing an approach that doesn't align with user expectations or existing patterns.
+
+---
+
+## 48. Lazy Initialization for SDK/API Clients
+
+External service SDKs (Stripe, external APIs) should be initialized lazily using a getter function, not at module level:
+
+```typescript
+// Bad - module-level instantiation fails during build
+import Stripe from "stripe";
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);  // Fails if env var not set at build time
+
+export async function createPayment() {
+  return stripe.paymentIntents.create({ ... });
+}
+
+// Good - lazy initialization via getter
+import Stripe from "stripe";
+
+let stripeInstance: Stripe | null = null;
+
+function getStripe(): Stripe {
+  if (!stripeInstance) {
+    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY!);
+  }
+  return stripeInstance;
+}
+
+export async function createPayment() {
+  return getStripe().paymentIntents.create({ ... });
+}
+```
+
+**Why:** During Next.js build, environment variables may not be available. Module-level instantiation runs at import time, causing build failures. Lazy initialization defers SDK creation to runtime when env vars are guaranteed to be present.
+
+**Common symptoms:**
+- Build errors about missing environment variables
+- "Cannot read property of undefined" during build
+- API routes that work locally but fail in production builds
+
+---
+
+## 49. Dynamic Rendering for Auth-Dependent Pages
+
+Pages or layouts that rely on Supabase authentication and user data fetched at runtime should be marked with `force-dynamic` to prevent prerendering:
+
+```typescript
+// In pages/layouts that use auth state
+export const dynamic = 'force-dynamic';
+
+export default function PortalLayout({ children }: { children: React.ReactNode }) {
+  // This layout uses AuthProvider which needs runtime Supabase client
+  return (
+    <AuthProvider>
+      {children}
+    </AuthProvider>
+  );
+}
+```
+
+**When to use:**
+- Layouts wrapping authenticated routes (`/portal/*`, `/admin/*`)
+- Pages that fetch user-specific data at load time
+- Any page that initializes Supabase client during render
+
+**Why:** Next.js attempts to prerender pages during build. If a page tries to create a Supabase client without environment variables (which aren't available at build time), the build fails.
+
+---
+
+## 50. Centralized Brand Configuration
+
+Use a dedicated `brand.ts` file for all brand-specific settings instead of scattering them throughout the codebase:
+
+```typescript
+// src/lib/brand.ts
+export const brand = {
+  name: "Inner Wealth Initiate",
+  tagline: "Transform Your Inner World",
+  domains: {
+    marketing: "innerwealthinitiate.com",
+    funnel: "offer.innerwealthinitiate.com",
+    portal: "portal.innerwealthinitiate.com",
+  },
+  contact: {
+    email: "support@innerwealthinitiate.com",
+    phone: "+1 (555) 123-4567",
+  },
+  social: {
+    instagram: "https://instagram.com/innerwealthinitiate",
+    youtube: "https://youtube.com/@innerwealthinitiate",
+  },
+  legal: {
+    companyName: "Inner Wealth LLC",
+    address: "123 Main St, City, State 12345",
+  },
+} as const;
+```
+
+**Usage:**
+```typescript
+import { brand } from "@/lib/brand";
+
+// In components
+<title>{brand.name} | Member Portal</title>
+<a href={`mailto:${brand.contact.email}`}>Contact Support</a>
+```
+
+**Why:**
+- Single source of truth for brand identity
+- Easy to customize when creating new brand instances from template
+- Prevents typos from hardcoded strings
+- Clear customization points marked with `[CUSTOMIZE]` comments
+
+---
+
+## 51. Immutable State Updates
+
+When updating React state (especially arrays or objects), always create new instances rather than mutating existing ones:
+
+```typescript
+// Bad - mutating existing array
+const handleAddItem = (newItem: Item) => {
+  items.push(newItem);  // Mutates existing array
+  setItems(items);       // React may not detect the change
+};
+
+// Good - creating new array
+const handleAddItem = (newItem: Item) => {
+  setItems([...items, newItem]);  // New array reference
+};
+
+// Bad - mutating object property
+const handleUpdateUser = (newName: string) => {
+  user.name = newName;   // Mutates existing object
+  setUser(user);          // React may not detect the change
+};
+
+// Good - creating new object with spread
+const handleUpdateUser = (newName: string) => {
+  setUser({ ...user, name: newName });  // New object reference
+};
+
+// Good - updating nested objects
+const handleUpdateAddress = (newCity: string) => {
+  setUser({
+    ...user,
+    address: { ...user.address, city: newCity }
+  });
+};
+```
+
+**Why:** React uses reference equality to detect state changes. Mutating an object/array keeps the same reference, so React doesn't know to re-render. Creating new references ensures React detects the change and updates the UI correctly.
+
+**Common symptoms of mutation bugs:**
+- UI not updating after state change
+- Stale data appearing in lists
+- useEffect not triggering when dependencies change

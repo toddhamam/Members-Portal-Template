@@ -20,7 +20,17 @@ Before starting, you'll need accounts with:
 
 ## Quick Start
 
-### 1. Clone & Install
+### 1. Create Your Repository
+
+**Recommended: Use GitHub Template**
+
+If this repository is set up as a GitHub template (Settings > Repository > Template repository), you can create a new repo directly:
+
+1. Click "Use this template" > "Create a new repository"
+2. Name your new repository (e.g., `brand-name-portal`)
+3. Clone your new repository and continue below
+
+**Alternative: Fork or Clone**
 
 ```bash
 # Clone the repository
