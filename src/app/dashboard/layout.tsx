@@ -1,5 +1,8 @@
 import { AuthProvider } from "@/components/auth/AuthProvider";
 
+// Prevent prerendering - AuthProvider needs runtime Supabase client
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: "Funnel Dashboard | Inner Wealth Initiate",
   description: "Funnel metrics and analytics",

@@ -5,6 +5,9 @@ import { PortalContent } from "@/components/portal/PortalContent";
 import { MobileNav } from "@/components/portal/MobileNav";
 import { ChatProvider, ChatContainer } from "@/components/chat";
 
+// Prevent prerendering - AuthProvider needs runtime Supabase client
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: "Member Portal | Inner Wealth Initiate",
   description: "Access your purchased products and courses",
