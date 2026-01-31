@@ -4,6 +4,7 @@ import { trackEvent, upsertProfile, addProfileToList, FunnelEvents, FunnelLists 
 import { grantProductAccess } from '@/lib/supabase/purchases';
 import { trackServerPurchase } from '@/lib/meta-capi';
 import { trackCheckoutPurchase } from '@/lib/funnel-tracking';
+import { domains } from '@/config/brand';
 import Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
             numItems: contentIds.length,
             firstName,
             lastName,
-            eventSourceUrl: 'https://offer.innerwealthinitiate.com/thank-you',
+            eventSourceUrl: `https://${domains.funnel}/thank-you`,
           });
         } catch (metaError) {
           console.error('[Webhook] Meta CAPI integration failed (non-critical):', metaError);
@@ -265,7 +266,7 @@ export async function POST(request: NextRequest) {
             numItems: contentIds.length,
             firstName,
             lastName,
-            eventSourceUrl: 'https://offer.innerwealthinitiate.com/thank-you',
+            eventSourceUrl: `https://${domains.funnel}/thank-you`,
           });
         } catch (metaError) {
           console.error('[Webhook] Meta CAPI integration failed (non-critical):', metaError);

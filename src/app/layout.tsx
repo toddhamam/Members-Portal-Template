@@ -4,6 +4,7 @@ import "./globals.css";
 import MetaPixel from "@/components/MetaPixel";
 import HotjarPixel from "@/components/HotjarPixel";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import { brand, meta } from "@/config/brand";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -17,16 +18,17 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
+// [CUSTOMIZE] Update brand name and description in src/config/brand.ts
 export const metadata: Metadata = {
   title: {
-    default: "Inner Wealth Initiate - Transform Your Inner World",
-    template: "%s | Inner Wealth Initiate",
+    default: `${brand.name} - ${brand.tagline}`,
+    template: `%s | ${brand.name}`,
   },
-  description: "Clear the fears, blocks, and patterns that keep you stuck. Discover tools for spiritual awakening and align with your true self.",
+  description: meta.defaultDescription,
   openGraph: {
-    siteName: "Inner Wealth Initiate",
-    title: "Inner Wealth Initiate - Transform Your Inner World",
-    description: "Clear the fears, blocks, and patterns that keep you stuck. Discover tools for spiritual awakening and align with your true self.",
+    siteName: brand.name,
+    title: `${brand.name} - ${brand.tagline}`,
+    description: meta.defaultDescription,
     type: "website",
     locale: "en_US",
   },

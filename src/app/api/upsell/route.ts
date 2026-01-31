@@ -9,6 +9,7 @@ import {
   trackDownsellPurchase,
   trackDownsellDecline,
 } from '@/lib/funnel-tracking';
+import { domains } from '@/config/brand';
 import Stripe from 'stripe';
 
 interface CustomerData {
@@ -230,7 +231,7 @@ export async function POST(request: NextRequest) {
           numItems: 1,
           firstName,
           lastName,
-          eventSourceUrl: `https://offer.innerwealthinitiate.com/${upsellType}`,
+          eventSourceUrl: `https://${domains.funnel}/${upsellType}`,
         });
       } catch (metaError) {
         console.error('[Upsell] Meta CAPI tracking failed (non-critical):', metaError);

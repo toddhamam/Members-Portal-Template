@@ -114,6 +114,67 @@ See [File Reference](#file-reference) below for details on each file.
 
 ---
 
+## Files with Brand References
+
+These files contain hardcoded brand references that should be updated. Use **Find & Replace** in your editor to update these quickly.
+
+**Search for:** `Inner Wealth Initiate`, `innerwealthinitiate`
+
+### High Priority (User-Facing)
+
+| File | What to Update |
+|------|----------------|
+| `src/app/privacy/page.tsx` | Company name, email throughout |
+| `src/app/terms/page.tsx` | Company name, email throughout |
+| `src/app/refund/page.tsx` | Support email |
+| `src/app/contact/page.tsx` | Email address, social links |
+| `src/app/thank-you/page.tsx` | Logo alt text, YouTube channel |
+| `src/app/checkout/page.tsx` | Logo alt text, copyright |
+
+### Portal Layouts (Meta Titles)
+
+| File | What to Update |
+|------|----------------|
+| `src/app/portal/layout.tsx` | Page title |
+| `src/app/portal/signup/layout.tsx` | Page title |
+| `src/app/claim-account/layout.tsx` | Page title |
+| `src/app/join/layout.tsx` | Page title |
+| `src/app/dashboard/layout.tsx` | Page title |
+
+### Funnel Pages (Logo Alt Text)
+
+| File | What to Update |
+|------|----------------|
+| `src/app/upsell-1/page.tsx` | Logo alt text, portal URL |
+| `src/app/downsell-1/page.tsx` | Logo alt text, portal URL |
+
+### Marketing Content
+
+| File | What to Update |
+|------|----------------|
+| `src/app/page.tsx` | Support email in FAQ |
+| `src/app/media/page.tsx` | Social media URLs |
+
+### Quick Find & Replace Commands
+
+```bash
+# Find all brand references
+grep -r "Inner Wealth Initiate" src/
+grep -r "innerwealthinitiate" src/
+
+# Or use your editor's Find & Replace:
+# 1. Search: Inner Wealth Initiate
+#    Replace: Your Brand Name
+#
+# 2. Search: innerwealthinitiate.com
+#    Replace: yourdomain.com
+#
+# 3. Search: info@innerwealthinitiate.com
+#    Replace: support@yourdomain.com
+```
+
+---
+
 ## Domain Configuration
 
 The portal supports multiple domain configurations:
