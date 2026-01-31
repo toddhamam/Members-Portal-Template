@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-12-15.clover',
-});
+// Lazy initialization to avoid build-time errors when env vars aren't available
+let stripeInstance: Stripe | null = null;
+
+function getStripe(): Stripe {
+  if (!stripeInstance) {
+    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2025-12-15.clover',
+    });
+  }
+  return stripeInstance;
+}
 
 // Prices in cents
 const RESISTANCE_MAP_PRICE = 700; // $7.00
@@ -23,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Create PaymentIntent WITHOUT a customer attached
     // The customer will be attached later in update-payment-intent
     // when the user enters their real email address
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount,
       currency: 'usd',
       // Don't attach customer here - will be attached during update

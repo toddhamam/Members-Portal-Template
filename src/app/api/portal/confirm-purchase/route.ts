@@ -3,9 +3,17 @@ import Stripe from 'stripe';
 import { grantProductAccess } from '@/lib/supabase/purchases';
 import { upsertProfile, trackEvent, addProfileToList, FunnelLists } from '@/lib/klaviyo';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-12-15.clover',
-});
+// Lazy initialization to avoid build-time errors when env vars aren't available
+let stripeInstance: Stripe | null = null;
+
+function getStripe(): Stripe {
+  if (!stripeInstance) {
+    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2025-12-15.clover',
+    });
+  }
+  return stripeInstance;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Retrieve the PaymentIntent to verify it succeeded
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const paymentIntent = await getStripe().paymentIntents.retrieve(paymentIntentId);
 
     if (paymentIntent.status !== 'succeeded') {
       return NextResponse.json(
@@ -42,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Get customer name from Stripe
     let fullName: string | undefined;
     if (paymentIntent.customer) {
-      const customer = await stripe.customers.retrieve(paymentIntent.customer as string);
+      const customer = await getStripe().customers.retrieve(paymentIntent.customer as string);
       if (customer && !customer.deleted) {
         fullName = customer.name || undefined;
       }

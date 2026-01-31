@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-12-15.clover',
-});
+// Lazy initialization to avoid build-time errors when env vars aren't available
+let stripeInstance: Stripe | null = null;
+
+function getStripe(): Stripe {
+  if (!stripeInstance) {
+    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2025-12-15.clover',
+    });
+  }
+  return stripeInstance;
+}
 
 // Prices in cents
 const RESISTANCE_MAP_PRICE = 700; // $7.00
@@ -24,7 +32,7 @@ export async function POST(request: NextRequest) {
     let customerId: string | undefined;
     if (email && email !== 'customer@example.com') {
       // Look for existing customer or create new one
-      const customers = await stripe.customers.list({
+      const customers = await getStripe().customers.list({
         email: email.toLowerCase(),
         limit: 1,
       });
@@ -34,12 +42,12 @@ export async function POST(request: NextRequest) {
         customer = customers.data[0];
         // Update name if provided
         if (fullName) {
-          customer = await stripe.customers.update(customer.id, {
+          customer = await getStripe().customers.update(customer.id, {
             name: fullName,
           });
         }
       } else {
-        customer = await stripe.customers.create({
+        customer = await getStripe().customers.create({
           email: email.toLowerCase(),
           name: fullName || undefined,
         });
@@ -68,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update the PaymentIntent
-    const paymentIntent = await stripe.paymentIntents.update(paymentIntentId, updateParams);
+    const paymentIntent = await getStripe().paymentIntents.update(paymentIntentId, updateParams);
 
     return NextResponse.json({
       success: true,
