@@ -1,5 +1,8 @@
 import { AuthProvider } from "@/components/auth/AuthProvider";
 
+// Force dynamic rendering - dashboard requires auth and env vars
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: "Funnel Dashboard | Inner Wealth Initiate",
   description: "Funnel metrics and analytics",

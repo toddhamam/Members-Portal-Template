@@ -5,6 +5,9 @@ import { PortalContent } from "@/components/portal/PortalContent";
 import { MobileNav } from "@/components/portal/MobileNav";
 import { ChatProvider, ChatContainer } from "@/components/chat";
 
+// Force dynamic rendering - portal requires auth and env vars
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: "Member Portal | Inner Wealth Initiate",
   description: "Access your purchased products and courses",
