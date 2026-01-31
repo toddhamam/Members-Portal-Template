@@ -914,6 +914,40 @@ Session recording and heatmaps via Hotjar.
 
 ---
 
+## Brand Configuration
+
+**Centralized config:** `src/config/brand.ts` - All brand-specific values in one place.
+
+### What It Contains
+- **Brand identity:** Name, tagline, legal name, copyright year
+- **Domains:** Marketing, funnel, and portal domains
+- **Contact:** Support and admin email addresses
+- **Social:** Links to social media profiles
+- **Instructor:** Name, title, bio, and image path
+- **Meta/SEO:** Title suffix, default description, OG image
+- **Feature flags:** Enable/disable portal features
+
+### Usage
+```typescript
+import { brand, domains, contact } from "@/config/brand";
+
+// In components
+<title>{brand.name} | Member Portal</title>
+<a href={`mailto:${contact.supportEmail}`}>Contact Support</a>
+
+// Helper functions
+import { getFullUrl, getCopyrightText } from "@/config/brand";
+const funnelUrl = getFullUrl('funnel', '/checkout');
+const copyright = getCopyrightText();
+```
+
+### Important
+- **Never hardcode brand strings** - Always import from `brand.ts`
+- When setting up a new brand, update this file first
+- All values have clear comments explaining their purpose
+
+---
+
 ## Style Guide
 
 **Full style guide:** `src/styles/style-guide.ts` - Contains all colors, typography, spacing, component patterns, and helper functions.
