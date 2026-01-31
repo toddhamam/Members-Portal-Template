@@ -1,9 +1,28 @@
 /**
- * INNER WEALTH INITIATE - STYLE GUIDE
- * ====================================
+ * STYLE GUIDE - MEMBER PORTAL TEMPLATE
+ * =====================================
  *
- * This file documents the design system for the entire funnel.
+ * This file documents the design system for the entire portal and funnel.
  * Import these constants to ensure consistency across all pages.
+ *
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │  CUSTOMIZATION GUIDE                                                    │
+ * │                                                                         │
+ * │  When setting up for a new brand, update these sections:                │
+ * │                                                                         │
+ * │  1. BRANDING (lines ~35-55)                                             │
+ * │     - Brand name, tagline, logo path                                    │
+ * │     - Brand-specific colors derived from logo                           │
+ * │                                                                         │
+ * │  2. COLOR PALETTE > accent (lines ~85-95)                               │
+ * │     - Primary accent color (currently gold #d4a574)                     │
+ * │     - Secondary accent (currently orange #ee5d0b)                       │
+ * │                                                                         │
+ * │  3. TYPOGRAPHY > fontFamily (lines ~115-125)                            │
+ * │     - Update if using different fonts (also update layout.tsx)          │
+ * │                                                                         │
+ * │  Look for [CUSTOMIZE] comments below for required changes.              │
+ * └─────────────────────────────────────────────────────────────────────────┘
  *
  * Pages in funnel:
  * - Sales Page (/)
@@ -18,13 +37,14 @@
 // =============================================================================
 // BRANDING
 // =============================================================================
+// [CUSTOMIZE] Update all values in this section for your brand
 
 export const branding = {
-  // Brand Name
+  // [CUSTOMIZE] Brand Name - appears in headers, titles, alt text
   name: 'Inner Wealth Initiate',
   tagline: 'Inner Wealth Initiate™',
 
-  // Logo
+  // [CUSTOMIZE] Logo - replace /logo.png with your logo file
   logo: {
     // Full logo with text (horizontal layout)
     full: '/logo.png',
@@ -32,27 +52,29 @@ export const branding = {
     alt: 'Inner Wealth Initiate logo',
   },
 
-  // Brand Colors (derived from logo)
+  // [CUSTOMIZE] Brand Colors - derive these from your logo/brand guidelines
+  // These are used for brand-specific accents throughout the UI
   brandColors: {
     gold: '#d4a574',           // Primary brand color - logo text and circle
-    teal: '#3da4ab',           // Teal/turquoise flame
-    coral: '#c46c5b',          // Coral/red flame
-    amber: '#e8a838',          // Golden amber flame center
+    teal: '#3da4ab',           // Secondary color (optional)
+    coral: '#c46c5b',          // Tertiary color (optional)
+    amber: '#e8a838',          // Accent color (optional)
   },
 } as const;
 
 // =============================================================================
 // COLOR PALETTE
 // =============================================================================
+// [CUSTOMIZE] The accent colors section below - these define your brand's look
 
 export const colors = {
-  // Primary Colors
+  // Primary Colors (generally don't need to change)
   primary: {
     black: '#222222',        // Primary text, CTA buttons
     white: '#ffffff',        // White backgrounds, button text
   },
 
-  // Background Colors
+  // Background Colors (adjust dark tones to complement your brand if desired)
   background: {
     white: '#ffffff',        // Main white background
     warmWhite: '#faf9f7',    // Warm off-white sections
@@ -65,12 +87,13 @@ export const colors = {
     deepBlue: '#0f3460',     // Hero gradient end
   },
 
-  // Accent Colors
+  // [CUSTOMIZE] Accent Colors - These define your brand's visual identity
+  // Replace with your brand's primary and secondary accent colors
   accent: {
-    gold: '#d4a574',         // Gold/tan accent (primary accent)
-    goldDark: '#b8956c',     // Darker gold (gradients, bullets)
-    orange: '#ee5d0b',       // Orange accent (sparingly used)
-    orangeHover: '#d54d00',  // Orange hover state
+    gold: '#d4a574',         // [CUSTOMIZE] Primary accent - used for highlights, links, badges
+    goldDark: '#b8956c',     // [CUSTOMIZE] Darker variant - gradients, bullets (darken primary by ~10%)
+    orange: '#ee5d0b',       // [CUSTOMIZE] Secondary accent - CTAs, important buttons
+    orangeHover: '#d54d00',  // [CUSTOMIZE] Secondary hover state (darken secondary by ~10%)
   },
 
   // Badge Colors
@@ -106,18 +129,23 @@ export const colors = {
 // =============================================================================
 // TYPOGRAPHY
 // =============================================================================
+// [CUSTOMIZE] Update fonts if using different typefaces (also update layout.tsx)
 
 export const typography = {
-  // Font Families (defined in layout.tsx via next/font/google)
+  // [CUSTOMIZE] Font Families - defined in layout.tsx via next/font/google
+  // To change fonts:
+  // 1. Update the imports in src/app/layout.tsx
+  // 2. Update the CSS variable names below to match
+  // 3. Update the fallback fonts as appropriate
   fontFamily: {
-    serif: 'var(--font-playfair), "Playfair Display", Georgia, serif',
-    sans: 'var(--font-inter), "Inter", system-ui, sans-serif',
+    serif: 'var(--font-playfair), "Playfair Display", Georgia, serif',  // Headings
+    sans: 'var(--font-inter), "Inter", system-ui, sans-serif',          // Body text
   },
 
   // Tailwind classes for fonts
   fontClasses: {
-    serif: 'font-serif',     // Playfair Display - Headings
-    sans: '',                // Inter - Body (default)
+    serif: 'font-serif',     // Playfair Display - Headings (elegant, traditional)
+    sans: '',                // Inter - Body (clean, modern) - default, no class needed
   },
 
   // Heading Sizes (Tailwind classes)
